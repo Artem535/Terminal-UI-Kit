@@ -1,9 +1,10 @@
 # Module targets for Terminal UI Kit (PRD section 10, "Target CMake Targets").
 #
-# No module has implementation sources yet, so every target below is
-# INTERFACE-only. As modules gain .cc files, add_library(... INTERFACE) will
-# become add_library(...) and target_terminal_ui_kit_warnings() should be
-# applied (see cmake/TerminalUiKitWarnings.cmake) -- that function requires a
+# Most modules have no implementation sources yet, so they stay
+# INTERFACE-only. As a module gains .cc files (see Core below for the
+# pattern), add_library(... INTERFACE) becomes add_library(...) and
+# target_terminal_ui_kit_warnings() should be applied (see
+# cmake/TerminalUiKitWarnings.cmake) -- that function requires a
 # non-INTERFACE target.
 #
 # Theme (include/terminal_ui_kit/theme/) has no dedicated CMake target and is
@@ -36,7 +37,18 @@ function(_terminal_ui_kit_add_module name)
   set(TERMINAL_UI_KIT_TARGET_${alias} ${target} PARENT_SCOPE)
 endfunction()
 
-_terminal_ui_kit_add_module(core)
+# Core has real implementation sources (text_wrap.cc), so it is a compiled
+# library rather than an INTERFACE target like the still-header-only
+# modules below.
+add_library(terminal_ui_kit_core core/text_wrap.cc)
+add_library(TerminalUiKit::Core ALIAS terminal_ui_kit_core)
+target_include_directories(terminal_ui_kit_core PUBLIC
+  $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>
+  $<INSTALL_INTERFACE:include>)
+target_compile_features(terminal_ui_kit_core PUBLIC cxx_std_20)
+target_terminal_ui_kit_warnings(terminal_ui_kit_core)
+set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_core)
+
 _terminal_ui_kit_add_module(components)
 _terminal_ui_kit_add_module(document)
 _terminal_ui_kit_add_module(editor)
@@ -64,6 +76,15 @@ target_include_directories(terminal_ui_kit_testing INTERFACE
   $<INSTALL_INTERFACE:include>)
 target_compile_features(terminal_ui_kit_testing INTERFACE cxx_std_20)
 target_link_libraries(terminal_ui_kit_testing INTERFACE terminal_ui_kit_core)
+
+# terminal_ui_kit/testing/virtual_screen.h renders against real FTXUI types,
+# so this target needs FTXUI. Only resolved when tests or examples are
+# actually being built, so a bare configure never touches the network (see
+# cmake/TerminalUiKitDependencies.cmake).
+if(TERMINAL_UI_KIT_BUILD_TESTS OR TERMINAL_UI_KIT_BUILD_EXAMPLES)
+  terminal_ui_kit_require_ftxui()
+  target_link_libraries(terminal_ui_kit_testing INTERFACE ftxui::screen ftxui::dom ftxui::component)
+endif()
 
 add_library(terminal_ui_kit_all INTERFACE)
 add_library(TerminalUiKit::All ALIAS terminal_ui_kit_all)

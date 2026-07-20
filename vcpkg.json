@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "High-level C++ components for modern interactive terminal applications, built on FTXUI",
   "license": "MIT",
-  "homepage": "https://github.com/Artem535/terminal_ui_kit",
+  "homepage": "https://github.com/Artem535/Terminal-UI-Kit",
   "dependencies": [
     "ftxui"
   ],

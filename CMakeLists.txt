@@ -5,7 +5,7 @@ file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" TERMINAL_UI_KIT_VERSION)
 project(TerminalUiKit
   VERSION ${TERMINAL_UI_KIT_VERSION}
   DESCRIPTION "High-level C++ components for terminal applications, built on FTXUI"
-  HOMEPAGE_URL "https://github.com/Artem535/terminal_ui_kit"
+  HOMEPAGE_URL "https://github.com/Artem535/Terminal-UI-Kit"
   LANGUAGES CXX)
 
 if(PROJECT_IS_TOP_LEVEL)

@@ -1,0 +1,9 @@
+add_executable(terminal_ui_kit_rendering_tests
+  virtual_screen_test.cc)
+
+target_link_libraries(terminal_ui_kit_rendering_tests PRIVATE
+  TerminalUiKit::Testing
+  GTest::gtest_main)
+
+target_terminal_ui_kit_warnings(terminal_ui_kit_rendering_tests)
+gtest_discover_tests(terminal_ui_kit_rendering_tests)
