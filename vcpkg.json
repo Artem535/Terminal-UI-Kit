@@ -1,0 +1,32 @@
+{
+  "name": "terminal-ui-kit",
+  "version": "0.1.0",
+  "description": "High-level C++ components for modern interactive terminal applications, built on FTXUI",
+  "license": "MIT",
+  "homepage": "https://github.com/Artem535/terminal_ui_kit",
+  "dependencies": [
+    "ftxui"
+  ],
+  "features": {
+    "markdown": {
+      "description": "Markdown rendering support",
+      "dependencies": ["md4c"]
+    },
+    "tree-sitter": {
+      "description": "Tree-sitter based syntax highlighting",
+      "dependencies": ["tree-sitter"]
+    },
+    "images": {
+      "description": "Terminal image rendering backends",
+      "dependencies": ["chafa"]
+    },
+    "tests": {
+      "description": "Unit, rendering, and interaction tests",
+      "dependencies": ["gtest"]
+    },
+    "benchmarks": {
+      "description": "Performance benchmarks",
+      "dependencies": ["benchmark"]
+    }
+  }
+}

@@ -1,0 +1,40 @@
+# Contributing
+
+## Scope
+
+Terminal UI Kit stays domain-neutral (see `doc/prd.md` section 8.4). Widgets
+that only make sense for a specific application (a coding agent, a chat
+client, ...) do not belong in this library — compose them from generic
+primitives in the consuming application instead.
+
+## Coding style
+
+The project follows the Google C++ Style Guide with the deviations listed in
+`doc/prd.md` section 47 (types `PascalCase`, functions/variables
+`snake_case`, private fields `snake_case_`, constants `kPascalCase`, files
+`snake_case.h`/`snake_case.cc`, tests `foo_test.cc`). `.clang-format` and
+`.clang-tidy` enforce this automatically:
+
+```sh
+clang-format -i path/to/file.cc
+clang-tidy path/to/file.cc
+```
+
+## Building and testing
+
+```sh
+cmake --preset debug
+cmake --build --preset debug
+ctest --preset debug
+```
+
+## Pull requests
+
+- Keep pull requests focused — see `doc/prd.md` section 63 for how the
+  initial foundation work is sequenced into independent PRs.
+- Every new primary target is added to both CMake and Xmake (section 11.3).
+- Add tests for new behavior; large-data components need a benchmark
+  (section 50) before they're considered done.
+- Upstream-suitable fixes (generic FTXUI improvements, not tied to Terminal
+  UI Kit) should go directly to FTXUI instead of living here — see section
+  55.

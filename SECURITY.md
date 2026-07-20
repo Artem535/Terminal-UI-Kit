@@ -1,0 +1,27 @@
+# Security Policy
+
+## Reporting a Vulnerability
+
+If you believe you've found a security issue in Terminal UI Kit (memory
+safety, clipboard data leakage, unsafe handling of untrusted terminal input,
+etc.), please report it privately rather than opening a public issue.
+
+Use GitHub's private vulnerability reporting for this repository
+(Security tab → "Report a vulnerability"), or contact the maintainer
+directly. Include:
+
+- affected version or commit;
+- a minimal reproduction;
+- the potential impact.
+
+## Scope notes
+
+- The clipboard integrations (section 32 of `doc/prd.md`) are disabled by
+  default in "sensitive mode" and require explicit user action — reports
+  about accidental clipboard exposure are in scope.
+- Terminal escape-sequence and ANSI parsing (log views, pasted input) are
+  fuzzed (section 49.5); parser crashes or memory-safety issues found there
+  are in scope.
+- This library does not implement networking, authentication, or storage —
+  reports about those concerns belong to the consuming application, not this
+  repository.

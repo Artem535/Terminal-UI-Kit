@@ -1,0 +1,2204 @@
+---
+title: "PRD: Terminal UI Kit — High-Level Components for FTXUI"
+status: "Draft"
+version: "0.1"
+date: "2026-07-20"
+owner: "Artem Durynin"
+language: "en"
+---
+
+# PRD: Terminal UI Kit
+
+## 1. Executive Summary
+
+**Terminal UI Kit** is a standalone C++20/23 library of high-level components for modern terminal applications, built on top of FTXUI.
+
+The project is intended to provide capabilities that are commonly missing from applications such as:
+
+- coding-agent CLIs;
+- AI assistants;
+- terminal chat applications;
+- Git clients;
+- log viewers;
+- task runners;
+- orchestration dashboards;
+- interactive CLIs and REPLs;
+- developer tools;
+- system consoles.
+
+FTXUI already provides a strong foundation for terminal rendering, layout, DOM construction, input events, focus management, mouse support, animations, and basic components. However, it does not provide ready-made high-level modules required by interfaces similar to Claude Code, Codex, or OpenCode:
+
+- a production-quality multiline editor;
+- virtualized lists;
+- streaming documents;
+- Markdown rendering;
+- syntax-highlighted code blocks;
+- diff viewers;
+- selectable text;
+- command palettes;
+- completion popups;
+- large log viewers;
+- terminal clipboard integration;
+- terminal image adapters;
+- transcript views;
+- asynchronous task trees;
+- rich status indicators.
+
+Terminal UI Kit should become a separate library that:
+
+1. uses FTXUI as its rendering and component foundation;
+2. does not fork or replace FTXUI;
+3. returns ordinary `ftxui::Component` and `ftxui::Element` objects;
+4. does not introduce a separate event loop;
+5. is independent of any specific coding agent;
+6. can be reused by other C++ projects;
+7. acts as a source of generic improvements that may later be contributed upstream to FTXUI.
+
+The first production consumer of the library will be a custom C++ coding-agent runtime.
+
+---
+
+# 2. Context
+
+## 2.1. Problem
+
+A modern coding-agent CLI is no longer a simple command prompt. Users expect:
+
+- streamed model responses;
+- Markdown;
+- tool-call blocks;
+- expandable logs;
+- confirmation of potentially dangerous actions;
+- multiline prompts;
+- slash commands;
+- file completion;
+- diff review;
+- an agent tree;
+- session resume;
+- progress indicators;
+- fast transcript search;
+- correct operation over SSH and inside tmux;
+- reliable resize handling;
+- Unicode support;
+- flicker-free rendering.
+
+FTXUI solves the low-level rendering and interaction layer, but most product-level components still need to be implemented by each application.
+
+If these components are built directly inside a coding-agent project, several problems appear:
+
+- the implementation becomes coupled to the agent domain model;
+- components are difficult to reuse;
+- UI testing becomes mixed with runtime testing;
+- other projects cannot use the resulting work;
+- generic improvements do not reach the broader FTXUI ecosystem;
+- the UI layer risks becoming monolithic and non-portable.
+
+## 2.2. Opportunity
+
+Extracting the components into a standalone library makes it possible to:
+
+- reduce the complexity of the coding-agent UI;
+- make a meaningful contribution to the C++ TUI ecosystem;
+- provide reusable components to other projects;
+- use Phoenix Agent as a production dogfooding environment;
+- contribute low-level improvements upstream to FTXUI;
+- evolve terminal UI independently from the agent runtime;
+- reuse the library in CppWiki, PsyClientManager CLI, PhoenixMcp tools, and other projects.
+
+---
+
+# 3. Product Vision
+
+Terminal UI Kit should become:
+
+> A production-ready collection of high-level C++ components for modern interactive terminal applications built on top of FTXUI.
+
+The library must not become “a second FTXUI.”
+
+FTXUI remains responsible for:
+
+- terminal rendering;
+- the cell model;
+- layout primitives;
+- base components;
+- screen lifecycle;
+- input events;
+- focus management.
+
+Terminal UI Kit becomes responsible for:
+
+- complex text-oriented components;
+- virtualized large-data views;
+- input editing;
+- Markdown and code rendering;
+- diff and log views;
+- completion and command UX;
+- terminal integrations;
+- reusable widgets for developer tools.
+
+---
+
+# 4. Goals
+
+## 4.1. Primary Goals
+
+1. Create a reusable component library on top of FTXUI.
+2. Provide the UI foundation for a Claude Code-like coding agent.
+3. Support C++20 as the minimum language standard.
+4. Allow optional C++23 optimizations without making C++23 mandatory.
+5. Support Linux, macOS, and Windows.
+6. Support tmux, SSH, and widely used terminal emulators.
+7. Use CMake as the primary build system.
+8. Retain Xmake as an additional build frontend.
+9. Provide unit, integration, rendering, and performance tests.
+10. Stabilize the public API by version 1.0.
+11. Remain independent of Phoenix Agent.
+12. Prepare small generic improvements for upstream contribution to FTXUI.
+
+## 4.2. Secondary Goals
+
+- Markdown support;
+- syntax highlighting using Tree-sitter;
+- terminal clipboard integration;
+- Kitty, Sixel, iTerm2, and Chafa image adapters;
+- diff viewers;
+- asynchronous progress widgets;
+- command palettes;
+- completion systems;
+- transcript and chat primitives;
+- a convenient theme API;
+- screen-reader-friendly fallback output where practical.
+
+---
+
+# 5. Non-Goals
+
+The initial scope does not include:
+
+- creating a new terminal renderer;
+- replacing the FTXUI DOM or layout engine;
+- creating a separate event loop;
+- browser rendering;
+- GUI development;
+- a full IDE-grade code editor;
+- an LSP client;
+- a Git implementation;
+- a Markdown parser written from scratch;
+- a syntax parser written from scratch;
+- a custom image decoder;
+- a custom Unicode database;
+- a custom clipboard service;
+- a direct agent-runtime API;
+- Phoenix Agent-specific domain components;
+- guaranteed support for every terminal in the first release;
+- pixel-perfect reproduction of Claude Code.
+
+---
+
+# 6. Target Users
+
+## 6.1. Coding-Agent Developers
+
+Need:
+
+- streaming text;
+- tool-call blocks;
+- Markdown;
+- diff rendering;
+- approval dialogs;
+- multiline prompts;
+- large transcripts;
+- task trees.
+
+## 6.2. Git TUI Developers
+
+Need:
+
+- virtualized file lists;
+- diff views;
+- syntax highlighting;
+- command palettes;
+- status bars;
+- search.
+
+## 6.3. Log Viewer Developers
+
+Need:
+
+- virtualized logs;
+- follow-output mode;
+- filtering;
+- search;
+- ANSI parsing;
+- large-data performance.
+
+## 6.4. REPL Developers
+
+Need:
+
+- multiline input;
+- history;
+- completion;
+- Markdown output;
+- asynchronous status updates.
+
+## 6.5. System Dashboard Developers
+
+Need:
+
+- task trees;
+- progress indicators;
+- collapsible panels;
+- status indicators;
+- resizable layouts.
+
+---
+
+# 7. Key Use Cases
+
+## 7.1. Coding-Agent Conversation
+
+A user enters a multiline request.
+
+The application:
+
+1. displays the user request;
+2. streams the assistant response;
+3. displays tool calls;
+4. updates the current action status;
+5. asks for approval when required;
+6. displays a diff;
+7. commits completed blocks to the transcript;
+8. allows the user to open the complete history.
+
+## 7.2. Large Log Viewer
+
+An application receives tens or hundreds of thousands of log lines.
+
+The component:
+
+- does not create one FTXUI component per line;
+- renders only the visible viewport;
+- supports follow mode;
+- supports text search;
+- displays dropped or truncated markers;
+- does not block the UI thread.
+
+## 7.3. Multiline Prompt
+
+The user:
+
+- enters multiple lines;
+- pastes a large text block;
+- moves by characters and words;
+- navigates command history;
+- invokes completion;
+- performs undo and redo;
+- submits the prompt.
+
+## 7.4. Diff Review
+
+The user:
+
+- opens a unified diff;
+- switches between files;
+- navigates between hunks;
+- collapses unchanged regions;
+- switches to side-by-side mode;
+- copies a selected fragment.
+
+## 7.5. Terminal Image Rendering
+
+The application receives an image.
+
+The library:
+
+1. detects terminal capabilities;
+2. selects Kitty, Sixel, iTerm2, or Chafa rendering;
+3. displays a fallback attachment card if graphics are unavailable;
+4. behaves correctly when the terminal is resized.
+
+---
+
+# 8. Architectural Principles
+
+## 8.1. FTXUI-Native API
+
+Components must return standard FTXUI types.
+
+Example:
+
+```cpp
+ftxui::Component editor =
+    terminal_ui_kit::MultilineEditor(editor_state);
+
+ftxui::Component diff =
+    terminal_ui_kit::DiffView(diff_model);
+
+auto root = ftxui::Container::Vertical({
+    editor,
+    diff,
+});
+```
+
+The library must not require applications to adopt a second UI tree.
+
+## 8.2. No Second Event Loop
+
+The library must not launch its own main event loop.
+
+It uses:
+
+- `ftxui::ScreenInteractive`;
+- `PostEvent`;
+- `RequestAnimationFrame`;
+- application-provided callbacks.
+
+## 8.3. Separation of Model and Rendering
+
+Components should separate:
+
+```text
+State / Model
+    ↓
+Layout
+    ↓
+FTXUI Element
+```
+
+Data must not exist exclusively inside rendering lambdas.
+
+## 8.4. Domain Neutrality
+
+The library must not know:
+
+- what an LLM is;
+- what MCP is;
+- what an agent is;
+- what a policy is;
+- what a tool call is.
+
+Instead of a `ToolCallBlock`, the library provides:
+
+- `CollapsiblePanel`;
+- `StreamingLogView`;
+- `StatusIndicator`;
+- `KeyHintBar`;
+- `ProgressView`.
+
+## 8.5. Optional Dependencies
+
+Markdown, Tree-sitter, image rendering, and clipboard integrations must be optional.
+
+The minimal configuration should depend only on:
+
+- the C++ standard library;
+- FTXUI.
+
+## 8.6. Testability
+
+Core models and layout logic should be testable without a physical terminal.
+
+## 8.7. Performance First
+
+Large-data components must be designed around virtualization from the beginning.
+
+---
+
+# 9. Proposed Repository Structure
+
+```text
+terminal_ui_kit/
+├── CMakeLists.txt
+├── CMakePresets.json
+├── vcpkg.json
+├── xmake.lua
+├── VERSION
+│
+├── cmake/
+│   ├── TerminalUiKitConfig.cmake.in
+│   ├── TerminalUiKitDependencies.cmake
+│   ├── TerminalUiKitOptions.cmake
+│   └── TerminalUiKitWarnings.cmake
+│
+├── include/
+│   └── terminal_ui_kit/
+│       ├── core/
+│       ├── components/
+│       ├── document/
+│       ├── editor/
+│       ├── diff/
+│       ├── markdown/
+│       ├── syntax/
+│       ├── terminal/
+│       ├── theme/
+│       └── testing/
+│
+├── src/
+│   └── terminal_ui_kit/
+│       ├── core/
+│       ├── components/
+│       ├── document/
+│       ├── editor/
+│       ├── diff/
+│       ├── markdown/
+│       ├── syntax/
+│       ├── terminal/
+│       └── theme/
+│
+├── tests/
+│   └── terminal_ui_kit/
+│       ├── unit/
+│       ├── rendering/
+│       ├── interaction/
+│       ├── integration/
+│       ├── fuzz/
+│       └── fixtures/
+│
+├── examples/
+│   ├── chat/
+│   ├── markdown_viewer/
+│   ├── diff_viewer/
+│   ├── log_viewer/
+│   ├── multiline_editor/
+│   └── image_viewer/
+│
+├── benchmarks/
+├── docs/
+└── tools/
+```
+
+---
+
+# 10. Target CMake Targets
+
+```text
+TerminalUiKit::Core
+TerminalUiKit::Components
+TerminalUiKit::Document
+TerminalUiKit::Editor
+TerminalUiKit::Markdown
+TerminalUiKit::Syntax
+TerminalUiKit::Diff
+TerminalUiKit::Terminal
+TerminalUiKit::Images
+TerminalUiKit::Testing
+TerminalUiKit::All
+```
+
+In the first implementation, multiple targets may be `INTERFACE` targets or share a physical library.
+
+The important requirement is to preserve clear dependency boundaries.
+
+---
+
+# 11. Build Systems
+
+## 11.1. CMake
+
+CMake is the primary and authoritative build system.
+
+It is responsible for:
+
+- targets;
+- feature options;
+- dependency resolution;
+- installation;
+- package export;
+- CTest integration;
+- CPack;
+- releases;
+- CI;
+- downstream package consumption.
+
+## 11.2. Xmake
+
+Xmake remains available as an additional developer-facing build frontend.
+
+It supports:
+
+- the core library;
+- primary components;
+- examples;
+- tests;
+- the Linux development workflow.
+
+## 11.3. Synchronization Rules
+
+- every new primary target is added to both build systems;
+- Xmake may support fewer optional feature combinations;
+- CI includes an Xmake smoke job;
+- release artifacts are produced through CMake;
+- the support matrix is documented.
+
+---
+
+# 12. Feature Options
+
+```cmake
+TERMINAL_UI_KIT_BUILD_TESTS
+TERMINAL_UI_KIT_BUILD_EXAMPLES
+TERMINAL_UI_KIT_BUILD_BENCHMARKS
+TERMINAL_UI_KIT_BUILD_SHARED
+
+TERMINAL_UI_KIT_ENABLE_MARKDOWN
+TERMINAL_UI_KIT_ENABLE_TREE_SITTER
+TERMINAL_UI_KIT_ENABLE_IMAGES
+TERMINAL_UI_KIT_ENABLE_CHAFA
+TERMINAL_UI_KIT_ENABLE_CLIPBOARD
+TERMINAL_UI_KIT_ENABLE_OSC52
+
+TERMINAL_UI_KIT_ENABLE_SANITIZERS
+TERMINAL_UI_KIT_ENABLE_CLANG_TIDY
+TERMINAL_UI_KIT_WARNINGS_AS_ERRORS
+```
+
+---
+
+# 13. Core Module
+
+## 13.1. Purpose
+
+Provide common types that are independent of any specific high-level component.
+
+## 13.2. Contents
+
+```text
+core/
+├── geometry.h
+├── viewport.h
+├── result.h
+├── error.h
+├── text_range.h
+├── text_position.h
+├── update_flags.h
+└── cancellation.h
+```
+
+## 13.3. Requirements
+
+- no heavy optional dependencies;
+- no dependency on Markdown;
+- no dependency on Tree-sitter;
+- minimal exposure to FTXUI-specific types;
+- testable without a real terminal screen.
+
+---
+
+# 14. Theme System
+
+## 14.1. Requirements
+
+The theme API should describe semantic roles rather than application-specific concepts.
+
+```cpp
+struct Theme {
+  TextStyle primary;
+  TextStyle secondary;
+  TextStyle muted;
+  TextStyle success;
+  TextStyle warning;
+  TextStyle error;
+  TextStyle accent;
+  TextStyle code;
+  TextStyle addition;
+  TextStyle deletion;
+  TextStyle border;
+  TextStyle selected;
+  TextStyle focused;
+};
+```
+
+## 14.2. Capabilities
+
+- dark and light themes;
+- no-color fallback;
+- 16-color mode;
+- 256-color mode;
+- true color;
+- user overrides;
+- adaptation to terminal capabilities.
+
+---
+
+# 15. RichText and StyledText
+
+## 15.1. Purpose
+
+Provide a unified model for formatted text.
+
+```cpp
+struct TextSpan {
+  std::string text;
+  TextStyle style;
+  std::optional<Hyperlink> hyperlink;
+};
+
+class StyledText {
+ public:
+  void append(TextSpan span);
+  std::span<const TextSpan> spans() const;
+};
+```
+
+## 15.2. Support
+
+- Unicode;
+- ANSI import;
+- hyperlinks;
+- selection mapping;
+- wrapping;
+- logical byte offsets;
+- display-column offsets.
+
+## 15.3. Consumers
+
+This model is used by:
+
+- Markdown;
+- code views;
+- diff views;
+- log views;
+- transcripts;
+- prompt previews.
+
+---
+
+# 16. Text Layout Engine
+
+## 16.1. Requirements
+
+- Unicode-aware wrapping;
+- configurable tab width;
+- grapheme-cluster handling;
+- wide characters;
+- zero-width characters;
+- hard and soft wrapping;
+- mapping from source positions to screen positions;
+- mapping from screen positions to source positions;
+- layout caching per viewport width.
+
+## 16.2. External Library
+
+Evaluate `utf8proc` for Unicode normalization and category data.
+
+The project must not implement a Unicode database from scratch.
+
+---
+
+# 17. VirtualList
+
+## 17.1. Goal
+
+Efficiently display lists containing thousands or hundreds of thousands of items.
+
+## 17.2. API
+
+```cpp
+struct VirtualListOptions {
+  std::function<std::size_t()> item_count;
+  std::function<ftxui::Element(std::size_t, int)> render_item;
+  std::function<int(std::size_t, int)> estimate_height;
+};
+
+ftxui::Component VirtualList(VirtualListOptions options);
+```
+
+## 17.3. Capabilities
+
+- variable item heights;
+- viewport virtualization;
+- layout caching;
+- keyboard navigation;
+- mouse scrolling;
+- scroll-to-index;
+- follow-end mode;
+- retained selection;
+- resize invalidation.
+
+## 17.4. Performance Criteria
+
+- support 100,000 items without linearly rendering all items;
+- recalculate only visible items;
+- DOM size must not grow proportionally with total item count;
+- stable frame times during append operations.
+
+---
+
+# 18. VirtualDocument
+
+## 18.1. Purpose
+
+Display large text documents and transcripts.
+
+## 18.2. Capabilities
+
+- virtualized lines;
+- wrapped logical lines;
+- search;
+- highlights;
+- copy selection;
+- bookmarks;
+- follow mode;
+- incremental append;
+- truncation markers.
+
+---
+
+# 19. StreamingDocument
+
+## 19.1. Goal
+
+Efficiently update the current text block during streaming output.
+
+## 19.2. API
+
+```cpp
+class StreamingDocument {
+ public:
+  void append(std::string_view chunk);
+  void replace_tail(std::string_view tail);
+  void finish();
+  void clear();
+};
+```
+
+## 19.3. Requirements
+
+- do not rebuild the complete document;
+- coalesce UI updates;
+- support chunks ending in incomplete UTF-8 sequences;
+- separate source data from rendered lines;
+- support safe asynchronous updates through a UI dispatcher.
+
+## 19.4. Recommended Frame Throttle
+
+- 16–33 ms;
+- configurable;
+- immediate flush when the block is completed.
+
+---
+
+# 20. LogView
+
+## 20.1. Capabilities
+
+- append log lines;
+- parse ANSI styles;
+- follow output;
+- pause follow mode;
+- search;
+- filtering;
+- severity markers;
+- timestamps;
+- truncated-output indication;
+- configurable retained-line limit;
+- virtualized rendering.
+
+## 20.2. API
+
+```cpp
+class LogModel {
+ public:
+  void append(LogEntry entry);
+  void clear();
+  void set_filter(LogFilter filter);
+};
+
+ftxui::Component LogView(
+    std::shared_ptr<LogModel> model,
+    LogViewOptions options);
+```
+
+---
+
+# 21. MultilineEditor
+
+## 21.1. Strategic Importance
+
+This is one of the most important components in the library.
+
+## 21.2. MVP Capabilities
+
+- multiple lines;
+- cursor management;
+- insertion and deletion;
+- arrow-key navigation;
+- Home and End;
+- word navigation;
+- submit callback;
+- newline callback;
+- bracketed paste;
+- command history;
+- viewport scrolling;
+- configurable key bindings.
+
+## 21.3. Full Version
+
+- text selection;
+- mouse selection;
+- undo and redo;
+- clipboard integration;
+- completion;
+- syntax highlighting;
+- validation;
+- placeholder text;
+- optional line numbers;
+- maximum-length limits;
+- grapheme-aware cursor movement;
+- IME compatibility where practical.
+
+## 21.4. Model
+
+```cpp
+struct EditorState {
+  std::vector<std::string> lines;
+  TextPosition cursor;
+  std::optional<TextRange> selection;
+  EditorViewport viewport;
+  std::vector<EditOperation> undo_stack;
+  std::vector<EditOperation> redo_stack;
+};
+```
+
+## 21.5. Commands
+
+```text
+insert_text
+insert_newline
+delete_backward
+delete_forward
+move_left
+move_right
+move_up
+move_down
+move_word_left
+move_word_right
+select_all
+undo
+redo
+history_previous
+history_next
+```
+
+---
+
+# 22. CommandHistory
+
+## Capabilities
+
+- ring buffer;
+- persistence adapter;
+- history search;
+- prefix search;
+- deduplication;
+- configurable maximum entries;
+- no-secret-persistence mode.
+
+---
+
+# 23. CompletionPopup
+
+## Requirements
+
+- asynchronous providers;
+- fuzzy filtering;
+- keyboard selection;
+- descriptions;
+- categories;
+- replacement ranges;
+- loading state;
+- no-results state;
+- viewport-aware placement.
+
+## API
+
+```cpp
+struct CompletionItem {
+  std::string label;
+  std::string insert_text;
+  std::string description;
+  CompletionKind kind;
+};
+
+class ICompletionProvider {
+ public:
+  virtual Task<std::vector<CompletionItem>> complete(
+      CompletionContext context) = 0;
+};
+```
+
+The task type must be adaptable to the host application and must not tie the library to Folly or Asio.
+
+For the core API, callback- or future-based adapters are acceptable.
+
+---
+
+# 24. CommandPalette
+
+## Capabilities
+
+- fuzzy search;
+- command groups;
+- keyboard shortcuts;
+- recently used commands;
+- disabled commands;
+- asynchronous commands;
+- descriptions;
+- command arguments;
+- custom rendering.
+
+---
+
+# 25. MarkdownView
+
+## 25.1. Parser
+
+Use one of:
+
+- `md4c`;
+- `cmark-gfm`.
+
+The final parser should be selected after a focused proof of concept.
+
+## 25.2. Supported Elements
+
+### P0
+
+- paragraphs;
+- headings;
+- bold;
+- italic;
+- inline code;
+- fenced code blocks;
+- unordered lists;
+- ordered lists;
+- blockquotes;
+- horizontal rules;
+- links.
+
+### P1
+
+- tables;
+- task lists;
+- nested blockquotes;
+- embedded attachments;
+- autolinks;
+- footnotes, if needed.
+
+## 25.3. API
+
+```cpp
+ftxui::Component MarkdownView(
+    std::shared_ptr<MarkdownDocument> document,
+    MarkdownViewOptions options);
+```
+
+## 25.4. Requirements
+
+- source parsing separated from rendering;
+- layout cache;
+- resize invalidation;
+- selectable text;
+- link-activation callback;
+- optional syntax highlighting;
+- plain-text fallback.
+
+---
+
+# 26. CodeView
+
+## Capabilities
+
+- line numbers;
+- horizontal scrolling;
+- optional wrapping;
+- syntax highlighting;
+- selection;
+- copy;
+- language label;
+- maximum preview length;
+- collapsed rendering for long output.
+
+---
+
+# 27. Syntax Highlighting
+
+## 27.1. Backend
+
+Tree-sitter.
+
+## 27.2. Initial Language Scope
+
+- C;
+- C++;
+- Python;
+- JSON;
+- YAML;
+- shell;
+- Markdown;
+- diff;
+- Rust;
+- JavaScript and TypeScript.
+
+## 27.3. Requirements
+
+- optional dependency;
+- lazy parser loading;
+- query-based captures;
+- theme mapping;
+- byte-offset conversion;
+- safe fallback without an available parser;
+- no reparsing on every frame.
+
+---
+
+# 28. Diff Model
+
+## 28.1. Do Not Implement Git Diff Generation
+
+The library receives either a pre-generated unified diff or a typed diff model.
+
+## 28.2. Parser
+
+A small unified-diff parser may be implemented because it is presentation-layer parsing, not diff generation.
+
+## 28.3. Model
+
+```cpp
+struct DiffLine {
+  DiffLineType type;
+  std::optional<int> old_line;
+  std::optional<int> new_line;
+  StyledText content;
+};
+
+struct DiffHunk {
+  std::string header;
+  std::vector<DiffLine> lines;
+};
+
+struct DiffFile {
+  std::string old_path;
+  std::string new_path;
+  std::vector<DiffHunk> hunks;
+};
+```
+
+---
+
+# 29. UnifiedDiffView
+
+## P0
+
+- file headers;
+- hunks;
+- addition, deletion, and context styles;
+- line numbers;
+- file collapse;
+- next and previous hunk navigation;
+- search;
+- copy.
+
+## P1
+
+- collapsed unchanged regions;
+- intraline character-level diff;
+- review markers;
+- selected lines;
+- custom annotations.
+
+---
+
+# 30. SideBySideDiffView
+
+## P1
+
+- aligned old and new columns;
+- independent or synchronized scrolling;
+- fallback for narrow terminals;
+- configurable line-wrapping policy;
+- automatic fallback to unified mode.
+
+---
+
+# 31. SelectableText
+
+## Requirements
+
+- keyboard selection;
+- optional mouse selection;
+- copy callback;
+- preservation of source offsets;
+- support for styled spans;
+- OSC 52 integration.
+
+---
+
+# 32. Clipboard
+
+## 32.1. Backends
+
+- host-application callback;
+- OSC 52;
+- Windows clipboard;
+- optional macOS `pbcopy` adapter;
+- optional Linux Wayland and X11 adapters.
+
+## 32.2. Security
+
+- clipboard disabled by default in sensitive mode;
+- configurable size limit;
+- explicit user action required;
+- no automatic copying of secrets.
+
+---
+
+# 33. TerminalCapabilities
+
+## Detection
+
+- color depth;
+- Unicode support;
+- mouse support;
+- bracketed paste;
+- hyperlinks;
+- Kitty graphics;
+- Sixel;
+- iTerm2 images;
+- OSC 52;
+- alternate screen;
+- terminal identity;
+- tmux and screen;
+- SSH environment.
+
+## API
+
+```cpp
+struct TerminalCapabilities {
+  ColorDepth color_depth;
+  bool unicode;
+  bool mouse;
+  bool bracketed_paste;
+  bool hyperlinks;
+  bool kitty_graphics;
+  bool sixel;
+  bool iterm_images;
+  bool osc52;
+  bool tmux;
+  bool ssh;
+};
+```
+
+---
+
+# 34. ImageRenderer
+
+## 34.1. Architecture
+
+```cpp
+class IImageRenderer {
+ public:
+  virtual bool supported(
+      const TerminalCapabilities& capabilities) const = 0;
+
+  virtual Result<void> render(
+      const ImageView& image,
+      const ImageRenderRegion& region) = 0;
+};
+```
+
+## 34.2. Backends
+
+- Kitty;
+- Sixel;
+- iTerm2;
+- Chafa;
+- placeholder card.
+
+## 34.3. Risks
+
+Terminal graphics protocols may conflict with FTXUI redraw behavior.
+
+Image rendering is therefore a P2 feature and requires a dedicated proof of concept.
+
+---
+
+# 35. TerminalSuspendGuard
+
+## Purpose
+
+Temporarily suspend FTXUI and hand terminal control to an external interactive application.
+
+```cpp
+{
+  TerminalSuspendGuard guard(screen);
+  run_interactive_process();
+}
+```
+
+## Requirements
+
+- restore terminal state;
+- disable mouse tracking;
+- restore the cursor;
+- restore alternate-screen state;
+- exception safety;
+- signal safety where practical.
+
+PTY management and process spawning remain the host application's responsibility.
+
+---
+
+# 36. ModalStack
+
+## Capabilities
+
+- nested modals;
+- focus restoration;
+- keyboard close;
+- optional click-outside behavior;
+- asynchronous completion;
+- configurable backdrop style.
+
+---
+
+# 37. CollapsiblePanel
+
+## Capabilities
+
+- title;
+- status icon;
+- summary;
+- expanded content;
+- keyboard and mouse toggle;
+- lazy body rendering;
+- duration or action slot.
+
+---
+
+# 38. StatusIndicator
+
+Supported statuses:
+
+```text
+idle
+pending
+running
+success
+warning
+error
+cancelled
+paused
+```
+
+Capabilities:
+
+- icon;
+- text;
+- animation;
+- no-color fallback.
+
+---
+
+# 39. Spinner and Progress
+
+## Components
+
+- `Spinner`;
+- `ProgressBar`;
+- `IndeterminateProgress`;
+- `ProgressTree`;
+- `TaskList`.
+
+## ProgressTree
+
+Suitable for:
+
+- builds;
+- agents;
+- workflows;
+- downloads;
+- test execution.
+
+---
+
+# 40. Toast
+
+## Capabilities
+
+- informational;
+- success;
+- warning;
+- error;
+- timeout;
+- actions;
+- queueing;
+- configurable maximum visible toasts;
+- pause timeout while focused.
+
+---
+
+# 41. KeyHintBar
+
+Example:
+
+```text
+esc cancel · enter submit · ctrl+r history · / commands
+```
+
+The API should receive semantic actions and bindings, not preformatted raw strings.
+
+---
+
+# 42. SearchableTextView
+
+## Capabilities
+
+- optional regular expressions;
+- literal search;
+- next and previous result;
+- result count;
+- highlighting;
+- case sensitivity;
+- incremental search.
+
+---
+
+# 43. TranscriptView
+
+## Purpose
+
+Display a large history of semantic blocks.
+
+## Model
+
+```cpp
+using TranscriptItem = std::variant<
+    TextBlock,
+    MarkdownBlock,
+    CodeBlock,
+    LogBlock,
+    DiffBlock,
+    StatusBlock,
+    CustomBlock>;
+```
+
+## Requirements
+
+- virtualization;
+- immutable completed blocks;
+- one mutable tail block;
+- search;
+- copy;
+- bookmarks;
+- follow-end mode;
+- opening item details.
+
+---
+
+# 44. Inline Transcript Strategy
+
+The library should support the architecture:
+
+```text
+Completed blocks
+    → immutable transcript
+
+Active block
+    → mutable streaming view
+
+Input and status
+    → bottom interactive area
+```
+
+Full integration with native terminal scrollback remains an experimental mode.
+
+---
+
+# 45. API Stability
+
+## Before 1.0
+
+- Semantic Versioning;
+- breaking changes are allowed only in minor versions;
+- migration notes are mandatory;
+- an experimental namespace is allowed.
+
+## After 1.0
+
+- Semantic Versioning;
+- public headers are stable;
+- deprecation lasts for at least one minor release cycle;
+- binary compatibility is not guaranteed unless explicitly adopted;
+- source compatibility is the primary guarantee.
+
+---
+
+# 46. Namespaces
+
+```cpp
+namespace terminal_ui_kit {
+namespace terminal_ui_kit::editor {
+namespace terminal_ui_kit::document {
+namespace terminal_ui_kit::diff {
+namespace terminal_ui_kit::terminal {
+```
+
+Internal namespaces:
+
+```cpp
+namespace terminal_ui_kit::editor_internal {
+namespace terminal_ui_kit::document_internal {
+```
+
+---
+
+# 47. Coding Style
+
+The project uses the Google C++ Style Guide as its foundation.
+
+Documented deviations:
+
+- types: `PascalCase`;
+- functions and methods: `snake_case`;
+- local variables: `snake_case`;
+- private fields: `snake_case_`;
+- constants: `kPascalCase`;
+- files: `snake_case.h` and `snake_case.cc`;
+- tests: `foo_test.cc`.
+
+---
+
+# 48. Dependencies
+
+## Required
+
+- FTXUI.
+
+## Optional
+
+- md4c or cmark-gfm;
+- Tree-sitter;
+- utf8proc;
+- Chafa;
+- an image decoding library;
+- GoogleTest;
+- Google Benchmark.
+
+## Dependency Rules
+
+- no networking libraries;
+- no agent frameworks;
+- no database libraries;
+- optional dependencies must not leak into core public headers;
+- feature macros must not pollute the downstream user API.
+
+---
+
+# 49. Testing Strategy
+
+## 49.1. Unit Tests
+
+- editor operations;
+- cursor movement;
+- selection;
+- undo and redo;
+- wrapping;
+- virtual-list range calculation;
+- layout caching;
+- diff parsing;
+- Markdown-model conversion;
+- ANSI parsing;
+- capability detection.
+
+## 49.2. Rendering Golden Tests
+
+Render components into a virtual screen and compare:
+
+- cells;
+- text;
+- styles;
+- cursor position;
+- dimensions.
+
+Fixtures:
+
+```text
+tests/fixtures/rendering/
+├── multiline_editor/
+├── markdown/
+├── diff/
+├── virtual_list/
+└── logs/
+```
+
+## 49.3. Interaction Tests
+
+- key sequences;
+- mouse input;
+- paste;
+- resize;
+- modal focus;
+- completion selection;
+- search.
+
+## 49.4. Integration Tests
+
+- real FTXUI screen;
+- tmux fixture where practical;
+- terminal-capability fixtures;
+- clipboard adapters;
+- image fallback.
+
+## 49.5. Fuzzing
+
+- ANSI parser;
+- Markdown adapter;
+- unified-diff parser;
+- UTF-8 input;
+- key-sequence parser;
+- image metadata.
+
+## 49.6. Sanitizers
+
+- ASan;
+- UBSan;
+- TSan.
+
+---
+
+# 50. Performance Benchmarks
+
+## Required Benchmark Scenarios
+
+1. `VirtualList` with 100,000 fixed-height items.
+2. `VirtualList` with 10,000 variable-height items.
+3. Streaming append of 100,000 chunks.
+4. `LogView` processing one million lines with a retention limit.
+5. A 1 MB Markdown document.
+6. A diff containing 100,000 lines.
+7. Pasting 1 MB into `MultilineEditor`.
+8. Resizing the terminal 200 times.
+9. Searching through a large transcript.
+10. Tree-sitter highlighting of a large code block.
+
+## Metrics
+
+- render time;
+- layout time;
+- allocation count;
+- peak memory;
+- append latency;
+- input latency;
+- resize latency.
+
+---
+
+# 51. Platform Support
+
+## P0
+
+- Linux;
+- GCC;
+- Clang;
+- Kitty;
+- WezTerm;
+- Konsole;
+- GNOME Terminal;
+- tmux;
+- SSH.
+
+## P1
+
+- macOS;
+- AppleClang;
+- Terminal.app;
+- iTerm2.
+
+## P1/P2
+
+- Windows;
+- MSVC;
+- Windows Terminal;
+- ConPTY.
+
+---
+
+# 52. CI
+
+## CMake Matrix
+
+```text
+cmake-linux-gcc
+cmake-linux-clang
+cmake-linux-minimal
+cmake-linux-all-features
+cmake-linux-asan
+cmake-linux-tsan
+cmake-linux-ubsan
+cmake-windows-msvc
+cmake-macos-clang
+```
+
+## Xmake Jobs
+
+```text
+xmake-linux-debug
+xmake-linux-tests
+```
+
+## Quality Gates
+
+- clang-format;
+- clang-tidy;
+- warnings as errors;
+- coverage;
+- dependency license checks;
+- benchmark smoke tests;
+- examples build.
+
+---
+
+# 53. Documentation
+
+Required documents:
+
+```text
+README.md
+README_RU.md
+docs/getting_started.md
+docs/architecture.md
+docs/components.md
+docs/editor.md
+docs/virtualization.md
+docs/markdown.md
+docs/diff.md
+docs/terminal_capabilities.md
+docs/images.md
+docs/theming.md
+docs/performance.md
+docs/testing.md
+docs/build_systems.md
+docs/code_style.md
+CONTRIBUTING.md
+SECURITY.md
+CHANGELOG.md
+```
+
+---
+
+# 54. Examples
+
+## `chat`
+
+Demonstrates:
+
+- transcript;
+- streaming response;
+- input;
+- status;
+- modal dialogs.
+
+## `markdown_viewer`
+
+Demonstrates:
+
+- file loading;
+- code blocks;
+- links;
+- resize handling.
+
+## `diff_viewer`
+
+Demonstrates:
+
+- unified diff;
+- side-by-side diff;
+- navigation.
+
+## `log_viewer`
+
+Demonstrates:
+
+- append;
+- follow mode;
+- search;
+- filtering.
+
+## `multiline_editor`
+
+Demonstrates:
+
+- history;
+- completion;
+- selection;
+- undo.
+
+## `image_viewer`
+
+Demonstrates:
+
+- capability detection;
+- rendering backends;
+- fallback behavior.
+
+---
+
+# 55. Upstream Strategy for FTXUI
+
+## 55.1. Features That Remain in Terminal UI Kit
+
+- `MarkdownView`;
+- `DiffView`;
+- `MultilineEditor`;
+- `VirtualList`;
+- `VirtualDocument`;
+- `LogView`;
+- `CommandPalette`;
+- `CompletionPopup`;
+- image-renderer adapters.
+
+## 55.2. Features Suitable for Upstream Contribution
+
+Small generic primitives:
+
+- bracketed-paste fixes;
+- Unicode and grapheme fixes;
+- cursor APIs;
+- viewport hooks;
+- virtualized-rendering primitives;
+- terminal-capability APIs;
+- scrollbar fixes;
+- performance improvements;
+- selection support;
+- event-parsing improvements.
+
+## 55.3. Upstream Rule
+
+Every upstream pull request must:
+
+- be independent of Terminal UI Kit;
+- solve a general problem;
+- include tests;
+- avoid agent-specific APIs;
+- be small enough for practical review.
+
+---
+
+# 56. Use in Phoenix Agent
+
+Phoenix Agent contains domain-specific components:
+
+```text
+ToolCallBlock
+ApprovalRequestBlock
+AgentTree
+RunStatusBlock
+McpServerStatus
+ModelSelector
+ContextUsageView
+```
+
+They are composed from Terminal UI Kit primitives:
+
+```text
+ToolCallBlock
+  = CollapsiblePanel
+  + StatusIndicator
+  + StreamingLogView
+  + KeyHintBar
+```
+
+The agent runtime does not depend on FTXUI.
+
+Architecture:
+
+```text
+Agent Runtime
+    ↓ domain events
+Phoenix TUI Adapter
+    ↓ view models
+Terminal UI Kit
+    ↓
+FTXUI
+```
+
+---
+
+# 57. Product Milestones
+
+## 0.1.0 — Foundation
+
+- CMake;
+- Xmake;
+- Core;
+- Theme;
+- StyledText;
+- StatusIndicator;
+- Spinner;
+- CollapsiblePanel;
+- ModalStack;
+- KeyHintBar;
+- tests;
+- examples.
+
+## 0.2.0 — Documents
+
+- text layout;
+- wrapping;
+- VirtualList;
+- VirtualDocument;
+- LogView;
+- StreamingDocument;
+- basic text selection.
+
+## 0.3.0 — Markdown and Code
+
+- Markdown parser adapter;
+- MarkdownView;
+- CodeView;
+- hyperlinks;
+- code blocks;
+- optional Tree-sitter highlighting.
+
+## 0.4.0 — Editor
+
+- MultilineEditor;
+- command history;
+- bracketed paste;
+- selection;
+- undo and redo;
+- CompletionPopup;
+- CommandPalette.
+
+## 0.5.0 — Diff
+
+- diff model;
+- unified-diff parser;
+- UnifiedDiffView;
+- navigation;
+- copy;
+- collapse.
+
+## 0.6.0 — Advanced Virtualization
+
+- variable-height VirtualList;
+- transcript model;
+- search;
+- bookmarks;
+- large-data optimizations.
+
+## 0.7.0 — Terminal Integration
+
+- TerminalCapabilities;
+- OSC 52;
+- clipboard adapters;
+- TerminalSuspendGuard;
+- hyperlink handling.
+
+## 0.8.0 — Images
+
+- image abstraction;
+- Chafa;
+- Kitty;
+- Sixel;
+- iTerm2;
+- fallback card.
+
+## 0.9.0 — Stabilization
+
+- API review;
+- platform matrix;
+- TSan;
+- fuzzing;
+- performance baseline;
+- migration guide;
+- complete documentation.
+
+## 1.0.0
+
+- stable API;
+- production use in Phoenix Agent;
+- Linux, macOS, and Windows support;
+- no known critical rendering or input defects;
+- documented compatibility matrix;
+- packaged CMake SDK;
+- vcpkg and Conan packaging evaluation;
+- multiple example applications.
+
+---
+
+# 58. Priorities
+
+## P0
+
+- CMake and Xmake foundation;
+- StyledText;
+- VirtualList;
+- StreamingDocument;
+- LogView;
+- MultilineEditor MVP;
+- ModalStack;
+- StatusIndicator;
+- Markdown MVP;
+- UnifiedDiffView;
+- tests;
+- performance benchmarks.
+
+## P1
+
+- full editor functionality;
+- syntax highlighting;
+- completion;
+- transcripts;
+- selection;
+- clipboard;
+- side-by-side diff;
+- broader platform support.
+
+## P2
+
+- image rendering;
+- inline terminal mode;
+- advanced accessibility;
+- IME edge cases;
+- complex Markdown extensions.
+
+---
+
+# 59. MVP Definition of Done
+
+The MVP is complete when:
+
+1. the library builds with CMake;
+2. an Xmake smoke build passes;
+3. the package can be consumed through `find_package`;
+4. `VirtualList` exists;
+5. `StreamingDocument` exists;
+6. `LogView` exists;
+7. multiline input exists;
+8. `ModalStack` exists;
+9. a Markdown subset is supported;
+10. unified diff rendering exists;
+11. a chat UI example exists;
+12. 10,000 transcript blocks do not break the UI;
+13. streaming does not trigger a complete history rerender;
+14. ASan and UBSan pass;
+15. CI supports GCC and Clang;
+16. the public API contains no agent-specific types.
+
+---
+
+# 60. Success Metrics
+
+## Technical Metrics
+
+- p95 input latency below 16 ms for a representative workload;
+- p95 append-to-render latency below 33 ms;
+- `VirtualList` does not render invisible items;
+- 100,000 items do not produce a linear-size DOM;
+- memory remains bounded by the configured retention policy;
+- no visible flicker in supported terminals;
+- sanitizer-clean releases.
+
+## Ecosystem Metrics
+
+- Phoenix Agent uses the library without a fork;
+- at least two independent example applications exist;
+- at least one external user adopts the public release;
+- multiple upstream pull requests are accepted into FTXUI;
+- documentation covers the major components;
+- issue templates and a contribution guide are available.
+
+---
+
+# 61. Risks
+
+## 61.1. Scope Creep
+
+Risk: the library turns into a terminal IDE framework.
+
+Mitigation:
+
+- strict P0, P1, and P2 separation;
+- each component should support at least two plausible use cases;
+- agent-specific widgets are not accepted into the library.
+
+## 61.2. Becoming a Second FTXUI
+
+Risk: the library begins wrapping every FTXUI primitive.
+
+Mitigation:
+
+- return standard FTXUI types;
+- do not create a new layout engine;
+- do not hide `ScreenInteractive`;
+- prefer composition over wrappers.
+
+## 61.3. MultilineEditor Complexity
+
+Mitigation:
+
+- MVP excludes full IME support and advanced mouse selection;
+- use a separate command model;
+- add fuzz tests;
+- maintain a platform-specific backlog.
+
+## 61.4. Unicode Complexity
+
+Mitigation:
+
+- use utf8proc or a comparable maintained library;
+- add grapheme tests;
+- explicitly map byte offsets to display positions;
+- include fixtures for CJK, emoji, and combining marks.
+
+## 61.5. Image Rendering Conflicts
+
+Mitigation:
+
+- dedicated proof of concept;
+- P2 priority;
+- fallback attachment card;
+- no stability guarantee before a proven backend exists.
+
+## 61.6. CMake and Xmake Divergence
+
+Mitigation:
+
+- CMake remains authoritative;
+- Xmake smoke jobs run in CI;
+- maintain a support matrix;
+- document intentional differences.
+
+## 61.7. Performance Regressions
+
+Mitigation:
+
+- virtualization-first design;
+- benchmark gates;
+- immutable completed blocks;
+- coalesced rendering updates.
+
+---
+
+# 62. Open Questions
+
+1. Should the Markdown backend be md4c or cmark-gfm?
+2. Is utf8proc sufficient, or is a dedicated grapheme engine required?
+3. Does the project need its own asynchronous `Task` abstraction?
+4. How should asynchronous callbacks be supported without coupling to Folly or Asio?
+5. Is ABI stability required after 1.0?
+6. Should the library be published to a vcpkg registry?
+7. Is a Conan package required?
+8. Which image backend should be implemented first?
+9. How deep should Windows support be in the first stable release?
+10. Should a `VirtualList` primitive be proposed upstream to FTXUI?
+11. Is a compatibility layer required for multiple FTXUI versions?
+12. How should real-terminal behavior be tested in CI?
+13. What is the minimum Markdown subset required by the MVP?
+14. How should library selection interact with native terminal selection?
+15. Should main-screen inline mode be supported in 1.0?
+
+---
+
+# 63. Initial Pull Request Plan
+
+## PR 1. Repository Foundation
+
+- repository structure;
+- CMake;
+- Xmake;
+- vcpkg;
+- CI;
+- install and package export;
+- code style.
+
+## PR 2. Testing Foundation
+
+- GoogleTest;
+- virtual-screen helpers;
+- rendering fixtures;
+- sanitizer jobs.
+
+## PR 3. Core Text Model
+
+- StyledText;
+- TextSpan;
+- TextPosition;
+- wrapping;
+- Unicode tests.
+
+## PR 4. Basic Components
+
+- StatusIndicator;
+- Spinner;
+- CollapsiblePanel;
+- ModalStack;
+- KeyHintBar.
+
+## PR 5. VirtualList
+
+- fixed-height items;
+- scrolling;
+- keyboard navigation;
+- benchmarks.
+
+## PR 6. Variable-Height Virtualization
+
+- layout cache;
+- resize handling;
+- scroll anchoring.
+
+## PR 7. StreamingDocument and LogView
+
+- append;
+- follow mode;
+- retention;
+- ANSI text.
+
+## PR 8. MultilineEditor MVP
+
+- multiline editing;
+- cursor movement;
+- paste;
+- history;
+- submit.
+
+## PR 9. Markdown MVP
+
+- md4c or cmark adapter;
+- paragraphs;
+- lists;
+- code blocks;
+- links.
+
+## PR 10. UnifiedDiffView
+
+- parser;
+- model;
+- rendering;
+- navigation.
+
+After PR 10, the library is ready to support the first Phoenix Agent TUI.
+
+---
+
+# 64. Decision
+
+Create Terminal UI Kit as a standalone library on top of FTXUI.
+
+FTXUI remains the rendering and component foundation.
+
+Terminal UI Kit provides reusable high-level components.
+
+Phoenix Agent becomes the first production consumer.
+
+Generic low-level improvements are contributed upstream to FTXUI through separate, focused pull requests.
+
+---
+
+# 65. Final Product Statement
+
+> Terminal UI Kit is a C++20/23 library of production-ready components for modern interactive terminal applications built on top of FTXUI. The project provides virtualized lists and documents, streaming output, multiline editing, Markdown, syntax highlighting, diff rendering, log views, completion, terminal integrations, and other reusable capabilities. The library remains independent of Phoenix Agent, uses CMake as its primary build system, retains Xmake as an additional frontend, and serves as a platform for gradually contributing generic primitives back to FTXUI.

@@ -1,0 +1,25 @@
+# Build directories
+/build/
+/build-*/
+/out/
+/cmake-build-*/
+
+# CMake
+CMakeUserPresets.json
+CMakeCache.txt
+CMakeFiles/
+compile_commands.json
+
+# Xmake
+.xmake/
+
+# vcpkg
+vcpkg_installed/
+
+# Editors / tooling
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store

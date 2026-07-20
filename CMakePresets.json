@@ -1,0 +1,68 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "debug",
+      "inherits": "base",
+      "displayName": "Debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "TERMINAL_UI_KIT_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "release",
+      "inherits": "base",
+      "displayName": "Release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "all-features",
+      "inherits": "base",
+      "displayName": "Debug, all optional features enabled",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "TERMINAL_UI_KIT_BUILD_TESTS": "ON",
+        "TERMINAL_UI_KIT_BUILD_EXAMPLES": "ON",
+        "TERMINAL_UI_KIT_BUILD_BENCHMARKS": "ON",
+        "TERMINAL_UI_KIT_ENABLE_MARKDOWN": "ON",
+        "TERMINAL_UI_KIT_ENABLE_TREE_SITTER": "ON",
+        "TERMINAL_UI_KIT_ENABLE_IMAGES": "ON",
+        "TERMINAL_UI_KIT_ENABLE_CHAFA": "ON",
+        "TERMINAL_UI_KIT_ENABLE_CLIPBOARD": "ON",
+        "TERMINAL_UI_KIT_ENABLE_OSC52": "ON"
+      }
+    },
+    {
+      "name": "sanitizers",
+      "inherits": "base",
+      "displayName": "Debug with ASan/UBSan",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "TERMINAL_UI_KIT_BUILD_TESTS": "ON",
+        "TERMINAL_UI_KIT_ENABLE_SANITIZERS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "debug", "configurePreset": "debug" },
+    { "name": "release", "configurePreset": "release" },
+    { "name": "all-features", "configurePreset": "all-features" },
+    { "name": "sanitizers", "configurePreset": "sanitizers" }
+  ],
+  "testPresets": [
+    { "name": "debug", "configurePreset": "debug", "output": { "outputOnFailure": true } },
+    { "name": "sanitizers", "configurePreset": "sanitizers", "output": { "outputOnFailure": true } }
+  ]
+}
