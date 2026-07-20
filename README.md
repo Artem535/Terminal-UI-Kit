@@ -6,24 +6,19 @@
 components for modern interactive terminal applications, built on top of
 [FTXUI](https://github.com/ArthurSonzogni/FTXUI).
 
-It provides the components FTXUI intentionally leaves out: virtualized
-lists and documents, streaming output, a multiline editor, Markdown and
-syntax-highlighted code rendering, diff views, log views, completion and
-command-palette UX, and terminal integrations (clipboard, images, capability
-detection).
+Full documentation (product requirements, contributing, security, changelog)
+lives in [`docs/`](docs/modules/ROOT/pages/index.adoc) as AsciiDoc, built into
+a site with [Antora](https://antora.org):
 
-The library returns ordinary `ftxui::Component` and `ftxui::Element` objects,
-does not run its own event loop, and stays independent of any specific
-application domain — see [`doc/prd.md`](doc/prd.md) for the full product
-requirements document.
+```sh
+npm ci
+npm run docs:build   # writes build/site/index.html
+```
 
-## Status
+GitHub also renders the `.adoc` pages directly if you'd rather read them
+in-repo, starting from [`docs/modules/ROOT/pages/index.adoc`](docs/modules/ROOT/pages/index.adoc).
 
-Early scaffolding stage (pre-0.1.0). No components are implemented yet; see
-the [PRD](doc/prd.md) section 57 for the milestone roadmap and section 63 for
-the initial pull request plan.
-
-## Building
+## Building the library
 
 CMake is the primary, authoritative build system; Xmake is available as a
 secondary developer-facing frontend on Linux.
@@ -46,29 +41,6 @@ to `OFF`, so a bare configure never touches the network.
 xmake config --mode=debug --yes
 xmake build
 ```
-
-## Repository Layout
-
-```text
-include/terminal_ui_kit/   Public headers, one directory per module
-src/terminal_ui_kit/       Implementation
-tests/terminal_ui_kit/     Unit, rendering, interaction, integration, fuzz tests
-examples/                  Example applications (chat, diff viewer, log viewer, ...)
-benchmarks/                Performance benchmarks
-docs/                      Component and architecture documentation
-cmake/                     CMake helper modules
-doc/                       Planning documents (PRD)
-```
-
-## Documentation
-
-Component and architecture guides will land under `docs/` as each module is
-implemented (see [`doc/prd.md`](doc/prd.md) section 53 for the planned set).
-Available now:
-
-- [Contributing](CONTRIBUTING.md)
-- [Security policy](SECURITY.md)
-- [Changelog](CHANGELOG.md)
 
 ## License
 

@@ -1,0 +1,24 @@
+# Builds the documentation site from docs/ (an Antora component) using
+# AsciiDoc content. Run locally with:
+#
+#   npx antora antora-playbook.yml
+#
+# The rendered site is written to build/site/index.html.
+
+site:
+  title: Terminal UI Kit
+  start_page: terminal-ui-kit::index.adoc
+
+content:
+  sources:
+    - url: .
+      start_path: docs
+      branches: HEAD
+
+ui:
+  bundle:
+    url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/HEAD/raw/build/ui-bundle.zip?job=bundle-stable
+    snapshot: true
+
+output:
+  dir: build/site

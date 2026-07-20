@@ -14,13 +14,19 @@ C++20/23, построенная поверх [FTXUI](https://github.com/ArthurS
 
 Компоненты возвращают обычные `ftxui::Component` и `ftxui::Element`, библиотека
 не запускает собственный event loop и не зависит от конкретного прикладного
-домена — полное описание требований см. в [`doc/prd.md`](doc/prd.md).
+домена.
 
-## Статус
+Полная документация (PRD, contributing, security, changelog) пока ведётся
+на английском в [`docs/`](docs/modules/ROOT/pages/index.adoc) в формате
+AsciiDoc и собирается сайтом через [Antora](https://antora.org):
 
-Ранняя стадия — создан только каркас репозитория (pre-0.1.0). Компоненты ещё
-не реализованы; дорожная карта — раздел 57 PRD, план первых pull request'ов —
-раздел 63.
+```sh
+npm ci
+npm run docs:build   # результат в build/site/index.html
+```
+
+GitHub также рендерит `.adoc`-страницы прямо в репозитории, начиная с
+[`docs/modules/ROOT/pages/index.adoc`](docs/modules/ROOT/pages/index.adoc).
 
 ## Сборка
 
@@ -54,16 +60,10 @@ src/terminal_ui_kit/       Реализация
 tests/terminal_ui_kit/     Unit, rendering, interaction, integration, fuzz тесты
 examples/                  Примеры приложений (чат, diff viewer, log viewer, ...)
 benchmarks/                Замеры производительности
-docs/                      Документация по компонентам и архитектуре
+docs/                      Документация (AsciiDoc, сайт Antora)
 cmake/                     Вспомогательные CMake-модули
-doc/                       Плановые документы (PRD)
+doc/                       Плановые документы (PRD, исходник в Markdown)
 ```
-
-## Документация
-
-- [Contributing](CONTRIBUTING.md)
-- [Security policy](SECURITY.md)
-- [Changelog](CHANGELOG.md)
 
 ## Лицензия
 

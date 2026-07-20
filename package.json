@@ -1,0 +1,13 @@
+{
+  "name": "terminal-ui-kit-docs",
+  "private": true,
+  "description": "Antora documentation site build for Terminal UI Kit",
+  "scripts": {
+    "docs:build": "antora antora-playbook.yml",
+    "docs:serve": "npx http-server build/site -o"
+  },
+  "devDependencies": {
+    "@antora/cli": "^3.1.0",
+    "@antora/site-generator": "^3.1.0"
+  }
+}

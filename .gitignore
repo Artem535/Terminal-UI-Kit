@@ -13,6 +13,9 @@ compile_commands.json
 # Xmake
 .xmake/
 
+# Node (Antora docs build)
+node_modules/
+
 # vcpkg
 vcpkg_installed/
 

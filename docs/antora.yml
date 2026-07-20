@@ -1,0 +1,5 @@
+name: terminal-ui-kit
+title: Terminal UI Kit
+version: '0.1'
+nav:
+  - modules/ROOT/nav.adoc

@@ -1,0 +1,22 @@
+= Changelog
+
+All notable changes to this project are documented here. The format follows
+https://keepachangelog.com/en/1.1.0/[Keep a Changelog], and the project
+adheres to https://semver.org/[Semantic Versioning] (see xref:prd.adoc[the PRD]
+section 45 for the project's specific stability rules before/after 1.0).
+
+== [Unreleased]
+
+=== Added
+
+* Repository foundation: CMake + Xmake build systems, vcpkg manifest,
+  directory skeleton for `include/`, `src/`, `tests/`, `examples/`,
+  `benchmarks/`, and `docs/`, code style configuration (clang-format,
+  clang-tidy), CI workflow skeleton, and governance documents.
+* Testing foundation: GoogleTest/CTest wiring and a virtual-screen
+  rendering-test helper (`terminal_ui_kit::test_support::render_to_text`).
+* Core Text Model: `TextPosition`, `TextRange`, `TextStyle`/`Color`,
+  `StyledText`/`TextSpan`, and a UTF-8 codepoint-safe `wrap_plain_text()`
+  word-wrap utility.
+* Documentation site: AsciiDoc content published via Antora, replacing the
+  Markdown docs that previously lived only in the repository root.
