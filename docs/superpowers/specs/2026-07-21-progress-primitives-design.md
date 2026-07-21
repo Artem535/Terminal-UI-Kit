@@ -33,5 +33,5 @@ frame timing and wrapping. Tests require no physical terminal.
 ## Example application
 
 `examples/progress_viewer` demonstrates both components together. It shows
-determinate and indeterminate rows in every supported style, lets the user
-cycle style and percentage, and documents its key bindings with `KeyHintBar`.
+determinate and indeterminate rows in every supported style at once, lets the
+user change the percentage, and documents its key bindings with `KeyHintBar`.

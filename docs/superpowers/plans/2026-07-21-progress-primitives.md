@@ -46,7 +46,7 @@
 **Files:** create `examples/progress_viewer/main.cc`, `examples/progress_viewer/CMakeLists.txt`; modify `examples/CMakeLists.txt`.
 
 - [ ] Create a fullscreen viewer listing all four styles, each with a determinate bar and an indeterminate bar.
-- [ ] Add keys `left`/`right` to change percentage by 5%, `s` to cycle style, `q` to quit; render these through `KeyHintBar`.
+- [ ] Add keys `left`/`right` to change percentage by 5% and `q` to quit; render these through `KeyHintBar`.
 - [ ] Add executable `terminal_ui_kit_example_progress_viewer` linked to `TerminalUiKit::Components` and FTXUI libraries; register the subdirectory.
 - [ ] Configure examples, build `terminal_ui_kit_example_progress_viewer`, run full tests, and smoke-run it in a pseudo-terminal.
 - [ ] Commit: `Add progress viewer example`.
