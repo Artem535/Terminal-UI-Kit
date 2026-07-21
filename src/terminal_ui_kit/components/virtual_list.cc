@@ -17,10 +17,7 @@ class VirtualListImpl : public ftxui::ComponentBase {
     normalize();
   }
 
-  void scroll_to_index(std::size_t index) {
-    normalize();
-    scroll_index_ = std::min(index, max_scroll_index());
-  }
+  void scroll_to_index(std::size_t index) { scroll_index_ = std::min(index, max_scroll_index()); }
 
   void select_index(std::size_t index) { set_selected(index); }
 

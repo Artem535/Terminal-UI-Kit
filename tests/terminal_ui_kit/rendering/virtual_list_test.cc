@@ -103,6 +103,28 @@ TEST(VirtualListModel, ModelControlClampsAndPreservesCallbackRules) {
   EXPECT_EQ(selections, std::vector<std::size_t>{7});
 }
 
+TEST(VirtualListModel, ScrollToIndexDoesNotNormalizeSelectionBeforeRender) {
+  std::size_t count = 8;
+  std::vector<std::size_t> selections;
+  VirtualListOptions options;
+  options.item_count = [&count] { return count; };
+  options.render_item = [](std::size_t index, int) { return ftxui::text(std::to_string(index)); };
+  options.on_select = [&selections](std::size_t index) { selections.push_back(index); };
+  VirtualListModel model(std::move(options));
+
+  model.select_index(7);
+  count = 3;
+  model.scroll_to_index(0);
+
+  EXPECT_EQ(model.selected_index(), std::optional<std::size_t>{7});
+  EXPECT_EQ(selections, std::vector<std::size_t>{7});
+
+  test_support::render_to_screen(model.component()->Render(), 20, 2);
+
+  EXPECT_EQ(model.selected_index(), std::optional<std::size_t>{2});
+  EXPECT_EQ(selections, std::vector<std::size_t>{7});
+}
+
 TEST(VirtualList, WheelDownScrollsViewportWithoutChangingSelection) {
   std::vector<std::size_t> rendered_indices;
   VirtualListOptions options;
