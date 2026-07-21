@@ -47,8 +47,7 @@ ftxui::Element ProgressBar(double fraction, const Theme& theme, ProgressBarOptio
     return ftxui::text("");
   }
   const double clamped = normalized(fraction);
-  const std::size_t filled =
-      static_cast<std::size_t>(clamped * static_cast<double>(options.width));
+  const std::size_t filled = static_cast<std::size_t>(clamped * static_cast<double>(options.width));
   const auto [filled_glyph, empty_glyph] = glyphs(options.style);
   ftxui::Elements elements = {
       ftxui::text(repeat(filled_glyph, filled)) | to_decorator(theme.accent),
@@ -62,7 +61,7 @@ ftxui::Element ProgressBar(double fraction, const Theme& theme, ProgressBarOptio
 }
 
 ftxui::Element ProgressBar(double value, double total, const Theme& theme,
-                            ProgressBarOptions options) {
+                           ProgressBarOptions options) {
   return ProgressBar(total > 0.0 && std::isfinite(total) ? value / total : 0.0, theme, options);
 }
 

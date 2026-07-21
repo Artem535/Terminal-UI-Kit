@@ -5,8 +5,8 @@
 #include <string_view>
 #include <utility>
 
-#include <ftxui/component/component_base.hpp>
 #include <ftxui/component/animation.hpp>
+#include <ftxui/component/component_base.hpp>
 #include <ftxui/dom/elements.hpp>
 
 #include "terminal_ui_kit/components/style_bridge.h"
@@ -30,9 +30,12 @@ std::pair<std::string_view, std::string_view> glyphs(ProgressStyle style) {
 
 class IndeterminateProgressBase : public ftxui::ComponentBase {
  public:
-  IndeterminateProgressBase(const Theme& theme, ProgressBarOptions options, std::size_t segment_width,
-                            std::chrono::milliseconds frame_duration)
-      : theme_(theme), options_(options), segment_width_(segment_width), frame_duration_(frame_duration) {}
+  IndeterminateProgressBase(const Theme& theme, ProgressBarOptions options,
+                            std::size_t segment_width, std::chrono::milliseconds frame_duration)
+      : theme_(theme),
+        options_(options),
+        segment_width_(segment_width),
+        frame_duration_(frame_duration) {}
 
  private:
   ftxui::Element Render() override {
@@ -41,7 +44,7 @@ class IndeterminateProgressBase : public ftxui::ComponentBase {
     const auto [filled_glyph, empty_glyph] = glyphs(options_.style);
     ftxui::Elements elements;
     for (std::size_t index = 0; index < options_.width; ++index) {
-      const bool active = index >= offset_ && index < offset_ + filled;
+      const bool active = ((index + options_.width - offset_) % options_.width) < filled;
       elements.push_back(ftxui::text(std::string(active ? filled_glyph : empty_glyph)) |
                          to_decorator(active ? theme_.accent : theme_.muted));
     }
@@ -69,7 +72,8 @@ class IndeterminateProgressBase : public ftxui::ComponentBase {
 ftxui::Component IndeterminateProgress(const Theme& theme, ProgressBarOptions options,
                                        std::size_t segment_width,
                                        std::chrono::milliseconds frame_duration) {
-  return ftxui::Make<IndeterminateProgressBase>(theme, options, segment_width, frame_duration);
+  const auto safe_duration = std::max(frame_duration, std::chrono::milliseconds(1));
+  return ftxui::Make<IndeterminateProgressBase>(theme, options, segment_width, safe_duration);
 }
 
 }  // namespace terminal_ui_kit

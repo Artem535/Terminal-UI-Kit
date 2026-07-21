@@ -16,10 +16,9 @@ struct ProgressBarOptions {
   bool show_percentage = true;
 };
 
-ftxui::Element ProgressBar(double fraction, const Theme& theme,
-                            ProgressBarOptions options = {});
+ftxui::Element ProgressBar(double fraction, const Theme& theme, ProgressBarOptions options = {});
 
 ftxui::Element ProgressBar(double value, double total, const Theme& theme,
-                            ProgressBarOptions options = {});
+                           ProgressBarOptions options = {});
 
 }  // namespace terminal_ui_kit
