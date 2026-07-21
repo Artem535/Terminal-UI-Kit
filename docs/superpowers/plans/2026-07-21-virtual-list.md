@@ -162,14 +162,14 @@ class VirtualListImpl : public ftxui::ComponentBase {
     Normalize();
   }
 
-  void ScrollToIndex(std::size_t) {}
-  void SelectIndex(std::size_t) {}
-  std::optional<std::size_t> SelectedIndex() const { return selected_index_; }
+  void scroll_to_index(std::size_t) {}
+  void select_index(std::size_t) {}
+  std::optional<std::size_t> selected_index() const { return selected_index_; }
 
  private:
   ftxui::Element Render() override { return ftxui::text(""); }
   bool Focusable() const override { return selected_index_.has_value(); }
-  void Normalize() {
+  void normalize() {
     if (!options_.item_count || options_.item_count() == 0) {
       selected_index_.reset();
       return;
@@ -182,7 +182,8 @@ class VirtualListImpl : public ftxui::ComponentBase {
 };
 ```
 
-Define the model methods as direct forwarding methods and make
+Define the model methods as direct forwarding methods to these snake_case
+implementation methods and make
 `VirtualList(options)` return `ftxui::Make<VirtualListImpl>(std::move(options))`.
 
 - [ ] **Step 4: Verify the API tests pass**
@@ -381,7 +382,7 @@ Implement `ensure_visible(index)` by moving `scroll_index_` up to `index` or
 down to `index - viewport_rows() + 1`. Implement `set_selected(index)` to
 change selection, reveal it, and call `on_select` only if the stored index
 changed. Use it for Up, Down, PageUp, PageDown, Home, End, and
-`SelectIndex`. `ScrollToIndex` only assigns a clamped `scroll_index_`.
+`select_index`. `scroll_to_index` only assigns a clamped `scroll_index_`.
 
 For mouse input, reject events outside `box_`; on `WheelUp` or `WheelDown`,
 subtract or add three from `scroll_index_`, clamp it, and return whether it
