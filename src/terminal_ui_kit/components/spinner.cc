@@ -13,12 +13,13 @@ namespace {
 class SpinnerBase : public ftxui::ComponentBase {
  public:
   SpinnerBase(int charset_index, std::chrono::milliseconds frame_duration)
-      : charset_index_(charset_index), frame_duration_(frame_duration) {
-    ftxui::animation::RequestAnimationFrame();
-  }
+      : charset_index_(charset_index), frame_duration_(frame_duration) {}
 
  private:
-  ftxui::Element Render() override { return ftxui::spinner(charset_index_, frame_); }
+  ftxui::Element Render() override {
+    ftxui::animation::RequestAnimationFrame();
+    return ftxui::spinner(charset_index_, frame_);
+  }
 
   bool Focusable() const override { return false; }
 
