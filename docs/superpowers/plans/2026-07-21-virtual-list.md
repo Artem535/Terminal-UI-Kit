@@ -159,7 +159,7 @@ from whether a selection exists:
 class VirtualListImpl : public ftxui::ComponentBase {
  public:
   explicit VirtualListImpl(VirtualListOptions options) : options_(std::move(options)) {
-    Normalize();
+    normalize();
   }
 
   void scroll_to_index(std::size_t) {}
