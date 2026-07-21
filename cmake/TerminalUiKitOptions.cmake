@@ -1,8 +1,12 @@
 # Feature options for Terminal UI Kit.
 #
 # All options default to OFF except the ones needed to configure and build
-# the library itself, so that a bare `cmake -S . -B build` never requires
-# network access or optional third-party dependencies.
+# the library itself. A bare `cmake -S . -B build` no longer avoids network
+# access entirely: TerminalUiKit::Components unconditionally requires FTXUI
+# (PRD section 8.1 -- components return ftxui::Element/Component), so FTXUI
+# is fetched even with every option below left at its OFF default. The
+# guarantee here is narrower: no *optional* feature or test/example
+# dependency is fetched unless its option is explicitly turned on.
 
 option(TERMINAL_UI_KIT_BUILD_TESTS "Build the test suite" OFF)
 option(TERMINAL_UI_KIT_BUILD_EXAMPLES "Build the example applications" OFF)

@@ -1,10 +1,10 @@
 # Module targets for Terminal UI Kit (PRD section 10, "Target CMake Targets").
 #
 # Most modules have no implementation sources yet, so they stay
-# INTERFACE-only. As a module gains .cc files (see Core below for the
-# pattern), add_library(... INTERFACE) becomes add_library(...) and
-# target_terminal_ui_kit_warnings() should be applied (see
-# cmake/TerminalUiKitWarnings.cmake) -- that function requires a
+# INTERFACE-only. As a module gains .cc files (see Core and Components
+# below for the pattern), add_library(... INTERFACE) becomes
+# add_library(...) and target_terminal_ui_kit_warnings() should be applied
+# (see cmake/TerminalUiKitWarnings.cmake) -- that function requires a
 # non-INTERFACE target.
 #
 # Theme (include/terminal_ui_kit/theme/) has no dedicated CMake target and is
@@ -49,7 +49,29 @@ target_compile_features(terminal_ui_kit_core PUBLIC cxx_std_20)
 target_terminal_ui_kit_warnings(terminal_ui_kit_core)
 set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_core)
 
-_terminal_ui_kit_add_module(components)
+# Components has real implementation sources and, unlike the header-only
+# modules below, unconditionally needs FTXUI: every component returns an
+# ftxui::Element or ftxui::Component (PRD section 8.1), so there is no
+# tests/examples-only path the way Testing has below. This means a bare
+# `cmake -S . -B build` (no tests, no examples) now fetches FTXUI too --
+# an accepted, unavoidable consequence of implementing real components,
+# not an oversight (see docs/superpowers/specs/2026-07-21-basic-components-design.md).
+terminal_ui_kit_require_ftxui()
+add_library(terminal_ui_kit_components
+  components/style_bridge.cc)
+add_library(TerminalUiKit::Components ALIAS terminal_ui_kit_components)
+target_include_directories(terminal_ui_kit_components PUBLIC
+  $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>
+  $<INSTALL_INTERFACE:include>)
+target_compile_features(terminal_ui_kit_components PUBLIC cxx_std_20)
+target_terminal_ui_kit_warnings(terminal_ui_kit_components)
+target_link_libraries(terminal_ui_kit_components PUBLIC
+  terminal_ui_kit_core
+  ftxui::dom
+  ftxui::component
+  ftxui::screen)
+set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_components)
+
 _terminal_ui_kit_add_module(document)
 _terminal_ui_kit_add_module(editor)
 _terminal_ui_kit_add_module(diff)
@@ -57,7 +79,6 @@ _terminal_ui_kit_add_module(markdown)
 _terminal_ui_kit_add_module(syntax)
 _terminal_ui_kit_add_module(terminal)
 
-target_link_libraries(terminal_ui_kit_components INTERFACE terminal_ui_kit_core)
 target_link_libraries(terminal_ui_kit_document INTERFACE terminal_ui_kit_core)
 target_link_libraries(terminal_ui_kit_editor INTERFACE terminal_ui_kit_document)
 target_link_libraries(terminal_ui_kit_diff INTERFACE terminal_ui_kit_core)
