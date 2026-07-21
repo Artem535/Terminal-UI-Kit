@@ -66,5 +66,30 @@ TEST(Theme, LightThemeSetsRepresentativeColors) {
   EXPECT_EQ(*theme.code.background, (Color{0xf6, 0xf8, 0xfa}));
 }
 
+TEST(Theme, WithoutColorStripsForegroundAndBackgroundFromEveryRole) {
+  const Theme stripped = without_color(default_dark_theme());
+
+  const TextStyle* roles[] = {
+      &stripped.primary,  &stripped.secondary, &stripped.muted,
+      &stripped.success,  &stripped.warning,   &stripped.error,
+      &stripped.accent,   &stripped.code,      &stripped.addition,
+      &stripped.deletion, &stripped.border,    &stripped.selected,
+      &stripped.focused,
+  };
+
+  for (const TextStyle* style : roles) {
+    EXPECT_FALSE(style->foreground.has_value());
+    EXPECT_FALSE(style->background.has_value());
+  }
+}
+
+TEST(Theme, WithoutColorPreservesNonColorAttributes) {
+  const Theme stripped = without_color(default_dark_theme());
+
+  EXPECT_TRUE(stripped.error.bold);
+  EXPECT_TRUE(stripped.focused.bold);
+  EXPECT_TRUE(stripped.muted.dim);
+}
+
 }  // namespace
 }  // namespace terminal_ui_kit

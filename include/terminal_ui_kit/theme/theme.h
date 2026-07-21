@@ -29,4 +29,10 @@ struct Theme {
 const Theme& default_dark_theme();
 const Theme& default_light_theme();
 
+// Strips foreground/background from every role, keeping bold/italic/
+// underline/dim/strikethrough untouched. Consumers that need visual
+// distinction without color (status icons, diff +/- markers) already carry
+// that meaning outside of color.
+Theme without_color(const Theme& theme);
+
 }  // namespace terminal_ui_kit

@@ -77,4 +77,23 @@ const Theme& default_light_theme() {
   return theme;
 }
 
+Theme without_color(const Theme& theme) {
+  Theme result = theme;
+
+  TextStyle* roles[] = {
+      &result.primary,  &result.secondary, &result.muted,
+      &result.success,  &result.warning,   &result.error,
+      &result.accent,   &result.code,      &result.addition,
+      &result.deletion, &result.border,    &result.selected,
+      &result.focused,
+  };
+
+  for (TextStyle* style : roles) {
+    style->foreground.reset();
+    style->background.reset();
+  }
+
+  return result;
+}
+
 }  // namespace terminal_ui_kit
