@@ -62,7 +62,8 @@ add_library(terminal_ui_kit_components
   components/status_indicator.cc
   components/key_hint_bar.cc
   components/spinner.cc
-  components/collapsible_panel.cc)
+  components/collapsible_panel.cc
+  components/modal_stack.cc)
 add_library(TerminalUiKit::Components ALIAS terminal_ui_kit_components)
 target_include_directories(terminal_ui_kit_components PUBLIC
   $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>

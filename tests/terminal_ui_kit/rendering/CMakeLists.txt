@@ -4,7 +4,8 @@ add_executable(terminal_ui_kit_rendering_tests
   status_indicator_test.cc
   key_hint_bar_test.cc
   spinner_test.cc
-  collapsible_panel_test.cc)
+  collapsible_panel_test.cc
+  modal_stack_test.cc)
 
 target_link_libraries(terminal_ui_kit_rendering_tests PRIVATE
   TerminalUiKit::Testing
