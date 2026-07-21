@@ -3,6 +3,8 @@
 /build-*/
 /out/
 /cmake-build-*/
+/.worktrees/
+/.superpowers/
 
 # CMake
 CMakeUserPresets.json
