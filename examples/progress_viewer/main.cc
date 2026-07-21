@@ -1,5 +1,6 @@
 #include <array>
 #include <cstddef>
+#include <string>
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/event.hpp>
@@ -39,10 +40,19 @@ int main() {
     options.style = styles[style_index];
     return ftxui::vbox({
                ftxui::text("Terminal UI Kit - Progress Viewer") | ftxui::bold,
-               ftxui::text(style_name(options.style)) | ftxui::dim,
+               ftxui::text("Interactive tour of determinate and animated progress.") | ftxui::dim,
                ftxui::separator(),
-               ftxui::text("Determinate"), ProgressBar(fraction, theme, options),
-               ftxui::text("Indeterminate"), indeterminate->Render(),
+               ftxui::text("ProgressBar") | ftxui::bold,
+               ftxui::text("Known completion: " + std::string(style_name(options.style)) +
+                           " style at a user-controlled percentage.") |
+                   ftxui::dim,
+               ProgressBar(fraction, theme, options),
+               ftxui::separator(),
+               ftxui::text("IndeterminateProgress") | ftxui::bold,
+               ftxui::text("Unknown completion: a wrapping animated segment.") | ftxui::dim,
+               indeterminate->Render(),
+               ftxui::separator(),
+               ftxui::text("Controls") | ftxui::bold,
                ftxui::filler(),
                KeyHintBar({{"left/right", "change progress"}, {"s", "cycle style"}, {"q", "quit"}}, theme),
            }) |

@@ -36,6 +36,7 @@ class IndeterminateProgressBase : public ftxui::ComponentBase {
 
  private:
   ftxui::Element Render() override {
+    ftxui::animation::RequestAnimationFrame();
     const std::size_t filled = std::min(segment_width_, options_.width);
     const auto [filled_glyph, empty_glyph] = glyphs(options_.style);
     ftxui::Elements elements;
