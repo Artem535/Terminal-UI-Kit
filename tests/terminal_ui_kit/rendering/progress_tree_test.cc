@@ -1,5 +1,8 @@
 #include "terminal_ui_kit/components/progress_tree.h"
 
+#include <chrono>
+
+#include <ftxui/component/animation.hpp>
 #include <ftxui/component/event.hpp>
 
 #include "terminal_ui_kit/testing/virtual_screen.h"
@@ -44,6 +47,55 @@ TEST(ProgressTree, RendersProgressAndSpinnerForRunningTasks) {
 
   EXPECT_NE(text.find("50%"), std::string::npos);
   EXPECT_NE(text.find("|"), std::string::npos);
+}
+
+TEST(ProgressTree, AdvancesUnknownProgressSpinnerWithTreeAnimation) {
+  ProgressTask task;
+  task.id = "scan";
+  task.label = "Scan";
+  task.status = Status::kRunning;
+
+  ftxui::Component tree = ProgressTree({task}, default_dark_theme());
+  tree->Render();
+
+  ftxui::animation::Params params(std::chrono::milliseconds(81));
+  tree->OnAnimation(params);
+
+  std::string text = test_support::render_to_text(tree->Render(), 40, 1);
+  EXPECT_NE(text.find("/"), std::string::npos);
+}
+
+TEST(ProgressTree, HighlightsTheSelectedRow) {
+  ProgressTask first;
+  first.id = "first";
+  first.label = "First";
+  ProgressTask second;
+  second.id = "second";
+  second.label = "Second";
+
+  ftxui::Component tree = ProgressTree({first, second}, default_dark_theme());
+  tree->OnEvent(ftxui::Event::ArrowDown);
+  ftxui::Screen screen = test_support::render_to_screen(tree->Render(), 40, 2);
+
+  EXPECT_FALSE(screen.PixelAt(0, 0).inverted);
+  EXPECT_TRUE(screen.PixelAt(0, 1).inverted);
+}
+
+TEST(ProgressTree, RendersChevronAndDetailForParentTask) {
+  ProgressTask child;
+  child.id = "child";
+  child.label = "Child";
+  ProgressTask parent;
+  parent.id = "parent";
+  parent.label = "Parent";
+  parent.detail = "3 tasks";
+  parent.children = {child};
+
+  ftxui::Component tree = ProgressTree({parent}, default_dark_theme());
+  std::string text = test_support::render_to_text(tree->Render(), 40, 2);
+
+  EXPECT_NE(text.find("▾"), std::string::npos);
+  EXPECT_NE(text.find("3 tasks"), std::string::npos);
 }
 
 TEST(ProgressTree, SpaceTogglesRootChildren) {
@@ -130,6 +182,29 @@ TEST(ProgressTreeModel, PreservesExpandedStateAcrossSnapshots) {
   std::string text = test_support::render_to_text(model.component()->Render(), 40, 3);
 
   EXPECT_EQ(text.find("Tests"), std::string::npos);
+}
+
+TEST(ProgressTreeModel, PreservesSelectionByTaskIdAcrossSnapshots) {
+  ProgressTask child;
+  child.id = "assertions";
+  child.label = "Assertions";
+  ProgressTask selected;
+  selected.id = "tests";
+  selected.label = "Tests";
+  selected.children = {child};
+  ProgressTask other;
+  other.id = "setup";
+  other.label = "Setup";
+
+  ProgressTreeModel model(default_dark_theme());
+  model.set_tasks({other, selected});
+  model.component()->OnEvent(ftxui::Event::ArrowDown);
+
+  model.set_tasks({selected});
+  model.component()->OnEvent(ftxui::Event::Character(' '));
+  std::string text = test_support::render_to_text(model.component()->Render(), 40, 2);
+
+  EXPECT_EQ(text.find("Assertions"), std::string::npos);
 }
 
 }  // namespace
