@@ -14,7 +14,7 @@ explicitly deferred.
 Included:
 
 - Fixed-height items only.
-- Viewport virtualization with a small configurable overscan.
+- Viewport virtualization of the exact visible range.
 - Keyboard navigation: Up, Down, PageUp, PageDown, Home, and End.
 - Mouse-wheel scrolling.
 - Retained selection and an `on_select` callback.
@@ -24,7 +24,7 @@ Included:
 
 Excluded:
 
-- Variable item heights, layout caching, and scroll anchoring (PR 6).
+- Variable item heights, layout caching, overscan, and scroll anchoring (PR 6).
 - Follow-end and streaming append behaviour (PR 7).
 - Filtering, searching, and domain-specific row models.
 
@@ -35,7 +35,6 @@ struct VirtualListOptions {
   std::function<std::size_t()> item_count;
   std::function<ftxui::Element(std::size_t index, int width)> render_item;
   int item_height = 1;
-  int overscan = 2;
   std::function<void(std::size_t)> on_select;
 };
 
@@ -63,8 +62,8 @@ viewport width and returns an item element. VirtualList applies
 visible without complicating the renderer callback.
 
 `item_height <= 0` is normalized to one terminal row. Each returned item
-element is constrained to that height. `overscan < 0` is normalized to zero.
-An empty list has no selection and `selected_index()` returns
+element is constrained to that height. An empty list has no selection and
+`selected_index()` returns
 `std::nullopt`; a non-empty list initially selects index zero without calling
 `on_select`.
 
@@ -80,13 +79,13 @@ The component stores:
 It measures the allocated box with `ftxui::reflect()`. When that box changes,
 it requests one animation frame so the next render uses the new viewport
 height. The render window is calculated from the measured height and
-`item_height`, then extended by `overscan` items on both sides. Only indexes
-inside that window call `render_item`.
+`item_height`. Only indexes inside that exact visible range call
+`render_item`.
 
-At most `ceil(viewport_height / item_height) + 2 * overscan` items are
-rendered per frame, regardless of the total `item_count`. The component uses
-flex layout so its reflected box is the allocated viewport rather than merely
-the content's natural height.
+At most `ceil(viewport_height / item_height)` items are rendered per frame,
+regardless of the total `item_count`. The component uses flex layout so its
+reflected box is the allocated viewport rather than merely the content's
+natural height.
 
 When `item_count` changes, every public operation and render clamps both
 stored indexes to the new valid range. If the list becomes empty, both are
@@ -121,7 +120,10 @@ The initial implementation intentionally does not use `ftxui::frame()` over
 the full list: that would create every item element and violate the
 virtualization requirement. A custom FTXUI DOM node is also deferred because
 the component-plus-reflected-viewport approach is sufficient for fixed-height
-items and keeps the variable-height concerns isolated for PR 6.
+items and keeps the variable-height concerns isolated for PR 6. Overscan is
+also deferred: without a layout cache, additional rows would be rebuilt every
+frame and cannot be hidden above the virtual window without adding the
+variable-height machinery prematurely.
 
 ## Tests and Example
 
@@ -131,9 +133,9 @@ normalization, navigation, mouse-wheel scrolling, model control methods,
 selection retention after a changing item count, and viewport resize.
 
 A 100,000-item regression test instruments `render_item` and verifies that a
-render invokes it only for the viewport window plus overscan. It does not use
-a wall-clock assertion, avoiding flaky performance tests while proving the
-important complexity property.
+render invokes it only for the viewport window. It does not use a wall-clock
+assertion, avoiding flaky performance tests while proving the important
+complexity property.
 
 `examples/virtual_list_viewer` demonstrates the component with 100,000 fixed
 height rows. Its layout has clearly labelled sections explaining the virtual
