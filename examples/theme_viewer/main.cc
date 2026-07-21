@@ -8,48 +8,17 @@
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/color.hpp>
 
+#include "terminal_ui_kit/components/style_bridge.h"
 #include "terminal_ui_kit/theme/theme.h"
 
 namespace {
 
-using terminal_ui_kit::Color;
 using terminal_ui_kit::TextStyle;
 using terminal_ui_kit::Theme;
 
-// FTXUI has no `italic` decorator (only bold/dim/underlined/
-// underlinedDouble/blink/strikethrough/color/bgcolor), so TextStyle::italic
-// has nothing to map to here; no built-in theme role sets it today, so this
-// has no visible effect.
-ftxui::Decorator style_to_decorator(const TextStyle& style) {
-  ftxui::Decorator decorator = ftxui::nothing;
-
-  if (style.bold) {
-    decorator = decorator | ftxui::Decorator(ftxui::bold);
-  }
-  if (style.dim) {
-    decorator = decorator | ftxui::Decorator(ftxui::dim);
-  }
-  if (style.underline) {
-    decorator = decorator | ftxui::Decorator(ftxui::underlined);
-  }
-  if (style.strikethrough) {
-    decorator = decorator | ftxui::Decorator(ftxui::strikethrough);
-  }
-  if (style.foreground) {
-    const Color& fg = *style.foreground;
-    decorator = decorator | ftxui::color(ftxui::Color::RGB(fg.red, fg.green, fg.blue));
-  }
-  if (style.background) {
-    const Color& bg = *style.background;
-    decorator = decorator | ftxui::bgcolor(ftxui::Color::RGB(bg.red, bg.green, bg.blue));
-  }
-
-  return decorator;
-}
-
 struct RoleDemo {
   std::string name;
-  TextStyle Theme::*field;
+  TextStyle Theme::* field;
   std::string sample;
 };
 
@@ -81,8 +50,8 @@ int main() {
   auto screen = ftxui::ScreenInteractive::Fullscreen();
 
   auto renderer = ftxui::Renderer([&] {
-    Theme base = dark ? terminal_ui_kit::default_dark_theme()
-                       : terminal_ui_kit::default_light_theme();
+    Theme base =
+        dark ? terminal_ui_kit::default_dark_theme() : terminal_ui_kit::default_light_theme();
     Theme theme = color_on ? base : terminal_ui_kit::without_color(base);
 
     ftxui::Elements rows;
@@ -90,12 +59,12 @@ int main() {
       const TextStyle& style = theme.*(role.field);
       rows.push_back(ftxui::hbox({
           ftxui::text(role.name) | ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 12),
-          ftxui::text(role.sample) | style_to_decorator(style),
+          ftxui::text(role.sample) | terminal_ui_kit::to_decorator(style),
       }));
     }
 
     std::string status = std::string("Theme: ") + (dark ? "Dark" : "Light") +
-                          " | Color: " + (color_on ? "On" : "Off");
+                         " | Color: " + (color_on ? "On" : "Off");
 
     return ftxui::vbox({
                ftxui::text("Terminal UI Kit - Theme Viewer") | ftxui::bold,
