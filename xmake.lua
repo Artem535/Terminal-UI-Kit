@@ -29,6 +29,13 @@ for _, name in ipairs({"core", "components", "document", "editor", "diff", "mark
     target_end()
 end
 
+-- Theme (include/terminal_ui_kit/theme/) has no dedicated target, same as
+-- the CMake side (src/terminal_ui_kit/CMakeLists.txt) -- it is exposed
+-- through terminal_ui_kit_core.
+target("terminal_ui_kit_core")
+    add_headerfiles("include/terminal_ui_kit/theme/**.h")
+target_end()
+
 if has_config("tests") then
     includes("tests/terminal_ui_kit")
 end

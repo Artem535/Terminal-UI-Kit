@@ -40,7 +40,7 @@ endfunction()
 # Core has real implementation sources (text_wrap.cc), so it is a compiled
 # library rather than an INTERFACE target like the still-header-only
 # modules below.
-add_library(terminal_ui_kit_core core/text_wrap.cc)
+add_library(terminal_ui_kit_core core/text_wrap.cc theme/theme.cc)
 add_library(TerminalUiKit::Core ALIAS terminal_ui_kit_core)
 target_include_directories(terminal_ui_kit_core PUBLIC
   $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>

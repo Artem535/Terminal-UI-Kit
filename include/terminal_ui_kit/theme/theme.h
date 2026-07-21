@@ -23,4 +23,10 @@ struct Theme {
   friend bool operator==(const Theme&, const Theme&) = default;
 };
 
+// Built-in themes inspired by the GitHub Primer dark/light palettes (PRD
+// section 14.2). Values are approximate, not verified byte-for-byte against
+// Primer's published design tokens.
+const Theme& default_dark_theme();
+const Theme& default_light_theme();
+
 }  // namespace terminal_ui_kit
