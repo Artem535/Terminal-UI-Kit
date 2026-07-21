@@ -1,11 +1,13 @@
 #include "terminal_ui_kit/components/spinner.h"
 
 #include <chrono>
+#include <string>
 
 #include <ftxui/component/animation.hpp>
 
-#include "terminal_ui_kit/testing/virtual_screen.h"
 #include <gtest/gtest.h>
+
+#include "terminal_ui_kit/testing/virtual_screen.h"
 
 namespace terminal_ui_kit {
 namespace {
