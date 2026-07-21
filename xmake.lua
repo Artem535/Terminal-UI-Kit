@@ -19,8 +19,12 @@ option("examples")
     set_description("Build the example applications")
 option_end()
 
--- Module targets mirror src/terminal_ui_kit/CMakeLists.txt. None has
--- implementation sources yet, so each is a header-only (interface) target.
+-- Module targets mirror src/terminal_ui_kit/CMakeLists.txt. Each is a
+-- header-only (interface) target here: Core has compiled sources under
+-- CMake (core/text_wrap.cc, theme/theme.cc), but Xmake only mirrors its
+-- headers for discoverability and does not compile them (PRD section
+-- 11.2 -- Xmake is a secondary, developer-facing frontend; CMake remains
+-- authoritative for what actually gets built and tested).
 for _, name in ipairs({"core", "components", "document", "editor", "diff", "markdown", "syntax", "terminal"}) do
     target("terminal_ui_kit_" .. name)
         set_kind("headeronly")
@@ -28,6 +32,13 @@ for _, name in ipairs({"core", "components", "document", "editor", "diff", "mark
         add_headerfiles("include/terminal_ui_kit/" .. name .. "/**.h")
     target_end()
 end
+
+-- Theme (include/terminal_ui_kit/theme/) has no dedicated target, same as
+-- the CMake side (src/terminal_ui_kit/CMakeLists.txt) -- it is exposed
+-- through terminal_ui_kit_core.
+target("terminal_ui_kit_core")
+    add_headerfiles("include/terminal_ui_kit/theme/**.h")
+target_end()
 
 if has_config("tests") then
     includes("tests/terminal_ui_kit")
