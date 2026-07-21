@@ -29,3 +29,9 @@ the available width; zero width renders empty. Labels are composed by callers.
 Rendering tests cover normalization, styles, width boundaries, colors and
 percentage visibility. Animation tests cover focusability, initial render,
 frame timing and wrapping. Tests require no physical terminal.
+
+## Example application
+
+`examples/progress_viewer` demonstrates both components together. It shows
+determinate and indeterminate rows in every supported style, lets the user
+cycle style and percentage, and documents its key bindings with `KeyHintBar`.
