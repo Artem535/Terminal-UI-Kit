@@ -8,9 +8,10 @@ Callers replace snapshots; the component owns only expansion and selection.
 
 ## Components
 
-`ProgressTree(std::vector<ProgressTask>, const Theme&)` renders a focusable,
-navigable tree. It keeps expanded IDs across updated snapshots. `TaskList` is
-a thin factory over the same renderer for flat root tasks.
+`ProgressTreeModel` owns a snapshot and renders a focusable, navigable tree
+through `component()`. `set_tasks()` replaces the immutable snapshot while
+preserving expanded IDs and selection when those stable IDs remain. `TaskList`
+is a thin factory over the same renderer for flat root tasks.
 
 Rows indent by depth and contain a chevron for parents, a StatusIndicator,
 label, determinate ProgressBar when fraction is known, Spinner for running

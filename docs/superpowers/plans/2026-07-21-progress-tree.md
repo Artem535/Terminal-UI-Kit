@@ -19,7 +19,7 @@
 **Files:** create `progress_tree.h/.cc`, `progress_tree_test.cc`; modify Components/rendering CMake lists.
 
 - [ ] Write failing tests for one root row, nested indentation, status icon, known fraction bar, and running unknown fraction spinner.
-- [ ] Implement `ProgressTask { id, label, status, optional<double> fraction, detail, children }` and focusable `ProgressTree` ComponentBase renderer.
+- [ ] Implement `ProgressTask { id, label, status, optional<double> fraction, detail, children }`, `ProgressTreeModel::set_tasks()`/`component()`, and focusable ComponentBase renderer.
 - [ ] Build focused tests and full suite; commit `Add ProgressTree rendering`.
 
 ### Task 2: Navigation, expansion and TaskList
