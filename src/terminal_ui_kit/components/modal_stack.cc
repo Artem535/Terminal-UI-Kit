@@ -41,7 +41,7 @@ class ModalStackImpl : public ftxui::ComponentBase {
     ftxui::Elements layers = {base_element};
     for (ftxui::Component& modal : modals_) {
       ftxui::Element modal_element = modal->Render() | ftxui::center;
-      if (style_ != BackdropStyle::kNone) {
+      if (style_ == BackdropStyle::kClear) {
         modal_element = modal_element | ftxui::clear_under;
       }
       layers.push_back(std::move(modal_element));
