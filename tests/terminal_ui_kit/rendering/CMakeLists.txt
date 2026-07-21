@@ -1,6 +1,8 @@
 add_executable(terminal_ui_kit_rendering_tests
   virtual_screen_test.cc
   style_bridge_test.cc
+  progress_bar_test.cc
+  indeterminate_progress_test.cc
   status_indicator_test.cc
   key_hint_bar_test.cc
   spinner_test.cc
