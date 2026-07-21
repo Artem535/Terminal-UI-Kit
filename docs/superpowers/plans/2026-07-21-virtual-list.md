@@ -78,7 +78,7 @@ TEST(VirtualListModel, NonEmptyListInitiallySelectsFirstItemWithoutCallback) {
   options.render_item = [](std::size_t index, int) {
     return ftxui::text(std::to_string(index));
   };
-  options.on_select = [&] { ++callback_count; };
+  options.on_select = [&](std::size_t) { ++callback_count; };
 
   VirtualListModel model(std::move(options));
 
