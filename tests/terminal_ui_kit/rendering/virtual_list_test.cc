@@ -39,21 +39,38 @@ TEST(VirtualListModel, NonEmptyListInitiallySelectsFirstItemWithoutCallback) {
 }
 
 TEST(VirtualList, RendersOnlyViewportItemsFromLargeList) {
-  std::size_t render_count = 0;
+  std::vector<std::size_t> rendered_indices;
   VirtualListOptions options;
   options.item_count = [] { return std::size_t{100000}; };
-  options.render_item = [&render_count](std::size_t index, int) {
-    ++render_count;
+  options.render_item = [&rendered_indices](std::size_t index, int) {
+    rendered_indices.push_back(index);
     return ftxui::text(std::to_string(index));
   };
 
   VirtualListModel model(std::move(options));
   test_support::render_to_screen(model.component()->Render(), 20, 4);
-  render_count = 0;
+  rendered_indices.clear();
   test_support::render_to_screen(model.component()->Render(), 20, 4);
 
-  EXPECT_GT(render_count, 0U);
-  EXPECT_LE(render_count, 4U);
+  EXPECT_EQ(rendered_indices, (std::vector<std::size_t>{0, 1, 2, 3}));
+}
+
+TEST(VirtualList, RendersTwoTwoLineItemsInFourRowViewport) {
+  std::vector<std::size_t> rendered_indices;
+  VirtualListOptions options;
+  options.item_count = [] { return std::size_t{100000}; };
+  options.item_height = 2;
+  options.render_item = [&rendered_indices](std::size_t index, int) {
+    rendered_indices.push_back(index);
+    return ftxui::text(std::to_string(index));
+  };
+
+  VirtualListModel model(std::move(options));
+  test_support::render_to_screen(model.component()->Render(), 20, 4);
+  rendered_indices.clear();
+  test_support::render_to_screen(model.component()->Render(), 20, 4);
+
+  EXPECT_EQ(rendered_indices, (std::vector<std::size_t>{0, 1}));
 }
 
 TEST(VirtualList, ArrowDownChangesSelectionAndInvokesCallback) {
@@ -103,7 +120,7 @@ TEST(VirtualListModel, ModelControlClampsAndPreservesCallbackRules) {
   EXPECT_EQ(selections, std::vector<std::size_t>{7});
 }
 
-TEST(VirtualListModel, ScrollToIndexDoesNotNormalizeSelectionBeforeRender) {
+TEST(VirtualListModel, ScrollToIndexNormalizesSelectionAfterBackingCountShrinks) {
   std::size_t count = 8;
   std::vector<std::size_t> selections;
   VirtualListOptions options;
@@ -116,13 +133,22 @@ TEST(VirtualListModel, ScrollToIndexDoesNotNormalizeSelectionBeforeRender) {
   count = 3;
   model.scroll_to_index(0);
 
-  EXPECT_EQ(model.selected_index(), std::optional<std::size_t>{7});
-  EXPECT_EQ(selections, std::vector<std::size_t>{7});
-
-  test_support::render_to_screen(model.component()->Render(), 20, 2);
-
   EXPECT_EQ(model.selected_index(), std::optional<std::size_t>{2});
   EXPECT_EQ(selections, std::vector<std::size_t>{7});
+}
+
+TEST(VirtualListModel, ScrollToIndexDoesNotInvokeCallbackForValidSelection) {
+  std::vector<std::size_t> selections;
+  VirtualListOptions options;
+  options.item_count = [] { return std::size_t{8}; };
+  options.render_item = [](std::size_t index, int) { return ftxui::text(std::to_string(index)); };
+  options.on_select = [&selections](std::size_t index) { selections.push_back(index); };
+  VirtualListModel model(std::move(options));
+
+  model.scroll_to_index(4);
+
+  EXPECT_EQ(model.selected_index(), std::optional<std::size_t>{0});
+  EXPECT_TRUE(selections.empty());
 }
 
 TEST(VirtualList, WheelDownScrollsViewportWithoutChangingSelection) {
@@ -149,7 +175,7 @@ TEST(VirtualList, WheelDownScrollsViewportWithoutChangingSelection) {
   EXPECT_EQ(model.selected_index(), std::optional<std::size_t>{0});
 }
 
-TEST(VirtualList, UsesReflectedWidthOnFrameAfterResize) {
+TEST(VirtualList, ObservesWidthOnFollowUpFrameAfterResize) {
   int last_width = 0;
   VirtualListOptions options;
   options.item_count = [] { return std::size_t{1}; };
@@ -159,6 +185,8 @@ TEST(VirtualList, UsesReflectedWidthOnFrameAfterResize) {
   };
   VirtualListModel model(std::move(options));
 
+  // The initial 20-wide layout records its allocation. The 40-wide resize
+  // layout requests the next animation frame, which observes width 40.
   test_support::render_to_screen(model.component()->Render(), 20, 1);
   test_support::render_to_screen(model.component()->Render(), 40, 1);
   test_support::render_to_screen(model.component()->Render(), 40, 1);

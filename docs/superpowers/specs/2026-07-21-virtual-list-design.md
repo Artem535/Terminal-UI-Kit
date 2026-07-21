@@ -76,22 +76,27 @@ The component stores:
 - an optional `selected_index_`;
 - the last measured FTXUI viewport box.
 
-It measures the allocated box with `ftxui::reflect()`. When that box changes,
-it requests one animation frame so the next render uses the new viewport
-height. The render window is calculated from the measured height and
+It measures the allocated box with a small private observing FTXUI DOM
+decorator. Its `SetBox()` stores the component box, delegates layout to its
+child, and requests one animation frame only when that allocation changes.
+The render window is calculated from the measured height and
 `item_height`. Only indexes inside that exact visible range call
 `render_item`.
 
 At most `ceil(viewport_height / item_height)` items are rendered per frame,
 regardless of the total `item_count`. The component uses flex layout so its
-reflected box is the allocated viewport rather than merely the content's
+observed box is the allocated viewport rather than merely the content's
 natural height.
 
-When `item_count` changes, every public operation and render clamps both
-stored indexes to the new valid range. If the list becomes empty, both are
-cleared; if it subsequently becomes non-empty, index zero becomes selected
-without calling `on_select`. This preserves a selected item whenever its index
-remains valid and prevents out-of-range event handling.
+When `item_count` changes, render and public state-changing operations clamp
+both stored indexes to the new valid range. `scroll_to_index()` first performs
+that normalization, then changes only viewport state for valid data: it never
+deliberately selects an item or calls `on_select`. If normalization repairs an
+invalid retained selection after a count shrink, it remains callback-free. If
+the list becomes empty, both indexes are cleared; if it subsequently becomes
+non-empty, index zero becomes selected without calling `on_select`. This
+preserves a selected item whenever its index remains valid and prevents
+out-of-range event handling.
 
 ## Interaction
 
@@ -102,8 +107,9 @@ remains valid and prevents out-of-range event handling.
   selection.
 - `select_index(index)` clamps the index, changes selection, invokes
   `on_select`, and reveals the item.
-- `scroll_to_index(index)` clamps and changes only the viewport; it does not
-  change selection.
+- `scroll_to_index(index)` normalizes invalid retained state after a backing
+  count change, then clamps and changes only the viewport for valid data; it
+  never calls `on_select`.
 
 Changing selection through keyboard or `select_index` invokes `on_select`
 exactly once for that change. Events that cannot change state return false.
@@ -116,14 +122,13 @@ Components library. It is focusable, handles navigation itself, and renders a
 `ftxui::Component` pointing at that implementation, mirroring the existing
 snapshot-model pattern used by `ProgressTreeModel`.
 
-The initial implementation intentionally does not use `ftxui::frame()` over
-the full list: that would create every item element and violate the
-virtualization requirement. A custom FTXUI DOM node is also deferred because
-the component-plus-reflected-viewport approach is sufficient for fixed-height
-items and keeps the variable-height concerns isolated for PR 6. Overscan is
-also deferred: without a layout cache, additional rows would be rebuilt every
-frame and cannot be hidden above the virtual window without adding the
-variable-height machinery prematurely.
+The implementation intentionally does not use `ftxui::frame()` over the full
+list: that would create every item element and violate the virtualization
+requirement. The private observing decorator only records allocation and
+delegates to its child; it is not a deferred custom virtual-layout node.
+Overscan is also deferred: without a layout cache, additional rows would be
+rebuilt every frame and cannot be hidden above the virtual window without
+adding the variable-height machinery prematurely.
 
 ## Tests and Example
 
@@ -132,10 +137,12 @@ Rendering tests use the existing virtual screen helper and public
 normalization, navigation, mouse-wheel scrolling, model control methods,
 selection retention after a changing item count, and viewport resize.
 
-A 100,000-item regression test instruments `render_item` and verifies that a
-render invokes it only for the viewport window. It does not use a wall-clock
+A 100,000-item regression test instruments `render_item` and verifies the
+exact four-row viewport indexes. A non-unit-height regression verifies that a
+four-row viewport renders exactly two two-line items. Neither uses a wall-clock
 assertion, avoiding flaky performance tests while proving the important
-complexity property.
+complexity property. A Google Benchmark renders and paints the same 100,000
+item model into a 120x40 off-screen screen and reports `rendered_items`.
 
 `examples/virtual_list_viewer` demonstrates the component with 100,000 fixed
 height rows. Its layout has clearly labelled sections explaining the virtual

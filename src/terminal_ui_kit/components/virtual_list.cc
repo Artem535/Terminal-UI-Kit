@@ -1,15 +1,50 @@
 #include "terminal_ui_kit/components/virtual_list.h"
 
 #include <algorithm>
+#include <memory>
 #include <utility>
 
 #include <ftxui/component/animation.hpp>
 #include <ftxui/component/component_base.hpp>
 #include <ftxui/component/event.hpp>
 #include <ftxui/component/mouse.hpp>
+#include <ftxui/dom/node.hpp>
 #include <ftxui/screen/box.hpp>
 
 namespace terminal_ui_kit {
+namespace {
+
+class ObservingBoxDecorator : public ftxui::Node {
+ public:
+  ObservingBoxDecorator(ftxui::Element child, ftxui::Box& observed_box)
+      : Node({std::move(child)}), observed_box_(observed_box) {}
+
+  void ComputeRequirement() override {
+    children_[0]->ComputeRequirement();
+    requirement_ = children_[0]->requirement();
+  }
+
+  void SetBox(ftxui::Box box) override {
+    const bool box_changed = observed_box_ != box;
+    observed_box_ = box;
+    Node::SetBox(box);
+    children_[0]->SetBox(box);
+    if (box_changed) {
+      ftxui::animation::RequestAnimationFrame();
+    }
+  }
+
+  void Render(ftxui::Screen& screen) override { children_[0]->Render(screen); }
+
+ private:
+  ftxui::Box& observed_box_;
+};
+
+ftxui::Element observe_box(ftxui::Element child, ftxui::Box& box) {
+  return std::make_shared<ObservingBoxDecorator>(std::move(child), box);
+}
+
+}  // namespace
 
 class VirtualListImpl : public ftxui::ComponentBase {
  public:
@@ -17,7 +52,10 @@ class VirtualListImpl : public ftxui::ComponentBase {
     normalize();
   }
 
-  void scroll_to_index(std::size_t index) { scroll_index_ = std::min(index, max_scroll_index()); }
+  void scroll_to_index(std::size_t index) {
+    normalize();
+    scroll_index_ = std::min(index, max_scroll_index());
+  }
 
   void select_index(std::size_t index) { set_selected(index); }
 
@@ -27,12 +65,6 @@ class VirtualListImpl : public ftxui::ComponentBase {
   ftxui::Element Render() override {
     normalize();
     const int width = box_width();
-    const int height = box_height();
-    if (width != rendered_width_ || height != rendered_height_) {
-      rendered_width_ = width;
-      rendered_height_ = height;
-      ftxui::animation::RequestAnimationFrame();
-    }
 
     ftxui::Elements rows;
     const std::size_t end = std::min(item_count(), scroll_index_ + viewport_rows());
@@ -44,7 +76,7 @@ class VirtualListImpl : public ftxui::ComponentBase {
       }
       rows.push_back(std::move(row));
     }
-    return ftxui::vbox(std::move(rows)) | ftxui::yflex | ftxui::reflect(box_);
+    return observe_box(ftxui::vbox(std::move(rows)) | ftxui::yflex, box_);
   }
 
   bool Focusable() const override { return selected_index_.has_value(); }
@@ -162,8 +194,6 @@ class VirtualListImpl : public ftxui::ComponentBase {
   ftxui::Box box_;
   std::size_t scroll_index_ = 0;
   std::optional<std::size_t> selected_index_;
-  int rendered_width_ = 0;
-  int rendered_height_ = 0;
 };
 
 ftxui::Component VirtualList(VirtualListOptions options) {

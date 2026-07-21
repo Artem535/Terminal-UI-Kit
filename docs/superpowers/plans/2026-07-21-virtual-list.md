@@ -7,9 +7,9 @@
 
 **Architecture:** `VirtualListImpl` is a focusable `ftxui::ComponentBase`
 owned by `VirtualListModel`. It measures its allocated FTXUI box with
-`reflect()`, computes a fixed-height visible index range, and invokes the row
-renderer only for that range. Variable-height layout, caching, overscan, and
-follow-end remain outside this PR.
+a private observing DOM decorator, computes a fixed-height visible index
+range, and invokes the row renderer only for that range. Variable-height
+layout, caching, overscan, and follow-end remain outside this PR.
 
 **Tech Stack:** C++20, FTXUI DOM/component/screen, GoogleTest, CMake.
 
@@ -24,8 +24,10 @@ follow-end remain outside this PR.
 - The list renders exactly the fixed-height viewport range, never all items.
 - `item_height <= 0` becomes one; empty lists have no selection; a non-empty
   list starts selected at index zero without calling `on_select`.
-- `scroll_to_index()` never changes selection; `select_index()` reveals the
-  item and calls `on_select` only when selection changes.
+- `scroll_to_index()` first normalizes state after a backing count change; for
+  valid data it changes only the viewport and never calls `on_select`.
+  `select_index()` reveals the item and calls `on_select` only when selection
+  changes.
 - No Xmake source/example wiring is added, following the existing examples.
 
 ---
@@ -215,7 +217,7 @@ git commit -m "Add VirtualList public API"
 - Modify: `tests/terminal_ui_kit/rendering/virtual_list_test.cc`
 
 **Interfaces:**
-- Consumes the API from Task 1, FTXUI `Event`, `Mouse`, `reflect`, `size`,
+- Consumes the API from Task 1, FTXUI `Event`, `Mouse`, `Node`, `size`,
   `yflex`, and `RequestAnimationFrame`.
 - Produces a fixed-height virtual viewport, keyboard and wheel interaction,
   `scroll_to_index`, `select_index`, and `on_select` semantics.
@@ -302,10 +304,10 @@ tests in the same file:
   ftxui::Mouse::WheelDown`, pass it through `ftxui::Event::Mouse("", mouse)`,
   and assert that the rendered first index moves down by three without
   changing `selected_index()`.
-- Render at width 20, perform one resize frame at width 40, then render once
-  more at width 40 and assert that the last width received by `render_item`
-  is 40. `reflect()` receives the resized box after constructing the resize
-  frame, so the follow-up frame verifies the requested invalidation.
+- Render the initial 20-wide layout, then the 40-wide resize layout that
+  schedules a frame, then a 40-wide follow-up element and assert that the
+  last width received by `render_item` is 40. The test uses only the direct
+  virtual screen helper, not `ScreenInteractive`.
 
 - [ ] **Step 2: Verify the new tests fail**
 
@@ -370,20 +372,21 @@ ftxui::Element Render() override {
     }
     rows.push_back(std::move(row));
   }
-  return ftxui::vbox(std::move(rows)) | ftxui::yflex | ftxui::reflect(box_);
+  return observe_box(ftxui::vbox(std::move(rows)) | ftxui::yflex, box_);
 }
 ```
 
-Before returning from `Render()`, compare the current reflected dimensions to
-the dimensions used for this frame. If they differ, call
-`ftxui::animation::RequestAnimationFrame()` so the next frame uses the new
-size.
+`ObservingBoxDecorator::SetBox()` stores the component's allocated box,
+forwards requirement, layout, and rendering calls to its child, and requests
+an animation frame exactly when the newly allocated box differs from the
+previously stored box. `Render()` has no pre-layout resize scheduling.
 
 Implement `ensure_visible(index)` by moving `scroll_index_` up to `index` or
 down to `index - viewport_rows() + 1`. Implement `set_selected(index)` to
 change selection, reveal it, and call `on_select` only if the stored index
 changed. Use it for Up, Down, PageUp, PageDown, Home, End, and
-`select_index`. `scroll_to_index` only assigns a clamped `scroll_index_`.
+`select_index`. `scroll_to_index` normalizes first, then assigns a clamped
+`scroll_index_` without calling `on_select`.
 
 For mouse input, reject events outside `box_`; on `WheelUp` or `WheelDown`,
 subtract or add three from `scroll_index_`, clamp it, and return whether it
