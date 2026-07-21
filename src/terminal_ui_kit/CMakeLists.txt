@@ -58,7 +58,8 @@ set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_k
 # not an oversight.
 terminal_ui_kit_require_ftxui()
 add_library(terminal_ui_kit_components
-  components/style_bridge.cc)
+  components/style_bridge.cc
+  components/status_indicator.cc)
 add_library(TerminalUiKit::Components ALIAS terminal_ui_kit_components)
 target_include_directories(terminal_ui_kit_components PUBLIC
   $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>

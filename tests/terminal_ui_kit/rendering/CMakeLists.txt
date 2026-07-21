@@ -1,6 +1,7 @@
 add_executable(terminal_ui_kit_rendering_tests
   virtual_screen_test.cc
-  style_bridge_test.cc)
+  style_bridge_test.cc
+  status_indicator_test.cc)
 
 target_link_libraries(terminal_ui_kit_rendering_tests PRIVATE
   TerminalUiKit::Testing
