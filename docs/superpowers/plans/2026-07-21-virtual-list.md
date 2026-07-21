@@ -302,9 +302,10 @@ tests in the same file:
   ftxui::Mouse::WheelDown`, pass it through `ftxui::Event::Mouse("", mouse)`,
   and assert that the rendered first index moves down by three without
   changing `selected_index()`.
-- Render once at width 20 and once at width 40, then assert that the last
-  width received by `render_item` is 40. This verifies the reflected viewport
-  is invalidated after resize.
+- Render at width 20, perform one resize frame at width 40, then render once
+  more at width 40 and assert that the last width received by `render_item`
+  is 40. `reflect()` receives the resized box after constructing the resize
+  frame, so the follow-up frame verifies the requested invalidation.
 
 - [ ] **Step 2: Verify the new tests fail**
 
