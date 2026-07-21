@@ -81,11 +81,9 @@ Theme without_color(const Theme& theme) {
   Theme result = theme;
 
   TextStyle* roles[] = {
-      &result.primary,  &result.secondary, &result.muted,
-      &result.success,  &result.warning,   &result.error,
-      &result.accent,   &result.code,      &result.addition,
-      &result.deletion, &result.border,    &result.selected,
-      &result.focused,
+      &result.primary, &result.secondary, &result.muted,   &result.success,  &result.warning,
+      &result.error,   &result.accent,    &result.code,    &result.addition, &result.deletion,
+      &result.border,  &result.selected,  &result.focused,
   };
 
   for (TextStyle* style : roles) {
