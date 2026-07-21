@@ -118,7 +118,7 @@ int main() {
                ftxui::border;
       });
 
-  ModalStack modal_stack(base, terminal_ui_kit::BackdropStyle::kNone);
+  ModalStack modal_stack(base, terminal_ui_kit::BackdropStyle::kDim);
   ftxui::Component modal_dialog = ftxui::Renderer([&theme] {
     return ftxui::vbox({
                ftxui::text("Confirm action?") | terminal_ui_kit::to_decorator(theme.primary),
