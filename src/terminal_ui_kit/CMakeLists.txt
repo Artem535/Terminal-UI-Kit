@@ -55,7 +55,7 @@ set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_k
 # tests/examples-only path the way Testing has below. This means a bare
 # `cmake -S . -B build` (no tests, no examples) now fetches FTXUI too --
 # an accepted, unavoidable consequence of implementing real components,
-# not an oversight (see docs/superpowers/specs/2026-07-21-basic-components-design.md).
+# not an oversight.
 terminal_ui_kit_require_ftxui()
 add_library(terminal_ui_kit_components
   components/style_bridge.cc)
@@ -100,8 +100,8 @@ target_link_libraries(terminal_ui_kit_testing INTERFACE terminal_ui_kit_core)
 
 # terminal_ui_kit/testing/virtual_screen.h renders against real FTXUI types,
 # so this target needs FTXUI. Only resolved when tests or examples are
-# actually being built, so a bare configure never touches the network (see
-# cmake/TerminalUiKitDependencies.cmake).
+# actually being built; Components already requires FTXUI during a bare
+# configure.
 if(TERMINAL_UI_KIT_BUILD_TESTS OR TERMINAL_UI_KIT_BUILD_EXAMPLES)
   terminal_ui_kit_require_ftxui()
   target_link_libraries(terminal_ui_kit_testing INTERFACE ftxui::screen ftxui::dom ftxui::component)

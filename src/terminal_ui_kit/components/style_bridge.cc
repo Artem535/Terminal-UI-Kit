@@ -24,8 +24,8 @@ ftxui::Decorator to_decorator(const TextStyle& style) {
   }
   if (style.background) {
     const Color& background = *style.background;
-    decorator = decorator |
-                ftxui::bgcolor(ftxui::Color::RGB(background.red, background.green, background.blue));
+    decorator = decorator | ftxui::bgcolor(ftxui::Color::RGB(background.red, background.green,
+                                                             background.blue));
   }
 
   return decorator;

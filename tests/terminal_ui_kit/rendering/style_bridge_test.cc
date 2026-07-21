@@ -1,8 +1,7 @@
 #include "terminal_ui_kit/components/style_bridge.h"
 
-#include <gtest/gtest.h>
-
 #include "terminal_ui_kit/testing/virtual_screen.h"
+#include <gtest/gtest.h>
 
 namespace terminal_ui_kit {
 namespace {
