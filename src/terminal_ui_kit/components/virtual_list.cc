@@ -9,17 +9,17 @@ namespace terminal_ui_kit {
 class VirtualListImpl : public ftxui::ComponentBase {
  public:
   explicit VirtualListImpl(VirtualListOptions options) : options_(std::move(options)) {
-    Normalize();
+    normalize();
   }
 
-  void ScrollToIndex(std::size_t) {}
-  void SelectIndex(std::size_t) {}
-  std::optional<std::size_t> SelectedIndex() const { return selected_index_; }
+  void scroll_to_index(std::size_t) {}
+  void select_index(std::size_t) {}
+  std::optional<std::size_t> selected_index() const { return selected_index_; }
 
  private:
   ftxui::Element Render() override { return ftxui::text(""); }
   bool Focusable() const override { return selected_index_.has_value(); }
-  void Normalize() {
+  void normalize() {
     if (!options_.item_count || options_.item_count() == 0) {
       selected_index_.reset();
       return;
@@ -40,12 +40,12 @@ VirtualListModel::VirtualListModel(VirtualListOptions options)
 
 ftxui::Component VirtualListModel::component() const { return impl_; }
 
-void VirtualListModel::scroll_to_index(std::size_t index) { impl_->ScrollToIndex(index); }
+void VirtualListModel::scroll_to_index(std::size_t index) { impl_->scroll_to_index(index); }
 
-void VirtualListModel::select_index(std::size_t index) { impl_->SelectIndex(index); }
+void VirtualListModel::select_index(std::size_t index) { impl_->select_index(index); }
 
 std::optional<std::size_t> VirtualListModel::selected_index() const {
-  return impl_->SelectedIndex();
+  return impl_->selected_index();
 }
 
 }  // namespace terminal_ui_kit
