@@ -82,13 +82,36 @@ int main() {
       ftxui::Container::Vertical({spinner, panel}), [&theme, spinner, panel, &status_index] {
         Status status = all_statuses()[status_index];
         return ftxui::vbox({
-                   ftxui::text("Terminal UI Kit - Components Gallery") | ftxui::bold,
+                   ftxui::text("Terminal UI Kit - Components Gallery") | ftxui::bold |
+                       terminal_ui_kit::to_decorator(theme.primary),
+                   ftxui::text("A small interactive tour of the basic components.") |
+                       terminal_ui_kit::to_decorator(theme.secondary),
                    ftxui::separator(),
+                   ftxui::text("StatusIndicator") | ftxui::bold |
+                       terminal_ui_kit::to_decorator(theme.accent),
+                   ftxui::text("Semantic status with an icon and theme role.") |
+                       terminal_ui_kit::to_decorator(theme.muted),
                    StatusIndicator(status, status_name(status), theme),
-                   ftxui::text(""),
+                   ftxui::separator(),
+                   ftxui::text("Spinner") | ftxui::bold |
+                       terminal_ui_kit::to_decorator(theme.accent),
+                   ftxui::text("An animated FTXUI glyph.") |
+                       terminal_ui_kit::to_decorator(theme.muted),
                    spinner->Render(),
-                   ftxui::text(""),
+                   ftxui::separator(),
+                   ftxui::text("CollapsiblePanel") | ftxui::bold |
+                       terminal_ui_kit::to_decorator(theme.accent),
+                   ftxui::text("Press Space or Enter on the header to reveal its body.") |
+                       terminal_ui_kit::to_decorator(theme.muted),
                    panel->Render(),
+                   ftxui::separator(),
+                   ftxui::text("ModalStack") | ftxui::bold |
+                       terminal_ui_kit::to_decorator(theme.accent),
+                   ftxui::text("Press m to open a modal over this gallery.") |
+                       terminal_ui_kit::to_decorator(theme.muted),
+                   ftxui::separator(),
+                   ftxui::text("KeyHintBar") | ftxui::bold |
+                       terminal_ui_kit::to_decorator(theme.accent),
                    ftxui::filler(),
                    KeyHintBar({{"s", "cycle status"}, {"m", "open modal"}, {"q", "quit"}}, theme),
                }) |
