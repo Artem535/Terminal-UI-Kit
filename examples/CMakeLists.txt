@@ -6,3 +6,4 @@
 add_subdirectory(theme_viewer)
 add_subdirectory(components_gallery)
 add_subdirectory(progress_viewer)
+add_subdirectory(task_dashboard)
