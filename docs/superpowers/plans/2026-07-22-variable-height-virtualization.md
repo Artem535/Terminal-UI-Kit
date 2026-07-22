@@ -37,10 +37,12 @@ anchor.
 - Modify `src/terminal_ui_kit/components/virtual_list.cc`.
 - Modify `tests/terminal_ui_kit/rendering/virtual_list_test.cc`.
 
-Add `std::function<int(std::size_t index, int width)> estimate_height` after
-`render_item`, retaining `item_height = 1` as fallback. Add tests proving the
-estimate callback is used for initial range calculation, that non-positive
-estimates become one row, and that existing fixed-height tests still pass.
+Append `std::function<int(std::size_t index, int width)> estimate_height`
+after the existing PR5 fields (`item_height` and `on_select`) so positional
+aggregate initialization remains source-compatible, retaining
+`item_height = 1` as fallback. Add tests proving the estimate callback is used
+for initial range calculation, that non-positive estimates become one row, and
+that callers without the callback retain PR5's fixed-height row layout.
 
 The implementation must expose one internal `height_for(index, width)` helper:
 return a cached measured value when available, otherwise call

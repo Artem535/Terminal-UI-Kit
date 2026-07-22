@@ -136,6 +136,9 @@ class VirtualListImpl : public ftxui::ComponentBase {
     const std::size_t begin = first_visible_index();
     for (std::size_t index = begin; index < end; ++index) {
       ftxui::Element row = options_.render_item(index, width);
+      if (!options_.estimate_height) {
+        row = row | ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, item_height());
+      }
       row = std::make_shared<RowObserver>(
           std::move(row), [this, index](int height) { update_measured_height(index, height); });
       if (selected_index_ && *selected_index_ == index) {

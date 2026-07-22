@@ -20,11 +20,17 @@ rendering remain PR7 work.
 std::function<int(std::size_t index, int width)> estimate_height;
 ```
 
+The field is appended after the existing PR5 fields (`item_count`,
+`render_item`, `item_height`, and `on_select`) so positional aggregate
+initialization remains source-compatible.
+
 `item_height` remains as a compatibility fallback. If `estimate_height` is
 provided, it supplies the initial height estimate; otherwise the existing
-positive `item_height` is used. Estimated heights are clamped to at least one
-row. The callback is never used to replace measured heights once layout data
-exists.
+positive `item_height` is used. Without `estimate_height`, rows retain their
+PR5 fixed-height layout using `ftxui::HEIGHT`/`ftxui::EQUAL` and
+`item_height`; the callback-enabled path measures natural row heights after
+layout. Estimated heights are clamped to at least one row. The callback is
+never used to replace measured heights once layout data exists.
 
 No new public component type is introduced. `VirtualListModel` retains its
 existing selection, scrolling, and callback semantics.

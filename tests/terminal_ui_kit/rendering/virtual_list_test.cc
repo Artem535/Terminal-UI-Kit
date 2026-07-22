@@ -73,6 +73,29 @@ TEST(VirtualList, RendersTwoTwoLineItemsInFourRowViewport) {
   EXPECT_EQ(rendered_indices, (std::vector<std::size_t>{0, 1, 2}));
 }
 
+TEST(VirtualList, LegacyAggregateInitializationKeepsFixedRowHeight) {
+  std::vector<std::size_t> rendered_indices;
+  VirtualListOptions options{
+      [] { return std::size_t{100}; },
+      [&rendered_indices](std::size_t index, int) {
+        rendered_indices.push_back(index);
+        return ftxui::text(std::to_string(index));
+      },
+      2,
+      {},
+  };
+
+  VirtualListModel model(std::move(options));
+  test_support::render_to_screen(model.component()->Render(), 20, 4);
+  rendered_indices.clear();
+  const ftxui::Screen screen = test_support::render_to_screen(model.component()->Render(), 20, 4);
+
+  EXPECT_EQ(screen.PixelAt(0, 0).character, "0");
+  EXPECT_EQ(screen.PixelAt(0, 1).character, " ");
+  EXPECT_EQ(screen.PixelAt(0, 2).character, "1");
+  EXPECT_EQ(rendered_indices, (std::vector<std::size_t>{0, 1, 2}));
+}
+
 TEST(VirtualList, EstimateHeightControlsInitialRange) {
   std::vector<std::size_t> rendered_indices;
   VirtualListOptions options;
