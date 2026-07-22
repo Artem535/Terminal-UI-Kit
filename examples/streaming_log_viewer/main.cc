@@ -16,7 +16,6 @@
 #include "terminal_ui_kit/components/log_view.h"
 #include "terminal_ui_kit/document/ansi_parser.h"
 #include "terminal_ui_kit/document/log_model.h"
-#include "terminal_ui_kit/document/streaming_document.h"
 #include "terminal_ui_kit/theme/theme.h"
 
 int main() {
@@ -24,7 +23,6 @@ int main() {
   using namespace std::chrono_literals;
 
   const Theme& theme = default_dark_theme();
-  StreamingDocument document;
   LogModel log_model;
   std::atomic<bool> running{true};
 
