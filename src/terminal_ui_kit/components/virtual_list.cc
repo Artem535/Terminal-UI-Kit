@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <memory>
+#include <optional>
 #include <utility>
+#include <vector>
 
 #include <ftxui/component/animation.hpp>
 #include <ftxui/component/component_base.hpp>
@@ -63,14 +65,15 @@ class VirtualListImpl : public ftxui::ComponentBase {
 
  private:
   ftxui::Element Render() override {
-    normalize();
     const int width = box_width();
+    update_layout_metadata(width);
+    normalize();
 
     ftxui::Elements rows;
-    const std::size_t end = std::min(item_count(), scroll_index_ + viewport_rows());
+    const std::size_t end = visible_end(width);
     for (std::size_t index = scroll_index_; index < end; ++index) {
       ftxui::Element row = options_.render_item(index, width) |
-                           ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, item_height());
+                           ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, height_for(index, width));
       if (selected_index_ && *selected_index_ == index) {
         row = row | ftxui::inverted;
       }
@@ -116,7 +119,42 @@ class VirtualListImpl : public ftxui::ComponentBase {
 
   std::size_t item_count() const { return options_.item_count ? options_.item_count() : 0; }
 
+  int height_for(std::size_t index, int width) {
+    if (index < measured_heights_.size() && measured_heights_[index]) {
+      return std::max(1, *measured_heights_[index]);
+    }
+    if (options_.estimate_height) {
+      return std::max(1, options_.estimate_height(index, width));
+    }
+    return std::max(1, options_.item_height);
+  }
+
   int item_height() const { return std::max(1, options_.item_height); }
+
+  void update_layout_metadata(int width) {
+    const std::size_t count = item_count();
+    if (count != current_item_count_) {
+      measured_heights_.resize(count);
+      current_item_count_ = count;
+      prefix_metadata_valid_ = false;
+    }
+    if (width != current_width_) {
+      current_width_ = width;
+      prefix_metadata_valid_ = false;
+    }
+  }
+
+  std::size_t visible_end(int width) {
+    const std::size_t count = item_count();
+    const std::size_t rows = static_cast<std::size_t>(box_height());
+    std::size_t end = scroll_index_;
+    std::size_t covered_rows = 0;
+    while (end < count && covered_rows < rows) {
+      covered_rows += static_cast<std::size_t>(height_for(end, width));
+      ++end;
+    }
+    return end;
+  }
 
   std::size_t viewport_rows() const {
     return static_cast<std::size_t>((box_height() + item_height() - 1) / item_height());
@@ -192,6 +230,10 @@ class VirtualListImpl : public ftxui::ComponentBase {
 
   VirtualListOptions options_;
   ftxui::Box box_;
+  std::vector<std::optional<int>> measured_heights_;
+  std::size_t current_item_count_ = 0;
+  int current_width_ = 0;
+  bool prefix_metadata_valid_ = false;
   std::size_t scroll_index_ = 0;
   std::optional<std::size_t> selected_index_;
 };

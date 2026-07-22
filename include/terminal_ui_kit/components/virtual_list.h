@@ -13,6 +13,7 @@ namespace terminal_ui_kit {
 struct VirtualListOptions {
   std::function<std::size_t()> item_count;
   std::function<ftxui::Element(std::size_t index, int width)> render_item;
+  std::function<int(std::size_t index, int width)> estimate_height;
   int item_height = 1;
   std::function<void(std::size_t index)> on_select;
 };

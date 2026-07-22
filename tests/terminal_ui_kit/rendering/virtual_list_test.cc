@@ -73,6 +73,42 @@ TEST(VirtualList, RendersTwoTwoLineItemsInFourRowViewport) {
   EXPECT_EQ(rendered_indices, (std::vector<std::size_t>{0, 1}));
 }
 
+TEST(VirtualList, EstimateHeightControlsInitialRange) {
+  std::vector<std::size_t> rendered_indices;
+  VirtualListOptions options;
+  options.item_count = [] { return std::size_t{100}; };
+  options.estimate_height = [](std::size_t index, int) { return index == 0 ? 2 : 1; };
+  options.render_item = [&rendered_indices](std::size_t index, int) {
+    rendered_indices.push_back(index);
+    return ftxui::text(std::to_string(index));
+  };
+
+  VirtualListModel model(std::move(options));
+  test_support::render_to_screen(model.component()->Render(), 20, 3);
+  rendered_indices.clear();
+  test_support::render_to_screen(model.component()->Render(), 20, 3);
+
+  EXPECT_EQ(rendered_indices, (std::vector<std::size_t>{0, 1}));
+}
+
+TEST(VirtualList, NonPositiveEstimateUsesOneRow) {
+  std::vector<std::size_t> rendered_indices;
+  VirtualListOptions options;
+  options.item_count = [] { return std::size_t{100}; };
+  options.estimate_height = [](std::size_t, int) { return 0; };
+  options.render_item = [&rendered_indices](std::size_t index, int) {
+    rendered_indices.push_back(index);
+    return ftxui::text(std::to_string(index));
+  };
+
+  VirtualListModel model(std::move(options));
+  test_support::render_to_screen(model.component()->Render(), 20, 3);
+  rendered_indices.clear();
+  test_support::render_to_screen(model.component()->Render(), 20, 3);
+
+  EXPECT_EQ(rendered_indices, (std::vector<std::size_t>{0, 1, 2}));
+}
+
 TEST(VirtualList, ArrowDownChangesSelectionAndInvokesCallback) {
   std::vector<std::size_t> selections;
   VirtualListOptions options;
