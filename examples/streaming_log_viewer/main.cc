@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <ctime>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <utility>
@@ -24,6 +25,7 @@ int main() {
 
   const Theme& theme = default_dark_theme();
   LogModel log_model;
+  std::mutex log_mutex;
   std::atomic<bool> running{true};
 
   LogViewOptions opts;
@@ -31,9 +33,9 @@ int main() {
   opts.theme = theme;
   LogView view(std::move(opts));
 
-  // Generator thread: produces log entries with ANSI color
+  auto screen = ftxui::ScreenInteractive::Fullscreen();
+
   std::thread generator([&] {
-    const char* severities[] = {"TRACE", "DEBUG", "INFO", "WARN", "ERROR"};
     const LogSeverity sev_map[] = {LogSeverity::kTrace, LogSeverity::kDebug, LogSeverity::kInfo,
                                    LogSeverity::kWarning, LogSeverity::kError};
     const char* messages[] = {
@@ -51,25 +53,30 @@ int main() {
     constexpr std::size_t kMsgCount = sizeof(messages) / sizeof(messages[0]);
 
     std::srand(static_cast<unsigned>(std::time(nullptr)));
-    for (std::size_t i = 0; running; ++i) {
+    while (running) {
       std::this_thread::sleep_for(200ms + std::chrono::milliseconds(std::rand() % 300));
 
       auto now = std::chrono::system_clock::now();
       auto tt = std::chrono::system_clock::to_time_t(now);
-      auto tm = std::localtime(&tt);
+      struct tm tm_storage;
+      localtime_r(&tt, &tm_storage);
       char timestamp[16];
-      std::strftime(timestamp, sizeof(timestamp), "%H:%M:%S", tm);
+      std::strftime(timestamp, sizeof(timestamp), "%H:%M:%S", &tm_storage);
 
       int sev_idx = std::rand() % 5;
       LogEntry entry;
       entry.timestamp = timestamp;
       entry.severity = sev_map[sev_idx];
       entry.message = parse_ansi(messages[std::rand() % kMsgCount]);
-      log_model.append(std::move(entry));
+
+      {
+        std::lock_guard<std::mutex> lock(log_mutex);
+        log_model.append(std::move(entry));
+      }
+      screen.PostEvent(ftxui::Event::Custom);
     }
   });
 
-  auto screen = ftxui::ScreenInteractive::Fullscreen();
   ftxui::Component root = ftxui::Renderer(view.component(), [&] {
     return ftxui::vbox({
                ftxui::text("Terminal UI Kit - Streaming Log Viewer") | ftxui::bold,

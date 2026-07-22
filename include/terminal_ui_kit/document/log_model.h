@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <deque>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <vector>
@@ -34,11 +35,12 @@ class LogModel {
 
   [[nodiscard]] std::size_t size() const;
   const LogEntry& at(std::size_t index) const;
-  [[nodiscard]] std::uint64_t revision() const { return revision_; }
+  [[nodiscard]] std::uint64_t revision() const;
 
  private:
   void rebuild_visible_indexes();
 
+  mutable std::mutex mutex_;
   std::deque<LogEntry> entries_;
   std::vector<std::size_t> visible_indexes_;
   LogFilter filter_;

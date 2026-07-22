@@ -25,6 +25,7 @@ LogModel::LogModel(std::size_t retention_limit) : retention_limit_(retention_lim
 }
 
 void LogModel::append(LogEntry entry) {
+  std::lock_guard<std::mutex> lock(mutex_);
   entries_.push_back(std::move(entry));
   if (retention_limit_ != 0 && entries_.size() > retention_limit_) {
     entries_.pop_front();
@@ -34,24 +35,35 @@ void LogModel::append(LogEntry entry) {
 }
 
 void LogModel::clear() {
+  std::lock_guard<std::mutex> lock(mutex_);
   entries_.clear();
   visible_indexes_.clear();
   ++revision_;
 }
 
 void LogModel::set_filter(LogFilter filter) {
+  std::lock_guard<std::mutex> lock(mutex_);
   filter_ = std::move(filter);
   rebuild_visible_indexes();
   ++revision_;
 }
 
-std::size_t LogModel::size() const { return visible_indexes_.size(); }
+std::size_t LogModel::size() const {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return visible_indexes_.size();
+}
 
 const LogEntry& LogModel::at(std::size_t index) const {
+  std::lock_guard<std::mutex> lock(mutex_);
   if (index >= visible_indexes_.size()) {
     throw std::out_of_range("LogModel index out of range");
   }
   return entries_[visible_indexes_[index]];
+}
+
+std::uint64_t LogModel::revision() const {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return revision_;
 }
 
 void LogModel::rebuild_visible_indexes() {
