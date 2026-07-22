@@ -5,7 +5,8 @@ add_executable(terminal_ui_kit_unit_tests
   text_wrap_test.cc
   theme_test.cc
   streaming_document_test.cc
-  ansi_parser_test.cc)
+  ansi_parser_test.cc
+  log_model_test.cc)
 
 target_link_libraries(terminal_ui_kit_unit_tests PRIVATE
   TerminalUiKit::Core
