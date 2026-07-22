@@ -1,6 +1,7 @@
 #include "terminal_ui_kit/components/virtual_list.h"
 
 #include <algorithm>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -42,6 +43,31 @@ class ObservingBoxDecorator : public ftxui::Node {
   ftxui::Box& observed_box_;
 };
 
+class RowObserver : public ftxui::Node {
+ public:
+  RowObserver(ftxui::Element child, std::function<void(int)> on_height)
+      : Node({std::move(child)}), on_height_(std::move(on_height)) {}
+
+  void ComputeRequirement() override {
+    children_[0]->ComputeRequirement();
+    requirement_ = children_[0]->requirement();
+  }
+
+  void SetBox(ftxui::Box box) override {
+    const bool changed = box_ != box;
+    Node::SetBox(box);
+    children_[0]->SetBox(box);
+    if (changed && on_height_) {
+      on_height_(std::max(1, box.y_max - box.y_min + 1));
+    }
+  }
+
+  void Render(ftxui::Screen& screen) override { children_[0]->Render(screen); }
+
+ private:
+  std::function<void(int)> on_height_;
+};
+
 ftxui::Element observe_box(ftxui::Element child, ftxui::Box& box) {
   return std::make_shared<ObservingBoxDecorator>(std::move(child), box);
 }
@@ -68,12 +94,15 @@ class VirtualListImpl : public ftxui::ComponentBase {
     const int width = box_width();
     update_layout_metadata(width);
     normalize();
+    ensure_prefix_sums(width);
 
     ftxui::Elements rows;
     const std::size_t end = visible_end(width);
     for (std::size_t index = scroll_index_; index < end; ++index) {
-      ftxui::Element row = options_.render_item(index, width) |
-                           ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, height_for(index, width));
+      ftxui::Element row = options_.render_item(index, width);
+      row = std::make_shared<RowObserver>(
+          std::move(row), [this, index](int height) { update_measured_height(index, height); });
+      row = row | ftxui::size(ftxui::HEIGHT, ftxui::GREATER_THAN, height_for(index, width));
       if (selected_index_ && *selected_index_ == index) {
         row = row | ftxui::inverted;
       }
@@ -123,8 +152,15 @@ class VirtualListImpl : public ftxui::ComponentBase {
     if (index < measured_heights_.size() && measured_heights_[index]) {
       return std::max(1, *measured_heights_[index]);
     }
+    if (index < estimated_heights_.size() && estimated_heights_[index] > 0) {
+      return estimated_heights_[index];
+    }
     if (options_.estimate_height) {
-      return std::max(1, options_.estimate_height(index, width));
+      const int estimate = std::max(1, options_.estimate_height(index, width));
+      if (index < estimated_heights_.size()) {
+        estimated_heights_[index] = estimate;
+      }
+      return estimate;
     }
     return std::max(1, options_.item_height);
   }
@@ -135,24 +171,57 @@ class VirtualListImpl : public ftxui::ComponentBase {
     const std::size_t count = item_count();
     if (count != current_item_count_) {
       measured_heights_.resize(count);
+      estimated_heights_.resize(count);
       current_item_count_ = count;
-      prefix_metadata_valid_ = false;
+      prefix_valid_ = false;
     }
     if (width != current_width_) {
       current_width_ = width;
-      prefix_metadata_valid_ = false;
+      std::fill(measured_heights_.begin(), measured_heights_.end(), std::nullopt);
+      std::fill(estimated_heights_.begin(), estimated_heights_.end(), 0);
+      prefix_valid_ = false;
     }
+  }
+
+  void ensure_prefix_sums(int width) {
+    if (prefix_valid_) {
+      return;
+    }
+    const std::size_t count = item_count();
+    prefix_sums_.assign(count + 1, 0);
+    for (std::size_t index = 0; index < count; ++index) {
+      prefix_sums_[index + 1] = prefix_sums_[index] + height_for(index, width);
+    }
+    prefix_valid_ = true;
+  }
+
+  void update_measured_height(std::size_t index, int height) {
+    if (index >= measured_heights_.size()) {
+      return;
+    }
+    height = std::max(1, height);
+    if (measured_heights_[index] && *measured_heights_[index] == height) {
+      return;
+    }
+    measured_heights_[index] = height;
+    prefix_valid_ = false;
+    ftxui::animation::RequestAnimationFrame();
   }
 
   std::size_t visible_end(int width) {
     const std::size_t count = item_count();
-    const std::size_t rows = static_cast<std::size_t>(box_height());
-    std::size_t end = scroll_index_;
-    std::size_t covered_rows = 0;
-    while (end < count && covered_rows < rows) {
-      covered_rows += static_cast<std::size_t>(height_for(end, width));
+    ensure_prefix_sums(width);
+    if (scroll_index_ >= count) {
+      return count;
+    }
+    const int viewport_bottom = prefix_sums_[scroll_index_] + box_height();
+    auto begin = prefix_sums_.begin() + static_cast<std::ptrdiff_t>(scroll_index_);
+    auto end_it = std::lower_bound(begin, prefix_sums_.end(), viewport_bottom);
+    std::size_t end = static_cast<std::size_t>(end_it - prefix_sums_.begin());
+    if (end < count) {
       ++end;
     }
+    end = std::min(count, std::max(end, scroll_index_ + 1));
     return end;
   }
 
@@ -231,9 +300,11 @@ class VirtualListImpl : public ftxui::ComponentBase {
   VirtualListOptions options_;
   ftxui::Box box_;
   std::vector<std::optional<int>> measured_heights_;
+  std::vector<int> estimated_heights_;
   std::size_t current_item_count_ = 0;
   int current_width_ = 0;
-  bool prefix_metadata_valid_ = false;
+  bool prefix_valid_ = false;
+  std::vector<int> prefix_sums_;
   std::size_t scroll_index_ = 0;
   std::optional<std::size_t> selected_index_;
 };
