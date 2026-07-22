@@ -37,6 +37,20 @@ git diff --check
 
 Both checks passed.
 
+## Review fixes
+
+- `ScrolledNode` now receives the scroll offset relative to the first row in
+  the materialized `vbox`, so `scroll_to_index()` and wheel scrolling place
+  the requested row at the correct viewport position.
+- `ScrolledNode` stores that offset by value, avoiding a dangling reference
+  to the temporary relative-offset local.
+- Model `scroll_to_index()`/`select_index()` and event selection paths refresh
+  count-dependent layout metadata before using prefix sums.
+- Added a render assertion that verifies a nonzero `scroll_to_index()` puts
+  the requested row at the first viewport line.
+
+Review-fix verification: 21/21 VirtualList tests passed.
+
 ## Concerns
 
 The anchor compensation path is exercised by measured-height callbacks during

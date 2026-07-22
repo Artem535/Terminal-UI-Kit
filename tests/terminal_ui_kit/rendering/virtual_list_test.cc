@@ -316,6 +316,20 @@ TEST(VirtualListModel, ScrollToIndexUsesMixedHeightPrefixSums) {
   EXPECT_EQ(rendered_indices.front(), 3U);
 }
 
+TEST(VirtualList, ScrollToIndexPlacesRequestedRowAtViewportTop) {
+  VirtualListOptions options;
+  options.item_count = [] { return std::size_t{8}; };
+  options.render_item = [](std::size_t index, int) {
+    return ftxui::text("row " + std::to_string(index));
+  };
+  VirtualListModel model(std::move(options));
+
+  model.scroll_to_index(3);
+  const std::string text = test_support::render_to_text(model.component()->Render(), 12, 3);
+
+  EXPECT_EQ(text.substr(0, 5), "row 3");
+}
+
 TEST(VirtualList, PageNavigationUsesViewportHeight) {
   VirtualListOptions options;
   options.item_count = [] { return std::size_t{10}; };

@@ -70,8 +70,7 @@ class RowObserver : public ftxui::Node {
 
 class ScrolledNode : public ftxui::Node {
  public:
-  ScrolledNode(ftxui::Element child, const int& offset)
-      : Node({std::move(child)}), offset_(offset) {}
+  ScrolledNode(ftxui::Element child, int offset) : Node({std::move(child)}), offset_(offset) {}
 
   void ComputeRequirement() override {
     children_[0]->ComputeRequirement();
@@ -89,7 +88,7 @@ class ScrolledNode : public ftxui::Node {
   void Render(ftxui::Screen& screen) override { children_[0]->Render(screen); }
 
  private:
-  const int& offset_;
+  int offset_;
 };
 
 ftxui::Element observe_box(ftxui::Element child, ftxui::Box& box) {
@@ -105,6 +104,7 @@ class VirtualListImpl : public ftxui::ComponentBase {
   }
 
   void scroll_to_index(std::size_t index) {
+    update_layout_metadata(current_width_);
     normalize();
     ensure_prefix_sums(current_width_);
     if (prefix_sums_.empty()) {
@@ -116,7 +116,10 @@ class VirtualListImpl : public ftxui::ComponentBase {
     normalize();
   }
 
-  void select_index(std::size_t index) { set_selected(index); }
+  void select_index(std::size_t index) {
+    update_layout_metadata(current_width_);
+    set_selected(index);
+  }
 
   std::optional<std::size_t> selected_index() const { return selected_index_; }
 
@@ -140,14 +143,16 @@ class VirtualListImpl : public ftxui::ComponentBase {
       }
       rows.push_back(std::move(row));
     }
-    ftxui::Element content =
-        std::make_shared<ScrolledNode>(ftxui::vbox(std::move(rows)) | ftxui::yflex, scroll_offset_);
+    const int relative_scroll_offset = scroll_offset_ - prefix_sums_[begin];
+    ftxui::Element content = std::make_shared<ScrolledNode>(
+        ftxui::vbox(std::move(rows)) | ftxui::yflex, relative_scroll_offset);
     return observe_box(std::move(content), box_);
   }
 
   bool Focusable() const override { return selected_index_.has_value(); }
 
   bool OnEvent(ftxui::Event event) override {
+    update_layout_metadata(current_width_);
     normalize();
     if (event.is_mouse()) {
       return on_mouse_event(event);
@@ -305,6 +310,7 @@ class VirtualListImpl : public ftxui::ComponentBase {
   }
 
   bool set_selected(std::size_t index) {
+    update_layout_metadata(current_width_);
     normalize();
     const std::size_t count = item_count();
     if (count == 0) {
