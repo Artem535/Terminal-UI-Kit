@@ -102,7 +102,6 @@ class VirtualListImpl : public ftxui::ComponentBase {
       ftxui::Element row = options_.render_item(index, width);
       row = std::make_shared<RowObserver>(
           std::move(row), [this, index](int height) { update_measured_height(index, height); });
-      row = row | ftxui::size(ftxui::HEIGHT, ftxui::GREATER_THAN, height_for(index, width));
       if (selected_index_ && *selected_index_ == index) {
         row = row | ftxui::inverted;
       }
