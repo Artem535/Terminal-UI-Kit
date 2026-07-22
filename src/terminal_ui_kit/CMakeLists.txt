@@ -81,7 +81,9 @@ target_link_libraries(terminal_ui_kit_components PUBLIC
   ftxui::screen)
 set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_components)
 
-add_library(terminal_ui_kit_document document/streaming_document.cc)
+add_library(terminal_ui_kit_document
+  document/streaming_document.cc
+  document/ansi_parser.cc)
 add_library(TerminalUiKit::Document ALIAS terminal_ui_kit_document)
 target_include_directories(terminal_ui_kit_document PUBLIC
   $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>
