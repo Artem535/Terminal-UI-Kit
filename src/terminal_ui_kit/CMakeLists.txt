@@ -81,14 +81,21 @@ target_link_libraries(terminal_ui_kit_components PUBLIC
   ftxui::screen)
 set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_components)
 
-_terminal_ui_kit_add_module(document)
+add_library(terminal_ui_kit_document document/streaming_document.cc)
+add_library(TerminalUiKit::Document ALIAS terminal_ui_kit_document)
+target_include_directories(terminal_ui_kit_document PUBLIC
+  $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>
+  $<INSTALL_INTERFACE:include>)
+target_compile_features(terminal_ui_kit_document PUBLIC cxx_std_20)
+target_terminal_ui_kit_warnings(terminal_ui_kit_document)
+target_link_libraries(terminal_ui_kit_document PUBLIC terminal_ui_kit_core)
+set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_document)
 _terminal_ui_kit_add_module(editor)
 _terminal_ui_kit_add_module(diff)
 _terminal_ui_kit_add_module(markdown)
 _terminal_ui_kit_add_module(syntax)
 _terminal_ui_kit_add_module(terminal)
 
-target_link_libraries(terminal_ui_kit_document INTERFACE terminal_ui_kit_core)
 target_link_libraries(terminal_ui_kit_editor INTERFACE terminal_ui_kit_document)
 target_link_libraries(terminal_ui_kit_diff INTERFACE terminal_ui_kit_core)
 target_link_libraries(terminal_ui_kit_markdown INTERFACE terminal_ui_kit_document)
