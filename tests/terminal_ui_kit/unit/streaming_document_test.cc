@@ -63,6 +63,22 @@ TEST(StreamingDocument, InvalidBytesBecomeReplacement) {
   EXPECT_EQ(document.line_at(0), expected);
 }
 
+TEST(StreamingDocument, InvalidContinuationPreservesFollowingAscii) {
+  StreamingDocument document;
+  document.append(std::string("bad\xE2") + "a");
+  document.finish();
+
+  EXPECT_EQ(document.line_at(0), std::string("bad\xEF\xBF\xBD") + "a");
+}
+
+TEST(StreamingDocument, InvalidContinuationBeforeNewlinePreservesLineBreak) {
+  StreamingDocument document;
+  document.append("bad\xE2\n");
+
+  ASSERT_EQ(document.line_count(), 1U);
+  EXPECT_EQ(document.line_at(0), "bad\xEF\xBF\xBD");
+}
+
 TEST(StreamingDocument, StripsCarriageReturn) {
   StreamingDocument document;
   document.append("line\r\n");

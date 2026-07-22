@@ -1,5 +1,6 @@
 #include "terminal_ui_kit/document/streaming_document.h"
 
+#include <algorithm>
 #include <stdexcept>
 
 namespace terminal_ui_kit {
@@ -15,6 +16,26 @@ int sequence_length(unsigned char byte) {
   if (byte >= 0xE0U && byte <= 0xEFU) return 3;
   if (byte >= 0xF0U && byte <= 0xF4U) return 4;
   return 0;
+}
+
+bool valid_prefix(unsigned char lead, int length, const std::string& bytes, std::size_t offset) {
+  const std::size_t available = bytes.size() - offset;
+  const std::size_t continuation_count =
+      std::min<std::size_t>(available - 1, static_cast<std::size_t>(length - 1));
+  for (std::size_t index = 1; index <= continuation_count; ++index) {
+    if (!is_continuation(static_cast<unsigned char>(bytes[offset + index]))) {
+      return false;
+    }
+  }
+
+  if (available >= 2) {
+    const auto second = static_cast<unsigned char>(bytes[offset + 1]);
+    if ((lead == 0xE0U && second < 0xA0U) || (lead == 0xEDU && second >= 0xA0U) ||
+        (lead == 0xF0U && second < 0x90U) || (lead == 0xF4U && second > 0x8FU)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 }  // namespace
@@ -41,6 +62,11 @@ void StreamingDocument::decode_pending(bool flush_incomplete) {
 
     const int length = sequence_length(lead);
     if (length == 0) {
+      current_line_.append(kReplacement);
+      ++offset;
+      continue;
+    }
+    if (!valid_prefix(lead, length, pending_bytes_, offset)) {
       current_line_.append(kReplacement);
       ++offset;
       continue;
