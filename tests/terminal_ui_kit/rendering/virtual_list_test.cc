@@ -52,7 +52,7 @@ TEST(VirtualList, RendersOnlyViewportItemsFromLargeList) {
   rendered_indices.clear();
   test_support::render_to_screen(model.component()->Render(), 20, 4);
 
-  EXPECT_EQ(rendered_indices, (std::vector<std::size_t>{0, 1, 2, 3}));
+  EXPECT_EQ(rendered_indices, (std::vector<std::size_t>{0, 1, 2, 3, 4}));
 }
 
 TEST(VirtualList, RendersTwoTwoLineItemsInFourRowViewport) {
@@ -70,7 +70,132 @@ TEST(VirtualList, RendersTwoTwoLineItemsInFourRowViewport) {
   rendered_indices.clear();
   test_support::render_to_screen(model.component()->Render(), 20, 4);
 
-  EXPECT_EQ(rendered_indices, (std::vector<std::size_t>{0, 1}));
+  EXPECT_EQ(rendered_indices, (std::vector<std::size_t>{0, 1, 2}));
+}
+
+TEST(VirtualList, LegacyAggregateInitializationKeepsFixedRowHeight) {
+  std::vector<std::size_t> rendered_indices;
+  VirtualListOptions options{
+      [] { return std::size_t{100}; },
+      [&rendered_indices](std::size_t index, int) {
+        rendered_indices.push_back(index);
+        return ftxui::text(std::to_string(index));
+      },
+      2,
+      {},
+  };
+
+  VirtualListModel model(std::move(options));
+  test_support::render_to_screen(model.component()->Render(), 20, 4);
+  rendered_indices.clear();
+  const ftxui::Screen screen = test_support::render_to_screen(model.component()->Render(), 20, 4);
+
+  EXPECT_EQ(screen.PixelAt(0, 0).character, "0");
+  EXPECT_EQ(screen.PixelAt(0, 1).character, " ");
+  EXPECT_EQ(screen.PixelAt(0, 2).character, "1");
+  EXPECT_EQ(rendered_indices, (std::vector<std::size_t>{0, 1, 2}));
+}
+
+TEST(VirtualList, EstimateHeightControlsInitialRange) {
+  std::vector<std::size_t> rendered_indices;
+  VirtualListOptions options;
+  options.item_count = [] { return std::size_t{100}; };
+  options.estimate_height = [](std::size_t index, int) { return index == 0 ? 2 : 1; };
+  options.render_item = [&rendered_indices](std::size_t index, int) {
+    rendered_indices.push_back(index);
+    return ftxui::text(std::to_string(index));
+  };
+
+  VirtualListModel model(std::move(options));
+  test_support::render_to_screen(model.component()->Render(), 20, 3);
+  rendered_indices.clear();
+  test_support::render_to_screen(model.component()->Render(), 20, 3);
+
+  EXPECT_EQ(rendered_indices, (std::vector<std::size_t>{0, 1, 2}));
+}
+
+TEST(VirtualList, NonPositiveEstimateUsesOneRow) {
+  std::vector<std::size_t> rendered_indices;
+  VirtualListOptions options;
+  options.item_count = [] { return std::size_t{100}; };
+  options.estimate_height = [](std::size_t, int) { return 0; };
+  options.render_item = [&rendered_indices](std::size_t index, int) {
+    rendered_indices.push_back(index);
+    return ftxui::text(std::to_string(index));
+  };
+
+  VirtualListModel model(std::move(options));
+  test_support::render_to_screen(model.component()->Render(), 20, 3);
+  rendered_indices.clear();
+  test_support::render_to_screen(model.component()->Render(), 20, 3);
+
+  EXPECT_EQ(rendered_indices, (std::vector<std::size_t>{0, 1, 2, 3}));
+}
+
+TEST(VirtualList, CachesMeasuredAlternatingHeightsAndKeepsBoundedRange) {
+  std::vector<std::size_t> rendered_indices;
+  std::size_t estimate_calls = 0;
+  VirtualListOptions options;
+  options.item_count = [] { return std::size_t{100000}; };
+  options.estimate_height = [&estimate_calls](std::size_t, int) {
+    ++estimate_calls;
+    return 1;
+  };
+  options.render_item = [&rendered_indices](std::size_t index, int) {
+    rendered_indices.push_back(index);
+    return index % 2 == 0 ? ftxui::text("one")
+                          : ftxui::vbox({ftxui::text("two"), ftxui::text("lines")});
+  };
+
+  VirtualListModel model(std::move(options));
+  test_support::render_to_screen(model.component()->Render(), 20, 4);
+  ASSERT_LE(rendered_indices.size(), 5U);
+  rendered_indices.clear();
+  test_support::render_to_screen(model.component()->Render(), 20, 4);
+  EXPECT_LE(rendered_indices.size(), 5U);
+  EXPECT_GT(estimate_calls, 0U);
+}
+
+TEST(VirtualList, WidthChangeReinvokesEstimateAndRefreshesMeasurements) {
+  std::size_t estimate_calls = 0;
+  int last_width = 0;
+  VirtualListOptions options;
+  options.item_count = [] { return std::size_t{2}; };
+  options.estimate_height = [&estimate_calls, &last_width](std::size_t, int width) {
+    ++estimate_calls;
+    last_width = width;
+    return width < 30 ? 1 : 2;
+  };
+  options.render_item = [](std::size_t, int) { return ftxui::text("item"); };
+
+  VirtualListModel model(std::move(options));
+  test_support::render_to_screen(model.component()->Render(), 20, 3);
+  const std::size_t calls_before_resize = estimate_calls;
+  test_support::render_to_screen(model.component()->Render(), 40, 3);
+  test_support::render_to_screen(model.component()->Render(), 40, 3);
+
+  EXPECT_GT(estimate_calls, calls_before_resize);
+  EXPECT_EQ(last_width, 40);
+}
+
+TEST(VirtualList, CountChangeInvalidatesPrefixAndClampsRenderedRange) {
+  std::size_t count = 100;
+  std::vector<std::size_t> rendered_indices;
+  VirtualListOptions options;
+  options.item_count = [&count] { return count; };
+  options.render_item = [&rendered_indices](std::size_t index, int) {
+    rendered_indices.push_back(index);
+    return ftxui::text("item");
+  };
+  VirtualListModel model(std::move(options));
+  model.scroll_to_index(90);
+  test_support::render_to_screen(model.component()->Render(), 20, 3);
+  count = 2;
+  rendered_indices.clear();
+  test_support::render_to_screen(model.component()->Render(), 20, 3);
+
+  ASSERT_FALSE(rendered_indices.empty());
+  EXPECT_LT(rendered_indices.back(), count);
 }
 
 TEST(VirtualList, ArrowDownChangesSelectionAndInvokesCallback) {
@@ -192,6 +317,91 @@ TEST(VirtualList, ObservesWidthOnFollowUpFrameAfterResize) {
   test_support::render_to_screen(model.component()->Render(), 40, 1);
 
   EXPECT_EQ(last_width, 40);
+}
+
+TEST(VirtualListModel, ScrollToIndexUsesMixedHeightPrefixSums) {
+  std::vector<std::size_t> rendered_indices;
+  VirtualListOptions options;
+  options.item_count = [] { return std::size_t{6}; };
+  options.estimate_height = [](std::size_t index, int) {
+    return index == 1 ? 2 : (index == 4 ? 3 : 1);
+  };
+  options.render_item = [&rendered_indices](std::size_t index, int) {
+    rendered_indices.push_back(index);
+    return ftxui::text(std::to_string(index));
+  };
+  VirtualListModel model(std::move(options));
+
+  model.scroll_to_index(3);
+  test_support::render_to_screen(model.component()->Render(), 20, 3);
+
+  ASSERT_FALSE(rendered_indices.empty());
+  EXPECT_EQ(rendered_indices.front(), 3U);
+}
+
+TEST(VirtualList, ScrollToIndexPlacesRequestedRowAtViewportTop) {
+  VirtualListOptions options;
+  options.item_count = [] { return std::size_t{8}; };
+  options.render_item = [](std::size_t index, int) {
+    return ftxui::text("row " + std::to_string(index));
+  };
+  VirtualListModel model(std::move(options));
+
+  model.scroll_to_index(3);
+  const std::string text = test_support::render_to_text(model.component()->Render(), 12, 3);
+
+  EXPECT_EQ(text.substr(0, 5), "row 3");
+}
+
+TEST(VirtualList, PageNavigationUsesViewportHeight) {
+  VirtualListOptions options;
+  options.item_count = [] { return std::size_t{10}; };
+  options.estimate_height = [](std::size_t index, int) { return index % 2 == 0 ? 2 : 1; };
+  options.render_item = [](std::size_t index, int) { return ftxui::text(std::to_string(index)); };
+  VirtualListModel model(std::move(options));
+
+  test_support::render_to_screen(model.component()->Render(), 20, 4);
+  EXPECT_TRUE(model.component()->OnEvent(ftxui::Event::PageDown));
+  EXPECT_EQ(model.selected_index(), std::optional<std::size_t>{3});
+}
+
+TEST(VirtualList, WheelScrollingDoesNotInvokeSelectionCallbackWithMixedHeights) {
+  std::vector<std::size_t> selections;
+  VirtualListOptions options;
+  options.item_count = [] { return std::size_t{10}; };
+  options.estimate_height = [](std::size_t index, int) { return index % 2 == 0 ? 2 : 1; };
+  options.render_item = [](std::size_t index, int) { return ftxui::text(std::to_string(index)); };
+  options.on_select = [&selections](std::size_t index) { selections.push_back(index); };
+  VirtualListModel model(std::move(options));
+  test_support::render_to_screen(model.component()->Render(), 20, 4);
+
+  ftxui::Mouse mouse;
+  mouse.x = 0;
+  mouse.y = 0;
+  mouse.button = ftxui::Mouse::WheelDown;
+  EXPECT_TRUE(model.component()->OnEvent(ftxui::Event::Mouse("", mouse)));
+  EXPECT_EQ(model.selected_index(), std::optional<std::size_t>{0});
+  EXPECT_TRUE(selections.empty());
+}
+
+TEST(VirtualList, CountShrinkClampsSelectionAndScrollOffset) {
+  std::size_t count = 10;
+  std::vector<std::size_t> selections;
+  VirtualListOptions options;
+  options.item_count = [&count] { return count; };
+  options.estimate_height = [](std::size_t index, int) { return index == 0 ? 2 : 1; };
+  options.render_item = [](std::size_t index, int) { return ftxui::text(std::to_string(index)); };
+  options.on_select = [&selections](std::size_t index) { selections.push_back(index); };
+  VirtualListModel model(std::move(options));
+  test_support::render_to_screen(model.component()->Render(), 20, 3);
+  model.select_index(9);
+  model.scroll_to_index(9);
+  count = 2;
+
+  const std::string text = test_support::render_to_text(model.component()->Render(), 20, 3);
+  EXPECT_NE(text.find("0"), std::string::npos);
+  EXPECT_EQ(model.selected_index(), std::optional<std::size_t>{1});
+  EXPECT_EQ(selections, (std::vector<std::size_t>{9}));
 }
 
 }  // namespace

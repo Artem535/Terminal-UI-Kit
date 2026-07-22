@@ -15,6 +15,9 @@ struct VirtualListOptions {
   std::function<ftxui::Element(std::size_t index, int width)> render_item;
   int item_height = 1;
   std::function<void(std::size_t index)> on_select;
+  // Optional variable-height estimate. Kept after the PR5 fields so the
+  // legacy positional aggregate form remains source-compatible.
+  std::function<int(std::size_t index, int width)> estimate_height;
 };
 
 class VirtualListImpl;

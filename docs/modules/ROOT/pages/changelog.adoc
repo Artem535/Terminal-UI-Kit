@@ -20,3 +20,6 @@ section 45 for the project's specific stability rules before/after 1.0).
   word-wrap utility.
 * Documentation site: AsciiDoc content published via Antora, replacing the
   Markdown docs that previously lived only in the repository root.
+* Variable-height `VirtualList` support with deterministic height estimates,
+  measured layout caching, prefix-sum range lookup, and scroll anchoring when
+  visible rows change height.
