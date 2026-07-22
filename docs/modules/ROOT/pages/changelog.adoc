@@ -23,3 +23,8 @@ section 45 for the project's specific stability rules before/after 1.0).
 * Variable-height `VirtualList` support with deterministic height estimates,
   measured layout caching, prefix-sum range lookup, and scroll anchoring when
   visible rows change height.
+* Streaming document and log model support: chunk-safe UTF-8 ingestion,
+  ANSI SGR parsing into `StyledText`, retained log entries with severity and
+  substring filtering, and revision tracking for incremental consumers.
+  The interactive `LogView` and streaming log viewer example are planned for
+  PR7B.
