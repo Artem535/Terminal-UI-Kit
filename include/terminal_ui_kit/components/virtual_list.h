@@ -28,6 +28,7 @@ class VirtualListModel {
 
   ftxui::Component component() const;
   void scroll_to_index(std::size_t index);
+  void scroll_to_bottom();
   void select_index(std::size_t index);
   std::optional<std::size_t> selected_index() const;
 

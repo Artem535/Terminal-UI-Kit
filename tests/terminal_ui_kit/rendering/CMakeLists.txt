@@ -9,11 +9,13 @@ add_executable(terminal_ui_kit_rendering_tests
   key_hint_bar_test.cc
   spinner_test.cc
   collapsible_panel_test.cc
-  modal_stack_test.cc)
+  modal_stack_test.cc
+  log_view_test.cc)
 
 target_link_libraries(terminal_ui_kit_rendering_tests PRIVATE
   TerminalUiKit::Testing
   TerminalUiKit::Components
+  TerminalUiKit::Document
   GTest::gtest_main)
 
 target_terminal_ui_kit_warnings(terminal_ui_kit_rendering_tests)
