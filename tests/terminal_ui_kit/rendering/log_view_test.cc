@@ -25,8 +25,7 @@ TEST(LogView, RawModeShowsStreamingLines) {
   LogView view(opts);
 
   test_support::render_to_screen(view.component()->Render(), 20, 3);
-  ftxui::Screen screen = test_support::render_to_screen(
-      view.component()->Render(), 20, 3);
+  ftxui::Screen screen = test_support::render_to_screen(view.component()->Render(), 20, 3);
   std::string text = screen.ToString();
   EXPECT_NE(text.find("hello"), std::string::npos);
   EXPECT_NE(text.find("world"), std::string::npos);
@@ -47,8 +46,7 @@ TEST(LogView, StructuredModeShowsLogEntry) {
   LogView view(opts);
 
   test_support::render_to_screen(view.component()->Render(), 30, 3);
-  std::string text = test_support::render_to_text(
-      view.component()->Render(), 30, 3);
+  std::string text = test_support::render_to_text(view.component()->Render(), 30, 3);
   EXPECT_NE(text.find("test message"), std::string::npos);
 }
 

@@ -21,11 +21,26 @@ ftxui::Element severity_badge(LogSeverity severity, const Theme& theme) {
   std::string label;
   TextStyle badge_style;
   switch (severity) {
-    case LogSeverity::kTrace:    label = " TRCE "; badge_style = theme.muted;     break;
-    case LogSeverity::kDebug:    label = " DEBUG"; badge_style = theme.code;      break;
-    case LogSeverity::kInfo:     label = " INFO "; badge_style = theme.accent;    break;
-    case LogSeverity::kWarning:  label = " WARN "; badge_style = theme.warning;   break;
-    case LogSeverity::kError:    label = " ERR ";  badge_style = theme.error;     break;
+    case LogSeverity::kTrace:
+      label = " TRCE ";
+      badge_style = theme.muted;
+      break;
+    case LogSeverity::kDebug:
+      label = " DEBUG";
+      badge_style = theme.code;
+      break;
+    case LogSeverity::kInfo:
+      label = " INFO ";
+      badge_style = theme.accent;
+      break;
+    case LogSeverity::kWarning:
+      label = " WARN ";
+      badge_style = theme.warning;
+      break;
+    case LogSeverity::kError:
+      label = " ERR ";
+      badge_style = theme.error;
+      break;
   }
   return ftxui::text(label) | to_decorator(badge_style) | ftxui::dim;
 }
@@ -34,14 +49,10 @@ ftxui::Element severity_badge(LogSeverity severity, const Theme& theme) {
 
 class LogViewImpl {
  public:
-  explicit LogViewImpl(LogViewOptions options)
-      : options_(std::move(options)),
-        last_revision_(0) {
+  explicit LogViewImpl(LogViewOptions options) : options_(std::move(options)), last_revision_(0) {
     VirtualListOptions list_opts;
     list_opts.item_count = [this] { return source_size(); };
-    list_opts.render_item = [this](std::size_t index, int) {
-      return render_line(index);
-    };
+    list_opts.render_item = [this](std::size_t index, int) { return render_line(index); };
 
     model_ = std::make_shared<VirtualListModel>(std::move(list_opts));
     auto list_component = model_->component();
@@ -50,9 +61,7 @@ class LogViewImpl {
       check_revision_and_follow();
       return list_component->Render();
     });
-    component_ |= ftxui::CatchEvent([this](ftxui::Event event) {
-      return handle_event(event);
-    });
+    component_ |= ftxui::CatchEvent([this](ftxui::Event event) { return handle_event(event); });
   }
 
   ftxui::Component component() const { return component_; }
@@ -64,9 +73,7 @@ class LogViewImpl {
       model_->scroll_to_bottom();
     }
   }
-  void scroll_to_bottom() {
-    model_->scroll_to_bottom();
-  }
+  void scroll_to_bottom() { model_->scroll_to_bottom(); }
 
  private:
   std::size_t source_size() const {
@@ -100,8 +107,7 @@ class LogViewImpl {
         parts.push_back(ftxui::text(" "));
       }
       if (options_.show_timestamp && !entry.timestamp.empty()) {
-        parts.push_back(
-            ftxui::text(entry.timestamp) | to_decorator(options_.theme.muted));
+        parts.push_back(ftxui::text(entry.timestamp) | to_decorator(options_.theme.muted));
         parts.push_back(ftxui::text(" "));
       }
       parts.push_back(render_styled_text(entry.message));
@@ -111,8 +117,7 @@ class LogViewImpl {
   }
 
   bool handle_event(ftxui::Event event) {
-    if (event == ftxui::Event::ArrowUp ||
-        event == ftxui::Event::ArrowDown ||
+    if (event == ftxui::Event::ArrowUp || event == ftxui::Event::ArrowDown ||
         (event.is_mouse() && event.mouse().button == ftxui::Mouse::WheelUp) ||
         (event.is_mouse() && event.mouse().button == ftxui::Mouse::WheelDown)) {
       options_.follow = false;

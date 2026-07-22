@@ -9,6 +9,10 @@ section 45 for the project's specific stability rules before/after 1.0).
 
 === Added
 
+- LogView component with follow/pause and severity badges (#PR7B)
+- streaming_log_viewer interactive example application
+- render_styled_text utility for StyledText-to-FTXUI Element conversion
+
 * Repository foundation: CMake + Xmake build systems, vcpkg manifest,
   directory skeleton for `include/`, `src/`, `tests/`, `examples/`,
   `benchmarks/`, and `docs/`, code style configuration (clang-format,

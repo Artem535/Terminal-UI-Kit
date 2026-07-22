@@ -36,9 +36,8 @@ int main() {
   // Generator thread: produces log entries with ANSI color
   std::thread generator([&] {
     const char* severities[] = {"TRACE", "DEBUG", "INFO", "WARN", "ERROR"};
-    const LogSeverity sev_map[] = {
-        LogSeverity::kTrace, LogSeverity::kDebug, LogSeverity::kInfo,
-        LogSeverity::kWarning, LogSeverity::kError};
+    const LogSeverity sev_map[] = {LogSeverity::kTrace, LogSeverity::kDebug, LogSeverity::kInfo,
+                                   LogSeverity::kWarning, LogSeverity::kError};
     const char* messages[] = {
         "\x1b[32mConnection\x1b[0m established to 10.0.0.1:8080",
         "Received \x1b[33m42\x1b[0m bytes from upstream",
@@ -81,11 +80,9 @@ int main() {
                view.component()->Render() | ftxui::flex,
                ftxui::separator(),
                ftxui::text(std::string("Follow: ") + (view.follow() ? "ON" : "OFF")) |
-                   (view.follow() ? ftxui::color(ftxui::Color::Green) : ftxui::color(ftxui::Color::GrayDark)),
-               KeyHintBar({{"up/down", "scroll"},
-                           {"end", "follow"},
-                           {"q/ESC", "quit"}},
-                          theme),
+                   (view.follow() ? ftxui::color(ftxui::Color::Green)
+                                  : ftxui::color(ftxui::Color::GrayDark)),
+               KeyHintBar({{"up/down", "scroll"}, {"end", "follow"}, {"q/ESC", "quit"}}, theme),
            }) |
            ftxui::border;
   });
