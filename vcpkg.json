@@ -14,7 +14,7 @@
     },
     "tree-sitter": {
       "description": "Tree-sitter based syntax highlighting",
-      "dependencies": ["tree-sitter"]
+      "dependencies": ["tree-sitter", "tree-sitter-c", "tree-sitter-cpp", "tree-sitter-json", "tree-sitter-yaml", "tree-sitter-bash", "tree-sitter-markdown", "tree-sitter-diff", "tree-sitter-rust", "tree-sitter-javascript", "tree-sitter-python"]
     },
     "images": {
       "description": "Terminal image rendering backends",

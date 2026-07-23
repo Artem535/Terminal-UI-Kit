@@ -6,7 +6,7 @@ project(TerminalUiKit
   VERSION ${TERMINAL_UI_KIT_VERSION}
   DESCRIPTION "High-level C++ components for terminal applications, built on FTXUI"
   HOMEPAGE_URL "https://github.com/Artem535/Terminal-UI-Kit"
-  LANGUAGES CXX)
+  LANGUAGES C CXX)
 
 if(PROJECT_IS_TOP_LEVEL)
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -50,35 +50,38 @@ if(TERMINAL_UI_KIT_BUILD_BENCHMARKS)
 endif()
 
 # --- Install and package export (find_package(TerminalUiKit) support) -----
+# Skip install when optional compiled dependencies (tree-sitter, cmark-gfm)
+# are enabled, as their grammar targets break the export set.
+if(NOT TERMINAL_UI_KIT_ENABLE_TREE_SITTER AND NOT TERMINAL_UI_KIT_ENABLE_MARKDOWN)
+  include(GNUInstallDirs)
+  include(CMakePackageConfigHelpers)
 
-include(GNUInstallDirs)
-include(CMakePackageConfigHelpers)
+  install(TARGETS ${TERMINAL_UI_KIT_INSTALL_TARGETS}
+    EXPORT TerminalUiKitTargets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-install(TARGETS ${TERMINAL_UI_KIT_INSTALL_TARGETS}
-  EXPORT TerminalUiKitTargets
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install(DIRECTORY include/terminal_ui_kit
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING PATTERN "*.h")
 
-install(DIRECTORY include/terminal_ui_kit
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  FILES_MATCHING PATTERN "*.h")
+  install(EXPORT TerminalUiKitTargets
+    NAMESPACE TerminalUiKit::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/TerminalUiKit)
 
-install(EXPORT TerminalUiKitTargets
-  NAMESPACE TerminalUiKit::
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/TerminalUiKit)
+  configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/TerminalUiKitConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/TerminalUiKitConfig.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/TerminalUiKit)
 
-configure_package_config_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/TerminalUiKitConfig.cmake.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/TerminalUiKitConfig.cmake"
-  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/TerminalUiKit)
+  write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/TerminalUiKitConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion)
 
-write_basic_package_version_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/TerminalUiKitConfigVersion.cmake"
-  VERSION ${PROJECT_VERSION}
-  COMPATIBILITY SameMajorVersion)
-
-install(FILES
-  "${CMAKE_CURRENT_BINARY_DIR}/TerminalUiKitConfig.cmake"
-  "${CMAKE_CURRENT_BINARY_DIR}/TerminalUiKitConfigVersion.cmake"
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/TerminalUiKit)
+  install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/TerminalUiKitConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/TerminalUiKitConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/TerminalUiKit)
+endif()

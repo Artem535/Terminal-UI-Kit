@@ -79,3 +79,85 @@ function(terminal_ui_kit_require_cmark_gfm)
   set(_cmark_gfm_source_dir "${cmark-gfm_SOURCE_DIR}" PARENT_SCOPE)
   set(_cmark_gfm_build_dir "${cmark-gfm_BINARY_DIR}" PARENT_SCOPE)
 endfunction()
+
+function(terminal_ui_kit_require_tree_sitter)
+  find_package(tree-sitter CONFIG QUIET)
+  if(TARGET tree-sitter::tree-sitter)
+    return()
+  endif()
+
+  message(STATUS "tree-sitter not found via find_package(); fetching with FetchContent")
+  FetchContent_Declare(
+    tree-sitter
+    GIT_REPOSITORY https://github.com/tree-sitter/tree-sitter.git
+    GIT_TAG v0.25.3
+    GIT_SHALLOW TRUE)
+  FetchContent_MakeAvailable(tree-sitter)
+
+  # tree-sitter's CMakeLists.txt is in lib/ subdirectory
+  # If FetchContent didn't find it, build manually
+  if(NOT TARGET tree-sitter)
+    add_subdirectory("${tree-sitter_SOURCE_DIR}/lib" "${tree-sitter_BINARY_DIR}/lib")
+  endif()
+
+  set(_tree_sitter_source_dir "${tree-sitter_SOURCE_DIR}" PARENT_SCOPE)
+endfunction()
+
+# Helper to fetch a tree-sitter grammar and create a static library target.
+# Usage: _terminal_ui_kit_fetch_grammar(c https://github.com/tree-sitter/tree-sitter-c.git v0.23.4)
+function(_terminal_ui_kit_fetch_grammar name repo tag)
+  string(REPLACE "-" "_" safe_name "${name}")
+  set(target_name "ts_grammar_${safe_name}")
+
+  if(TARGET ${target_name})
+    return()
+  endif()
+
+  set(src_dir "${CMAKE_BINARY_DIR}/_ts_grammars/${name}")
+  if(NOT EXISTS "${src_dir}/src/parser.c")
+    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/_ts_grammars")
+    message(STATUS "Fetching tree-sitter grammar: ${name}")
+    execute_process(
+      COMMAND git clone --depth 1 --branch ${tag} ${repo} ${src_dir}
+      RESULT_VARIABLE result
+      TIMEOUT 30)
+    if(NOT result EQUAL 0)
+      message(WARNING "Failed to fetch tree-sitter grammar: ${name} (skipping)")
+      return()
+    endif()
+  endif()
+
+  file(GLOB grammar_sources "${src_dir}/src/*.c")
+  if(grammar_sources)
+    add_library(${target_name} STATIC ${grammar_sources})
+    target_include_directories(${target_name} PUBLIC "${src_dir}/src")
+    set_target_properties(${target_name} PROPERTIES
+      C_STANDARD 11
+      C_STANDARD_REQUIRED ON
+      POSITION_INDEPENDENT_CODE ON)
+    target_compile_options(${target_name} PRIVATE -w -fPIC)
+  endif()
+endfunction()
+
+function(terminal_ui_kit_require_tree_sitter_grammars)
+  _terminal_ui_kit_fetch_grammar(c
+    https://github.com/tree-sitter/tree-sitter-c.git v0.23.4)
+  _terminal_ui_kit_fetch_grammar(cpp
+    https://github.com/tree-sitter/tree-sitter-cpp.git v0.23.4)
+  _terminal_ui_kit_fetch_grammar(python
+    https://github.com/tree-sitter/tree-sitter-python.git v0.23.6)
+  _terminal_ui_kit_fetch_grammar(json
+    https://github.com/tree-sitter/tree-sitter-json.git v0.24.8)
+  _terminal_ui_kit_fetch_grammar(yaml
+    https://github.com/tree-sitter/tree-sitter-yaml.git v0.7.0)
+  _terminal_ui_kit_fetch_grammar(bash
+    https://github.com/tree-sitter/tree-sitter-bash.git v0.23.3)
+  _terminal_ui_kit_fetch_grammar(markdown
+    https://github.com/tree-sitter/tree-sitter-markdown.git v0.4.1)
+  _terminal_ui_kit_fetch_grammar(diff
+    https://github.com/tree-sitter/tree-sitter-diff.git v0.24.0)
+  _terminal_ui_kit_fetch_grammar(rust
+    https://github.com/tree-sitter/tree-sitter-rust.git v0.24.0)
+  _terminal_ui_kit_fetch_grammar(javascript
+    https://github.com/tree-sitter/tree-sitter-javascript.git v0.23.1)
+endfunction()

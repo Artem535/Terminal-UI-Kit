@@ -39,6 +39,32 @@ auto screen = ftxui::ScreenInteractive::Fullscreen();
 screen.Loop(list);
 ```
 
+## Python Example
+
+```python
+def fibonacci(n: int) -> list[int]:
+    """Generate Fibonacci sequence."""
+    if n <= 0:
+        return []
+    seq = [0, 1]
+    while len(seq) < n:
+        seq.append(seq[-1] + seq[-2])
+    return seq[:n]
+```
+
+## Rust Example
+
+```rust
+fn main() {
+    let greeting = String::from("Hello, world!");
+    println!("{}", greeting);
+    
+    let numbers: Vec<i32> = (1..=10).collect();
+    let sum: i32 = numbers.iter().sum();
+    println!("Sum: {}", sum);
+}
+```
+
 ## Supported Elements
 
 1. Headings (h1-h6)
