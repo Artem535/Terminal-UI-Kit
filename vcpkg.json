@@ -10,7 +10,7 @@
   "features": {
     "markdown": {
       "description": "Markdown rendering support",
-      "dependencies": ["md4c"]
+      "dependencies": ["cmark-gfm"]
     },
     "tree-sitter": {
       "description": "Tree-sitter based syntax highlighting",
