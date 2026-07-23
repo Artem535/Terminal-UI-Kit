@@ -69,7 +69,8 @@ add_library(terminal_ui_kit_components
   components/progress_tree.cc
   components/virtual_list.cc
   components/log_view.cc
-  components/virtual_document.cc)
+  components/virtual_document.cc
+  components/code_view.cc)
 add_library(TerminalUiKit::Components ALIAS terminal_ui_kit_components)
 target_include_directories(terminal_ui_kit_components PUBLIC
   $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>
@@ -99,14 +100,59 @@ target_link_libraries(terminal_ui_kit_document PUBLIC terminal_ui_kit_core)
 set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_document)
 _terminal_ui_kit_add_module(editor)
 _terminal_ui_kit_add_module(diff)
-_terminal_ui_kit_add_module(markdown)
 _terminal_ui_kit_add_module(syntax)
 _terminal_ui_kit_add_module(terminal)
 
 target_link_libraries(terminal_ui_kit_editor INTERFACE terminal_ui_kit_document)
 target_link_libraries(terminal_ui_kit_diff INTERFACE terminal_ui_kit_core)
-target_link_libraries(terminal_ui_kit_markdown INTERFACE terminal_ui_kit_document)
 target_link_libraries(terminal_ui_kit_syntax INTERFACE terminal_ui_kit_core)
+
+# Markdown module: compiled library when ENABLE_MARKDOWN is ON, otherwise INTERFACE.
+if(TERMINAL_UI_KIT_ENABLE_MARKDOWN)
+  terminal_ui_kit_require_cmark_gfm()
+  add_library(terminal_ui_kit_markdown
+    markdown/markdown_document.cc
+    markdown/markdown_view.cc)
+  add_library(TerminalUiKit::Markdown ALIAS terminal_ui_kit_markdown)
+  target_include_directories(terminal_ui_kit_markdown PUBLIC
+    $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>
+    $<INSTALL_INTERFACE:include>)
+  target_compile_features(terminal_ui_kit_markdown PUBLIC cxx_std_20)
+  target_terminal_ui_kit_warnings(terminal_ui_kit_markdown)
+  target_link_libraries(terminal_ui_kit_markdown PUBLIC
+    terminal_ui_kit_core
+    terminal_ui_kit_components
+    terminal_ui_kit_document)
+  if(TARGET cmark-gfm::cmark-gfm)
+    target_link_libraries(terminal_ui_kit_markdown PUBLIC cmark-gfm::cmark-gfm)
+  elseif(TARGET cmark::cmark)
+    target_link_libraries(terminal_ui_kit_markdown PUBLIC cmark::cmark)
+  elseif(TARGET libcmark-gfm_static)
+    if(TARGET libcmark-gfm-extensions_static)
+      target_link_libraries(terminal_ui_kit_markdown PUBLIC libcmark-gfm-extensions_static libcmark-gfm_static)
+    else()
+      target_link_libraries(terminal_ui_kit_markdown PUBLIC libcmark-gfm_static)
+    endif()
+    target_include_directories(terminal_ui_kit_markdown PUBLIC
+      $<BUILD_INTERFACE:${_cmark_gfm_source_dir}/src>
+      $<BUILD_INTERFACE:${_cmark_gfm_source_dir}/extensions>
+      $<BUILD_INTERFACE:${_cmark_gfm_build_dir}/src>)
+  elseif(TARGET libcmark-gfm)
+    if(TARGET libcmark-gfm-extensions)
+      target_link_libraries(terminal_ui_kit_markdown PUBLIC libcmark-gfm-extensions libcmark-gfm)
+    else()
+      target_link_libraries(terminal_ui_kit_markdown PUBLIC libcmark-gfm)
+    endif()
+    target_include_directories(terminal_ui_kit_markdown PUBLIC
+      $<BUILD_INTERFACE:${_cmark_gfm_source_dir}/src>
+      $<BUILD_INTERFACE:${_cmark_gfm_source_dir}/extensions>
+      $<BUILD_INTERFACE:${_cmark_gfm_build_dir}/src>)
+  endif()
+  set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_markdown)
+else()
+  _terminal_ui_kit_add_module(markdown)
+  target_link_libraries(terminal_ui_kit_markdown INTERFACE terminal_ui_kit_document)
+endif()
 
 # Images shares the Terminal module's headers (see file header comment).
 add_library(terminal_ui_kit_images INTERFACE)
