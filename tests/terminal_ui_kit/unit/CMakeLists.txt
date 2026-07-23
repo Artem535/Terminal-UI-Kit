@@ -14,6 +14,10 @@ if(TERMINAL_UI_KIT_ENABLE_MARKDOWN)
   target_sources(terminal_ui_kit_unit_tests PRIVATE markdown_document_test.cc)
 endif()
 
+if(TERMINAL_UI_KIT_ENABLE_TREE_SITTER)
+  target_sources(terminal_ui_kit_unit_tests PRIVATE syntax_highlighter_test.cc)
+endif()
+
 target_link_libraries(terminal_ui_kit_unit_tests PRIVATE
   TerminalUiKit::Core
   TerminalUiKit::Document
@@ -21,6 +25,10 @@ target_link_libraries(terminal_ui_kit_unit_tests PRIVATE
 
 if(TERMINAL_UI_KIT_ENABLE_MARKDOWN)
   target_link_libraries(terminal_ui_kit_unit_tests PRIVATE TerminalUiKit::Markdown)
+endif()
+
+if(TERMINAL_UI_KIT_ENABLE_TREE_SITTER)
+  target_link_libraries(terminal_ui_kit_unit_tests PRIVATE TerminalUiKit::Syntax)
 endif()
 
 target_terminal_ui_kit_warnings(terminal_ui_kit_unit_tests)

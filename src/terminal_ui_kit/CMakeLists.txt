@@ -83,6 +83,13 @@ target_link_libraries(terminal_ui_kit_components PUBLIC
   ftxui::dom
   ftxui::component
   ftxui::screen)
+
+if(TERMINAL_UI_KIT_ENABLE_TREE_SITTER)
+  target_link_libraries(terminal_ui_kit_components PUBLIC terminal_ui_kit_syntax)
+  target_compile_definitions(terminal_ui_kit_components PUBLIC
+    TERMINAL_UI_KIT_ENABLE_TREE_SITTER)
+endif()
+
 set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_components)
 
 add_library(terminal_ui_kit_document
@@ -100,12 +107,45 @@ target_link_libraries(terminal_ui_kit_document PUBLIC terminal_ui_kit_core)
 set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_document)
 _terminal_ui_kit_add_module(editor)
 _terminal_ui_kit_add_module(diff)
-_terminal_ui_kit_add_module(syntax)
 _terminal_ui_kit_add_module(terminal)
 
 target_link_libraries(terminal_ui_kit_editor INTERFACE terminal_ui_kit_document)
 target_link_libraries(terminal_ui_kit_diff INTERFACE terminal_ui_kit_core)
-target_link_libraries(terminal_ui_kit_syntax INTERFACE terminal_ui_kit_core)
+
+# Syntax module: compiled library when ENABLE_TREE_SITTER is ON, otherwise INTERFACE.
+if(TERMINAL_UI_KIT_ENABLE_TREE_SITTER)
+  terminal_ui_kit_require_tree_sitter()
+  terminal_ui_kit_require_tree_sitter_grammars()
+  add_library(terminal_ui_kit_syntax
+    syntax/syntax_highlighter.cc)
+  add_library(TerminalUiKit::Syntax ALIAS terminal_ui_kit_syntax)
+  target_include_directories(terminal_ui_kit_syntax PUBLIC
+    $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>
+    $<INSTALL_INTERFACE:include>)
+  target_compile_features(terminal_ui_kit_syntax PUBLIC cxx_std_20)
+  target_terminal_ui_kit_warnings(terminal_ui_kit_syntax)
+  target_link_libraries(terminal_ui_kit_syntax PUBLIC
+    terminal_ui_kit_core)
+  if(TARGET tree-sitter::tree-sitter)
+    target_link_libraries(terminal_ui_kit_syntax PUBLIC tree-sitter::tree-sitter)
+  elseif(TARGET tree-sitter)
+    target_link_libraries(terminal_ui_kit_syntax PUBLIC tree-sitter)
+    target_include_directories(terminal_ui_kit_syntax PUBLIC
+      "${_tree_sitter_source_dir}/lib/include")
+  endif()
+  # Link all grammar libraries
+  foreach(lang c cpp python json yaml bash markdown diff rust javascript)
+    string(REPLACE "-" "_" safe_name "${lang}")
+    set(grammar_target "ts_grammar_${safe_name}")
+    if(TARGET ${grammar_target})
+      target_link_libraries(terminal_ui_kit_syntax PUBLIC ${grammar_target})
+    endif()
+  endforeach()
+  set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_syntax)
+else()
+  _terminal_ui_kit_add_module(syntax)
+  target_link_libraries(terminal_ui_kit_syntax INTERFACE terminal_ui_kit_core)
+endif()
 
 # Markdown module: compiled library when ENABLE_MARKDOWN is ON, otherwise INTERFACE.
 if(TERMINAL_UI_KIT_ENABLE_MARKDOWN)
@@ -195,10 +235,7 @@ set(TERMINAL_UI_KIT_INSTALL_TARGETS
   terminal_ui_kit_document
   terminal_ui_kit_editor
   terminal_ui_kit_diff
-  terminal_ui_kit_markdown
-  terminal_ui_kit_syntax
   terminal_ui_kit_terminal
   terminal_ui_kit_images
   terminal_ui_kit_testing
-  terminal_ui_kit_all
   PARENT_SCOPE)
