@@ -10,7 +10,8 @@ add_executable(terminal_ui_kit_rendering_tests
   spinner_test.cc
   collapsible_panel_test.cc
   modal_stack_test.cc
-  log_view_test.cc)
+  log_view_test.cc
+  virtual_document_test.cc)
 
 target_link_libraries(terminal_ui_kit_rendering_tests PRIVATE
   TerminalUiKit::Testing
