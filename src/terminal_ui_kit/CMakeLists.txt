@@ -40,7 +40,7 @@ endfunction()
 # Core has real implementation sources (text_wrap.cc), so it is a compiled
 # library rather than an INTERFACE target like the still-header-only
 # modules below.
-add_library(terminal_ui_kit_core core/text_wrap.cc theme/theme.cc)
+add_library(terminal_ui_kit_core core/text_wrap.cc core/selection.cc theme/theme.cc)
 add_library(TerminalUiKit::Core ALIAS terminal_ui_kit_core)
 target_include_directories(terminal_ui_kit_core PUBLIC
   $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>
@@ -67,7 +67,9 @@ add_library(terminal_ui_kit_components
   components/progress_bar.cc
   components/indeterminate_progress.cc
   components/progress_tree.cc
-  components/virtual_list.cc)
+  components/virtual_list.cc
+  components/log_view.cc
+  components/virtual_document.cc)
 add_library(TerminalUiKit::Components ALIAS terminal_ui_kit_components)
 target_include_directories(terminal_ui_kit_components PUBLIC
   $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>
@@ -76,19 +78,31 @@ target_compile_features(terminal_ui_kit_components PUBLIC cxx_std_20)
 target_terminal_ui_kit_warnings(terminal_ui_kit_components)
 target_link_libraries(terminal_ui_kit_components PUBLIC
   terminal_ui_kit_core
+  terminal_ui_kit_document
   ftxui::dom
   ftxui::component
   ftxui::screen)
 set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_components)
 
-_terminal_ui_kit_add_module(document)
+add_library(terminal_ui_kit_document
+  document/streaming_document.cc
+  document/ansi_parser.cc
+  document/log_model.cc
+  document/wrapped_document.cc)
+add_library(TerminalUiKit::Document ALIAS terminal_ui_kit_document)
+target_include_directories(terminal_ui_kit_document PUBLIC
+  $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>
+  $<INSTALL_INTERFACE:include>)
+target_compile_features(terminal_ui_kit_document PUBLIC cxx_std_20)
+target_terminal_ui_kit_warnings(terminal_ui_kit_document)
+target_link_libraries(terminal_ui_kit_document PUBLIC terminal_ui_kit_core)
+set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_document)
 _terminal_ui_kit_add_module(editor)
 _terminal_ui_kit_add_module(diff)
 _terminal_ui_kit_add_module(markdown)
 _terminal_ui_kit_add_module(syntax)
 _terminal_ui_kit_add_module(terminal)
 
-target_link_libraries(terminal_ui_kit_document INTERFACE terminal_ui_kit_core)
 target_link_libraries(terminal_ui_kit_editor INTERFACE terminal_ui_kit_document)
 target_link_libraries(terminal_ui_kit_diff INTERFACE terminal_ui_kit_core)
 target_link_libraries(terminal_ui_kit_markdown INTERFACE terminal_ui_kit_document)

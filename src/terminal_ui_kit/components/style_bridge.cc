@@ -31,4 +31,15 @@ ftxui::Decorator to_decorator(const TextStyle& style) {
   return decorator;
 }
 
+ftxui::Element render_styled_text(const StyledText& text) {
+  if (text.spans().empty()) {
+    return ftxui::text("");
+  }
+  ftxui::Elements children;
+  for (const auto& span : text.spans()) {
+    children.push_back(ftxui::text(span.text) | to_decorator(span.style));
+  }
+  return ftxui::hbox(std::move(children));
+}
+
 }  // namespace terminal_ui_kit

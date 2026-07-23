@@ -3,10 +3,16 @@ add_executable(terminal_ui_kit_unit_tests
   text_range_test.cc
   styled_text_test.cc
   text_wrap_test.cc
-  theme_test.cc)
+  theme_test.cc
+  streaming_document_test.cc
+  ansi_parser_test.cc
+  log_model_test.cc
+  wrapped_document_test.cc
+  selection_manager_test.cc)
 
 target_link_libraries(terminal_ui_kit_unit_tests PRIVATE
   TerminalUiKit::Core
+  TerminalUiKit::Document
   GTest::gtest_main)
 
 target_terminal_ui_kit_warnings(terminal_ui_kit_unit_tests)

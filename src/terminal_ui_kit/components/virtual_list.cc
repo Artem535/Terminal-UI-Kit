@@ -116,6 +116,15 @@ class VirtualListImpl : public ftxui::ComponentBase {
     normalize();
   }
 
+  void scroll_to_bottom() {
+    update_layout_metadata(current_width_);
+    normalize();
+    ensure_prefix_sums(current_width_);
+    scroll_offset_ = max_scroll_offset();
+    clamp_scroll_offset();
+    normalize();
+  }
+
   void select_index(std::size_t index) {
     update_layout_metadata(current_width_);
     set_selected(index);
@@ -406,6 +415,8 @@ VirtualListModel::VirtualListModel(VirtualListOptions options)
 ftxui::Component VirtualListModel::component() const { return impl_; }
 
 void VirtualListModel::scroll_to_index(std::size_t index) { impl_->scroll_to_index(index); }
+
+void VirtualListModel::scroll_to_bottom() { impl_->scroll_to_bottom(); }
 
 void VirtualListModel::select_index(std::size_t index) { impl_->select_index(index); }
 

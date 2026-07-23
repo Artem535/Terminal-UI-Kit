@@ -18,4 +18,11 @@ namespace terminal_ui_kit {
 // question 62.2) and is deferred to the Text Layout Engine (section 16).
 std::vector<std::string> wrap_plain_text(std::string_view text, int width);
 
+using WrappedSegment = std::pair<std::string, std::size_t>;
+
+// Like wrap_plain_text but also returns the byte offset of each wrapped
+// segment within the original source text.
+std::vector<WrappedSegment> wrap_plain_text_with_offsets(
+    std::string_view text, int width);
+
 }  // namespace terminal_ui_kit

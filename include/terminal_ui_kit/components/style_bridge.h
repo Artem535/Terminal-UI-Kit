@@ -2,6 +2,7 @@
 
 #include <ftxui/dom/elements.hpp>
 
+#include "terminal_ui_kit/core/styled_text.h"
 #include "terminal_ui_kit/core/text_style.h"
 
 namespace terminal_ui_kit {
@@ -12,5 +13,9 @@ namespace terminal_ui_kit {
 // strikethrough/color/bgcolor), so TextStyle::italic has nothing to map to
 // and is not represented here.
 ftxui::Decorator to_decorator(const TextStyle& style);
+
+// Converts a StyledText sequence into an FTXUI horizontal element, applying
+// each span's TextStyle via to_decorator.
+ftxui::Element render_styled_text(const StyledText& text);
 
 }  // namespace terminal_ui_kit
