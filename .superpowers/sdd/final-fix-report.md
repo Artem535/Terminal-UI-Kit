@@ -34,7 +34,30 @@ git diff --check
 
 ## Concern
 
-The current worktree's Markdown grammar checkout is incomplete, so the
-Markdown availability test remains independently skipped. Once the grammar
-checkout is restored or fetched, the compile-time macro wiring will exercise
-it through a strong linker reference like YAML and Diff.
+The initial focused run used an incomplete Markdown checkout and skipped its
+test. The nested-source-root CMake fix was then verified against the restored
+checkout: Markdown, YAML, and Diff availability tests all ran and passed.
+
+The optional-OFF configure remains unverified in this sandbox because a fresh
+configure needs to fetch FTXUI and network DNS is unavailable.
+
+## Follow-up CMake fix verification
+
+```text
+cmake -S . -B build-debug -DTERMINAL_UI_KIT_BUILD_TESTS=ON \
+  -DTERMINAL_UI_KIT_ENABLE_TREE_SITTER=ON \
+  -DTERMINAL_UI_KIT_ENABLE_MARKDOWN=ON
+  Passed; no repeated "Fetching tree-sitter grammar: markdown" message.
+
+cmake --build build-debug --target terminal_ui_kit_unit_tests --parallel 4
+  Built successfully; nested Markdown grammar target compiled.
+
+ctest --test-dir build-debug --output-on-failure -R SyntaxHighlighter
+  19/19 tests passed.
+
+clang-format-18 --dry-run --Werror cmake/TerminalUiKitDependencies.cmake \
+  src/terminal_ui_kit/syntax/syntax_highlighter.cc \
+  tests/terminal_ui_kit/unit/syntax_highlighter_test.cc
+git diff --check
+  Passed.
+```

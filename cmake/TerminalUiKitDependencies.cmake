@@ -119,7 +119,16 @@ function(_terminal_ui_kit_fetch_grammar name repo tag)
   endif()
 
   set(src_dir "${CMAKE_BINARY_DIR}/_ts_grammars/${name}")
-  if(NOT EXISTS "${src_dir}/src/parser.c")
+  # Some grammars (e.g. tree-sitter-grammars/tree-sitter-markdown) keep
+  # their parser.c in a subdirectory of the cloned repository. Resolve the
+  # grammar source root before checking whether the checkout is complete, so
+  # a valid nested checkout is not cloned again on every configure.
+  set(grammar_src_root "${src_dir}")
+  if(ARGC GREATER 3)
+    set(grammar_src_root "${src_dir}/${ARGV3}")
+  endif()
+
+  if(NOT EXISTS "${grammar_src_root}/src/parser.c")
     file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/_ts_grammars")
     message(STATUS "Fetching tree-sitter grammar: ${name}")
     execute_process(
@@ -130,13 +139,6 @@ function(_terminal_ui_kit_fetch_grammar name repo tag)
       message(WARNING "Failed to fetch tree-sitter grammar: ${name} (skipping)")
       return()
     endif()
-  endif()
-
-  # Some grammars (e.g. tree-sitter-grammars/tree-sitter-markdown) keep their
-  # parser.c in a subdirectory of the cloned repo.
-  set(grammar_src_root "${src_dir}")
-  if(ARGC GREATER 3)
-    set(grammar_src_root "${src_dir}/${ARGV3}")
   endif()
 
   file(GLOB grammar_sources "${grammar_src_root}/src/*.c")
