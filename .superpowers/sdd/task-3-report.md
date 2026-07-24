@@ -1,54 +1,32 @@
-# Task 3 report: retained and filtered `LogModel`
+# Task 3 report: grammar query coverage
 
-## Status
+Status: complete.
 
-Complete. Added a Core-only `LogModel` to the compiled Document target. It
-stores entries in a deque, applies oldest-first retention, preserves the
-active filter across `clear()`, and maintains a source-index vector for the
-visible filtered order. Substring filtering joins all `StyledText` spans and
-is case-sensitive. `revision()` increments once per mutating public call;
-`at()` throws `std::out_of_range` for an invalid visible index.
+Implemented and committed as `1b3f729` (`Expand Tree-sitter syntax captures for current grammars`).
 
-## Commit
+Changes:
 
-`Add retained LogModel`
+- Added current-grammar coverage assertions for C++, Python, JavaScript,
+  Rust, C, Bash, Markdown, YAML, and diff highlighting.
+- Adjusted assertions to match the pinned grammar spans: Python f-strings are
+  split around interpolation nodes, Rust lifetimes contain an identifier
+  child, and C preprocessor definitions overlap their macro-name child.
+- Added a direct Bash `number` node capture; newer Bash grammar parses numeric
+  assignment values as `number`, not only as numeric `word` nodes.
+- Removed temporary diagnostic output from the tests.
+- Optional Markdown/YAML grammars remain weak-linked; tests accept the
+  documented primary-style fallback when those grammar symbols are absent from
+  the unit-test binary.
 
-## Verification
-
-```text
-cmake --build build-debug --target terminal_ui_kit_unit_tests -j2
-```
-
-Completed successfully; the compiled Document target and unit executable
-linked cleanly.
+Verification:
 
 ```text
-ctest --test-dir build-debug --output-on-failure -R 'LogModel|AnsiParser|StreamingDocument'
+cmake --build build-debug --target terminal_ui_kit_unit_tests -j2  PASS
+ctest --test-dir build-debug --output-on-failure -R SyntaxHighlighter  PASS (15/15)
+clang-format --dry-run --Werror tests/terminal_ui_kit/unit/syntax_highlighter_test.cc  PASS
+git diff --check  PASS
 ```
 
-Result: 25/25 focused tests passed.
-
-```text
-ctest --test-dir build-debug --output-on-failure
-```
-
-All 50 built unit tests passed. The separate rendering executable was not
-built in this worktree, so CTest reported its existing `_NOT_BUILT` placeholder
-as not run.
-
-```text
-clang-format --dry-run -Werror \
-  include/terminal_ui_kit/document/log_model.h \
-  src/terminal_ui_kit/document/log_model.cc \
-  tests/terminal_ui_kit/unit/log_model_test.cc
-git diff --check
-```
-
-Both checks passed.
-
-## Concerns
-
-Retention limit `0` means unlimited storage. Severity ordering follows the
-declared enum order from trace through error. Filtering is rebuilt eagerly on
-append, clear, and filter changes; this is intentional for the small MVP and
-keeps `at()` constant-time for the visible sequence.
+No grammar dependency versions were changed. The pre-existing modified
+`.superpowers/sdd/task-1-report.md` was intentionally not included in the
+commit.
