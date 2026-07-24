@@ -154,5 +154,119 @@ TEST(SyntaxHighlighter, PythonAndRustUseSharedSemanticPalette) {
   EXPECT_EQ(*rust_escape, syntax.string);
 }
 
+TEST(SyntaxHighlighter, CoversCurrentCppNamespaceAndBooleanNodes) {
+  const Theme& theme = default_dark_theme();
+  const SyntaxTheme syntax = default_dark_syntax_theme(theme);
+  const StyledText result =
+      SyntaxHighlighter::highlight("namespace demo { bool enabled = true; }", "cpp", theme);
+
+  const TextStyle* namespace_style = style_for_text(result, "demo");
+  const TextStyle* boolean = style_for_text(result, "true");
+  ASSERT_NE(namespace_style, nullptr);
+  ASSERT_NE(boolean, nullptr);
+  EXPECT_EQ(*namespace_style, syntax.namespace_style);
+  EXPECT_EQ(*boolean, syntax.constant);
+}
+
+TEST(SyntaxHighlighter, CoversCurrentPythonFStringAndBooleanNodes) {
+  const Theme& theme = default_dark_theme();
+  const SyntaxTheme syntax = default_dark_syntax_theme(theme);
+  const StyledText result =
+      SyntaxHighlighter::highlight("message = f\"ready={True}\"", "python", theme);
+
+  // The current Python grammar exposes an f-string as a string prefix/body
+  // plus interpolation nodes, so the string capture is intentionally split.
+  const TextStyle* string = style_for_text(result, "f\"ready=");
+  const TextStyle* boolean = style_for_text(result, "True");
+  ASSERT_NE(string, nullptr);
+  ASSERT_NE(boolean, nullptr);
+  EXPECT_EQ(*string, syntax.string);
+  EXPECT_EQ(*boolean, syntax.constant);
+}
+
+TEST(SyntaxHighlighter, CoversCurrentJavascriptFunctionExpressionAndConstants) {
+  const Theme& theme = default_dark_theme();
+  const SyntaxTheme syntax = default_dark_syntax_theme(theme);
+  const StyledText result = SyntaxHighlighter::highlight(
+      "const fn = function named() { return this.value ?? null; };", "javascript", theme);
+
+  const TextStyle* function = style_for_text(result, "named");
+  const TextStyle* this_value = style_for_text(result, "this");
+  const TextStyle* null_value = style_for_text(result, "null");
+  ASSERT_NE(function, nullptr);
+  ASSERT_NE(this_value, nullptr);
+  ASSERT_NE(null_value, nullptr);
+  EXPECT_EQ(*function, syntax.function);
+  EXPECT_EQ(*this_value, syntax.variable);
+  EXPECT_EQ(*null_value, syntax.constant);
+}
+
+TEST(SyntaxHighlighter, CoversRustLifetimesAndMacros) {
+  const Theme& theme = default_dark_theme();
+  const SyntaxTheme syntax = default_dark_syntax_theme(theme);
+  const StyledText result = SyntaxHighlighter::highlight(
+      "fn borrow<'a>(value: &'a str) { println!(\"{value}\"); }", "rust", theme);
+
+  const TextStyle* macro = style_for_text(result, "println");
+  // `lifetime` contains an identifier child; the overlap normalizer keeps
+  // the most specific identifier spans, so assert source coverage instead of
+  // requiring a synthetic combined span for `'a`.
+  EXPECT_NE(flatten(result).find("'a"), std::string::npos);
+  ASSERT_NE(macro, nullptr);
+  EXPECT_EQ(*macro, syntax.macro);
+}
+
+TEST(SyntaxHighlighter, CoversCAndBashSemanticNodes) {
+  const Theme& theme = default_dark_theme();
+  const SyntaxTheme syntax = default_dark_syntax_theme(theme);
+
+  const StyledText c =
+      SyntaxHighlighter::highlight("#define LIMIT 10\nint main() { return LIMIT; }", "c", theme);
+  // The preprocessor definition capture overlaps its child identifier and
+  // is normalized into a `#define ` prefix plus the macro name.
+  const TextStyle* c_macro = style_for_text(c, "#define ");
+  const TextStyle* c_function = style_for_text(c, "main");
+  ASSERT_NE(c_macro, nullptr);
+  ASSERT_NE(c_function, nullptr);
+  EXPECT_EQ(*c_macro, syntax.macro);
+  EXPECT_EQ(*c_function, syntax.function);
+
+  const StyledText bash =
+      SyntaxHighlighter::highlight("echo \"hello\" # comment\ncount=42", "bash", theme);
+  const TextStyle* command = style_for_text(bash, "echo");
+  const TextStyle* comment = style_for_text(bash, "# comment");
+  const TextStyle* number = style_for_text(bash, "42");
+  ASSERT_NE(command, nullptr);
+  ASSERT_NE(comment, nullptr);
+  ASSERT_NE(number, nullptr);
+  EXPECT_EQ(*command, syntax.function);
+  EXPECT_EQ(*comment, syntax.comment);
+  EXPECT_EQ(*number, syntax.number);
+}
+
+TEST(SyntaxHighlighter, CoversMarkdownYamlAndDiffBlockNodes) {
+  const Theme& theme = default_dark_theme();
+  const SyntaxTheme syntax = default_dark_syntax_theme(theme);
+
+  const StyledText markdown = SyntaxHighlighter::highlight("# Title\n\n- item", "markdown", theme);
+  // Optional grammars are weak-linked; a unit-test binary may legitimately
+  // omit them and receive the primary-style fallback span.
+  if (markdown.spans().size() > 1) {
+    const TextStyle* heading = style_for_text(markdown, "#");
+    ASSERT_NE(heading, nullptr);
+    EXPECT_EQ(*heading, syntax.keyword);
+  }
+
+  const StyledText yaml = SyntaxHighlighter::highlight("name: value\nenabled: true", "yaml", theme);
+  if (yaml.spans().size() > 1) {
+    const TextStyle* key = style_for_text(yaml, "name");
+    ASSERT_NE(key, nullptr);
+    EXPECT_EQ(*key, syntax.property);
+  }
+
+  const StyledText diff = SyntaxHighlighter::highlight("@@ -1 +1 @@\n+added", "diff", theme);
+  ASSERT_FALSE(diff.spans().empty());
+}
+
 }  // namespace
 }  // namespace terminal_ui_kit

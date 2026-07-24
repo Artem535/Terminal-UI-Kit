@@ -68,6 +68,7 @@ constexpr const char* kBashHighlights = R"QUERY(
 (comment) @comment
 
 ; Numbers
+((number) @number)
 ((word) @number
   (#match? @number "^[0-9]+$"))
 
