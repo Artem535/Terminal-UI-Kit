@@ -6,6 +6,7 @@
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
 
+#include "terminal_ui_kit/components/code_view.h"
 #include "terminal_ui_kit/components/collapsible_panel.h"
 #include "terminal_ui_kit/components/key_hint_bar.h"
 #include "terminal_ui_kit/components/modal_stack.h"
@@ -17,6 +18,7 @@
 
 namespace {
 
+using terminal_ui_kit::CodeView;
 using terminal_ui_kit::CollapsiblePanel;
 using terminal_ui_kit::CollapsiblePanelOptions;
 using terminal_ui_kit::KeyHintBar;
@@ -68,6 +70,20 @@ int main() {
         StatusIndicator(Status::kSuccess, "lint", theme),
         StatusIndicator(Status::kSuccess, "build", theme),
         StatusIndicator(Status::kError, "tests", theme),
+        ftxui::separator(),
+        ftxui::text("Syntax palette") | ftxui::bold | terminal_ui_kit::to_decorator(theme.accent),
+        ftxui::text("C++") | terminal_ui_kit::to_decorator(theme.muted),
+        CodeView("// Count values in a namespace.\nnamespace demo {\n  std::vector<int> values = "
+                 "{1, 2, 3};\n  int total() { return values[0] + 7; }\n}\n",
+                 {"cpp", false, theme}),
+        ftxui::text("Python") | terminal_ui_kit::to_decorator(theme.muted),
+        CodeView("# Build a greeting.\ndef greet(name: str) -> str:\n  message = \"Hello \" + "
+                 "name\n  return message + str(42)\n",
+                 {"python", false, theme}),
+        ftxui::text("Rust") | terminal_ui_kit::to_decorator(theme.muted),
+        CodeView("// Sum a sequence.\nfn total(values: Vec<i32>) -> i32 {\n  let answer = "
+                 "values[0] + 7;\n  println!(\"sum={}\", answer);\n  answer\n}\n",
+                 {"rust", false, theme}),
     });
   });
 
