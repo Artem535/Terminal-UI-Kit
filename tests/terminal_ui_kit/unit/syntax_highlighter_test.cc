@@ -250,25 +250,41 @@ TEST(SyntaxHighlighter, CoversCAndBashSemanticNodes) {
   EXPECT_EQ(*number, syntax.number);
 }
 
-TEST(SyntaxHighlighter, CoversMarkdownYamlAndDiffBlockNodes) {
+TEST(SyntaxHighlighter, CoversMarkdownBlockNodes) {
   const Theme& theme = default_dark_theme();
   const SyntaxTheme syntax = default_dark_syntax_theme(theme);
 
-  if (!SyntaxHighlighter::supports_language("markdown") ||
-      !SyntaxHighlighter::supports_language("yaml") ||
-      !SyntaxHighlighter::supports_language("diff")) {
-    GTEST_SKIP() << "optional Tree-sitter grammar is not linked";
+  if (!SyntaxHighlighter::supports_language("markdown")) {
+    GTEST_SKIP() << "Markdown Tree-sitter grammar is not linked";
   }
 
   const StyledText markdown = SyntaxHighlighter::highlight("# Title\n\n- item", "markdown", theme);
   const TextStyle* heading = style_for_text(markdown, "#");
   ASSERT_NE(heading, nullptr);
   EXPECT_EQ(*heading, syntax.keyword);
+}
+
+TEST(SyntaxHighlighter, CoversYamlBlockNodes) {
+  const Theme& theme = default_dark_theme();
+  const SyntaxTheme syntax = default_dark_syntax_theme(theme);
+
+  if (!SyntaxHighlighter::supports_language("yaml")) {
+    GTEST_SKIP() << "YAML Tree-sitter grammar is not linked";
+  }
 
   const StyledText yaml = SyntaxHighlighter::highlight("name: value\nenabled: true", "yaml", theme);
   const TextStyle* key = style_for_text(yaml, "name");
   ASSERT_NE(key, nullptr);
   EXPECT_EQ(*key, syntax.property);
+}
+
+TEST(SyntaxHighlighter, CoversDiffBlockNodes) {
+  const Theme& theme = default_dark_theme();
+  const SyntaxTheme syntax = default_dark_syntax_theme(theme);
+
+  if (!SyntaxHighlighter::supports_language("diff")) {
+    GTEST_SKIP() << "Diff Tree-sitter grammar is not linked";
+  }
 
   const StyledText diff = SyntaxHighlighter::highlight("@@ -1 +1 @@\n+added", "diff", theme);
   const TextStyle* addition = style_for_text(diff, "+added");

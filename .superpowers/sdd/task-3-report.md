@@ -42,3 +42,8 @@ Follow-up hardening:
 Follow-up verification: SyntaxHighlighter 16/16 tests passed (one optional
 grammar test skipped because the weak-linked grammars are not linked into this
 unit binary); formatting and `git diff --check` passed.
+
+The optional coverage was then split into independent Markdown, YAML, and diff
+tests so an unavailable grammar skips only its own test. Final verification:
+18/18 SyntaxHighlighter tests passed, with three independent expected skips in
+this unit binary; formatting and `git diff --check` passed.
