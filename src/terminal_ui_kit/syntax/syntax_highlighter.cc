@@ -131,6 +131,10 @@ TextStyle style_for_capture(std::string_view capture, const SyntaxTheme& syntax)
 
 }  // namespace
 
+bool SyntaxHighlighter::supports_language(std::string_view language) {
+  return language_map().find(language) != language_map().end();
+}
+
 StyledText SyntaxHighlighter::highlight(std::string_view code, std::string_view language,
                                         const Theme& theme) {
   StyledText result;

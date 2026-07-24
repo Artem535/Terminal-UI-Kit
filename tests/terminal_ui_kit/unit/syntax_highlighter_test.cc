@@ -41,6 +41,12 @@ TEST(SyntaxHighlighter, UnknownLanguageReturnsUnstyled) {
   EXPECT_EQ(result.spans()[0].text, "hello");
 }
 
+TEST(SyntaxHighlighter, ReportsLinkedGrammarAvailability) {
+  EXPECT_TRUE(SyntaxHighlighter::supports_language("python"));
+  EXPECT_TRUE(SyntaxHighlighter::supports_language("cpp"));
+  EXPECT_FALSE(SyntaxHighlighter::supports_language("unknown"));
+}
+
 TEST(SyntaxHighlighter, EmptyCodeReturnsEmpty) {
   const Theme& theme = default_dark_theme();
   StyledText result = SyntaxHighlighter::highlight("", "c", theme);
@@ -248,24 +254,26 @@ TEST(SyntaxHighlighter, CoversMarkdownYamlAndDiffBlockNodes) {
   const Theme& theme = default_dark_theme();
   const SyntaxTheme syntax = default_dark_syntax_theme(theme);
 
-  const StyledText markdown = SyntaxHighlighter::highlight("# Title\n\n- item", "markdown", theme);
-  // Optional grammars are weak-linked; a unit-test binary may legitimately
-  // omit them and receive the primary-style fallback span.
-  if (markdown.spans().size() > 1) {
-    const TextStyle* heading = style_for_text(markdown, "#");
-    ASSERT_NE(heading, nullptr);
-    EXPECT_EQ(*heading, syntax.keyword);
+  if (!SyntaxHighlighter::supports_language("markdown") ||
+      !SyntaxHighlighter::supports_language("yaml") ||
+      !SyntaxHighlighter::supports_language("diff")) {
+    GTEST_SKIP() << "optional Tree-sitter grammar is not linked";
   }
+
+  const StyledText markdown = SyntaxHighlighter::highlight("# Title\n\n- item", "markdown", theme);
+  const TextStyle* heading = style_for_text(markdown, "#");
+  ASSERT_NE(heading, nullptr);
+  EXPECT_EQ(*heading, syntax.keyword);
 
   const StyledText yaml = SyntaxHighlighter::highlight("name: value\nenabled: true", "yaml", theme);
-  if (yaml.spans().size() > 1) {
-    const TextStyle* key = style_for_text(yaml, "name");
-    ASSERT_NE(key, nullptr);
-    EXPECT_EQ(*key, syntax.property);
-  }
+  const TextStyle* key = style_for_text(yaml, "name");
+  ASSERT_NE(key, nullptr);
+  EXPECT_EQ(*key, syntax.property);
 
   const StyledText diff = SyntaxHighlighter::highlight("@@ -1 +1 @@\n+added", "diff", theme);
-  ASSERT_FALSE(diff.spans().empty());
+  const TextStyle* addition = style_for_text(diff, "+added");
+  ASSERT_NE(addition, nullptr);
+  EXPECT_EQ(*addition, syntax.string);
 }
 
 }  // namespace

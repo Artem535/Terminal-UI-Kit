@@ -30,3 +30,15 @@ git diff --check  PASS
 No grammar dependency versions were changed. The pre-existing modified
 `.superpowers/sdd/task-1-report.md` was intentionally not included in the
 commit.
+
+Follow-up hardening:
+
+- Added `SyntaxHighlighter::supports_language()` so optional grammar tests
+  skip only when the grammar symbol is genuinely unavailable.
+- Markdown/YAML/diff tests now require semantic captures whenever their
+  grammars are linked; they no longer silently accept a fallback span.
+- Added coverage for availability reporting of required and unknown languages.
+
+Follow-up verification: SyntaxHighlighter 16/16 tests passed (one optional
+grammar test skipped because the weak-linked grammars are not linked into this
+unit binary); formatting and `git diff --check` passed.
