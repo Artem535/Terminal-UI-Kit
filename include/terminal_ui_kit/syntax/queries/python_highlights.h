@@ -43,19 +43,13 @@ constexpr const char* kPythonHighlights = R"QUERY(
 "import" @import
 "from" @import
 
-(import_statement
-  module_name: (dotted_name) @namespace)
-
 (import_from_statement
   module_name: (dotted_name) @namespace)
 
-(import_statement
-  name: (dotted_name) @namespace)
-
 ; Decorators
-(decorator) @attribute
+(decorator) @attribute.decorator
 (decorator
-  (identifier) @attribute)
+  (identifier) @attribute.name)
 
 ; Function definitions
 (function_definition
@@ -91,7 +85,6 @@ constexpr const char* kPythonHighlights = R"QUERY(
 
 ; Strings
 (string) @string
-(f_string) @string
 (interpolation) @string
 
 ; Escape sequences
@@ -105,14 +98,15 @@ constexpr const char* kPythonHighlights = R"QUERY(
 (comment) @comment
 
 ; Boolean constants
-"True" @constant.builtin
-"False" @constant.builtin
+(true) @constant.builtin
+(false) @constant.builtin
 
 ; None constant
-"None" @constant.builtin
+(none) @constant.builtin
 
 ; Self parameter
-"self" @variable.builtin
+((identifier) @variable.builtin
+  (#match? @variable.builtin "^self$"))
 
 ; Operators
 "+" @operator

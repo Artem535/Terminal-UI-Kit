@@ -3,23 +3,23 @@
 namespace terminal_ui_kit::syntax_queries {
 
 constexpr const char* kDiffHighlights = R"QUERY(
-; File headers
-(diff_header) @keyword
+; File changes
+(file_change) @keyword
 
-; Chunk headers
-(chunk_header) @label
+; Hunks
+(hunk) @label
 
 ; Additions
-(line_added) @string
+(addition) @string
 
 ; Deletions
-(line_deleted) @comment
+(deletion) @comment
 
 ; Context lines
-(line_context) @comment
+(context) @comment
 
 ; File modes
-(file_mode) @type
+(mode) @type
 
 ; Binary files
 (binary_change) @constant
@@ -27,17 +27,13 @@ constexpr const char* kDiffHighlights = R"QUERY(
 ; Commit info
 (commit) @constant
 
-; Author
-(author) @attribute
+; Filenames
+(filename) @attribute
+(old_file) @attribute
+(new_file) @attribute
 
-; Date
-(date) @number
-
-; Punctuation
-"+" @string
-"-" @comment
-"@" @label
-"=" @keyword
+; Index
+(index) @number
 )QUERY";
 
 }  // namespace terminal_ui_kit::syntax_queries

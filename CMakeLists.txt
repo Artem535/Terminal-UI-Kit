@@ -16,6 +16,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Ensure all project libraries are compiled with -fPIC so they can be linked
+# into shared libraries (e.g. terminal_ui_kit_markdown when shared libs are ON).
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(TerminalUiKitOptions)

@@ -5,7 +5,7 @@ namespace terminal_ui_kit::syntax_queries {
 constexpr const char* kJsonHighlights = R"QUERY(
 ; Strings (keys and values)
 (pair
-  key: (string) @property)
+  key: (string) @property.key)
 
 (string) @string
 

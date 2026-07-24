@@ -88,9 +88,9 @@ constexpr const char* kCppHighlights = R"QUERY(
 
 ; Namespace definitions and usage
 (namespace_definition
-  name: (identifier) @namespace)
+  name: (namespace_identifier) @namespace)
 
-(namespace_identifier) @namespace
+(namespace_identifier) @namespace.name
 
 ; Type identifiers
 (type_identifier) @type
@@ -125,9 +125,6 @@ constexpr const char* kCppHighlights = R"QUERY(
 (call_expression
   function: (field_expression
     field: (field_identifier) @method))
-
-; Constructor
-(constructor_name) @constructor
 
 ; Destructor
 (destructor_name) @constructor
@@ -169,10 +166,10 @@ constexpr const char* kCppHighlights = R"QUERY(
 (number_literal) @number
 
 ; Comments
-(comment) @comment
+(comment) @comment.line
 
 ; Operators
-"+" @operator
+"+" @operator.arithmetic
 "-" @operator
 "*" @operator
 "/" @operator
@@ -229,8 +226,8 @@ constexpr const char* kCppHighlights = R"QUERY(
 ((identifier) @constant.builtin
   (#match? @constant.builtin "^NULL$"))
 
-"true" @constant.builtin
-"false" @constant.builtin
+(true) @constant.builtin
+(false) @constant.builtin
 "nullptr" @constant.builtin
 
 ; Preprocessor
@@ -241,8 +238,9 @@ constexpr const char* kCppHighlights = R"QUERY(
 (preproc_if) @macro
 (preproc_else) @macro
 (preproc_elif) @macro
-(preproc_endif) @macro
+(preproc_elifdef) @macro
 (preproc_defined) @macro
+(preproc_call) @macro
 
 ; Identifiers
 (identifier) @variable

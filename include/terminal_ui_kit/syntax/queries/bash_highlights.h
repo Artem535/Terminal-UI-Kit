@@ -18,24 +18,13 @@ constexpr const char* kBashHighlights = R"QUERY(
 "do" @keyword
 "done" @keyword
 "select" @keyword
-"time" @keyword
-"coproc" @keyword
 "function" @keyword
-"return" @keyword.return
-"break" @keyword
-"continue" @keyword
 "declare" @keyword
 "typeset" @keyword
 "export" @keyword
 "readonly" @keyword
 "local" @keyword
 "unset" @keyword
-"shift" @keyword
-"trap" @keyword
-"exit" @keyword
-"exec" @keyword
-"eval" @keyword
-"source" @keyword
 
 ; Operator keywords
 "!" @keyword.operator
@@ -49,7 +38,7 @@ constexpr const char* kBashHighlights = R"QUERY(
 ; Built-in commands
 ((command_name
   (word) @function.builtin)
-  (#match? @function.builtin "^(echo|printf|read|cd|pwd|pushd|popd|dirs|let|test|true|false|set|unset|shopt|builtin|command|type|hash|help|logout|umask|wait|jobs|bg|fg|kill|suspend|alias|unalias|bind|complete|compgen|compopt|caller|enable|getopts|mapfile|readarray)$"))
+  (#match? @function.builtin "^(echo|printf|read|cd|pwd|pushd|popd|dirs|let|test|true|false|set|unset|shopt|builtin|command|type|hash|help|logout|umask|wait|jobs|bg|fg|kill|suspend|alias|unalias|bind|complete|compgen|compopt|caller|enable|getopts|mapfile|readarray|return|break|continue|shift|trap|exit|exec|eval|source|coproc|time)$"))
 
 ; Function definitions
 (function_definition
@@ -70,9 +59,6 @@ constexpr const char* kBashHighlights = R"QUERY(
 (ansi_c_string) @string
 (raw_string) @string
 
-; Escape sequences
-(escape_sequence) @escape
-
 ; Heredoc
 (heredoc_body) @string
 (heredoc_start) @string
@@ -82,6 +68,7 @@ constexpr const char* kBashHighlights = R"QUERY(
 (comment) @comment
 
 ; Numbers
+((number) @number)
 ((word) @number
   (#match? @number "^[0-9]+$"))
 
@@ -122,17 +109,13 @@ constexpr const char* kBashHighlights = R"QUERY(
 "$(" @punctuation.bracket
 "${" @punctuation.bracket
 "}" @punctuation.bracket
+"{" @punctuation.bracket
 "(" @punctuation.bracket
 ")" @punctuation.bracket
-"$(" @punctuation.bracket
 "`" @punctuation.bracket
 ";" @punctuation.delimiter
 ";;" @punctuation.delimiter
-"&" @punctuation.delimiter
-"|" @punctuation.delimiter
 "," @punctuation.delimiter
-"{" @punctuation.bracket
-"}" @punctuation.bracket
 
 ; File descriptors
 (file_descriptor) @number

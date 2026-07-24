@@ -9,14 +9,15 @@ namespace terminal_ui_kit {
 
 class SyntaxHighlighter {
  public:
+  // Returns true when a Tree-sitter grammar for `language` is linked into the
+  // current build. Optional grammars (Markdown, YAML, and diff) may be absent.
+  static bool supports_language(std::string_view language);
+
   // Highlight a code string for the given language.
   // Returns StyledText with TextStyle applied to each token.
   // If language is unknown or tree-sitter is unavailable,
   // returns StyledText with a single unstyled span.
-  static StyledText highlight(
-      std::string_view code,
-      std::string_view language,
-      const Theme& theme);
+  static StyledText highlight(std::string_view code, std::string_view language, const Theme& theme);
 };
 
 }  // namespace terminal_ui_kit

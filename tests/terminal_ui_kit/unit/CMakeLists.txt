@@ -15,7 +15,9 @@ if(TERMINAL_UI_KIT_ENABLE_MARKDOWN)
 endif()
 
 if(TERMINAL_UI_KIT_ENABLE_TREE_SITTER)
-  target_sources(terminal_ui_kit_unit_tests PRIVATE syntax_highlighter_test.cc)
+  target_sources(terminal_ui_kit_unit_tests PRIVATE
+    syntax_highlighter_test.cc
+    syntax_theme_test.cc)
 endif()
 
 target_link_libraries(terminal_ui_kit_unit_tests PRIVATE

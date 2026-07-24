@@ -1,54 +1,49 @@
-# Task 3 report: retained and filtered `LogModel`
+# Task 3 report: grammar query coverage
 
-## Status
+Status: complete.
 
-Complete. Added a Core-only `LogModel` to the compiled Document target. It
-stores entries in a deque, applies oldest-first retention, preserves the
-active filter across `clear()`, and maintains a source-index vector for the
-visible filtered order. Substring filtering joins all `StyledText` spans and
-is case-sensitive. `revision()` increments once per mutating public call;
-`at()` throws `std::out_of_range` for an invalid visible index.
+Implemented and committed as `1b3f729` (`Expand Tree-sitter syntax captures for current grammars`).
 
-## Commit
+Changes:
 
-`Add retained LogModel`
+- Added current-grammar coverage assertions for C++, Python, JavaScript,
+  Rust, C, Bash, Markdown, YAML, and diff highlighting.
+- Adjusted assertions to match the pinned grammar spans: Python f-strings are
+  split around interpolation nodes, Rust lifetimes contain an identifier
+  child, and C preprocessor definitions overlap their macro-name child.
+- Added a direct Bash `number` node capture; newer Bash grammar parses numeric
+  assignment values as `number`, not only as numeric `word` nodes.
+- Removed temporary diagnostic output from the tests.
+- Optional Markdown/YAML grammars remain weak-linked; tests accept the
+  documented primary-style fallback when those grammar symbols are absent from
+  the unit-test binary.
 
-## Verification
-
-```text
-cmake --build build-debug --target terminal_ui_kit_unit_tests -j2
-```
-
-Completed successfully; the compiled Document target and unit executable
-linked cleanly.
+Verification:
 
 ```text
-ctest --test-dir build-debug --output-on-failure -R 'LogModel|AnsiParser|StreamingDocument'
+cmake --build build-debug --target terminal_ui_kit_unit_tests -j2  PASS
+ctest --test-dir build-debug --output-on-failure -R SyntaxHighlighter  PASS (15/15)
+clang-format --dry-run --Werror tests/terminal_ui_kit/unit/syntax_highlighter_test.cc  PASS
+git diff --check  PASS
 ```
 
-Result: 25/25 focused tests passed.
+No grammar dependency versions were changed. The pre-existing modified
+`.superpowers/sdd/task-1-report.md` was intentionally not included in the
+commit.
 
-```text
-ctest --test-dir build-debug --output-on-failure
-```
+Follow-up hardening:
 
-All 50 built unit tests passed. The separate rendering executable was not
-built in this worktree, so CTest reported its existing `_NOT_BUILT` placeholder
-as not run.
+- Added `SyntaxHighlighter::supports_language()` so optional grammar tests
+  skip only when the grammar symbol is genuinely unavailable.
+- Markdown/YAML/diff tests now require semantic captures whenever their
+  grammars are linked; they no longer silently accept a fallback span.
+- Added coverage for availability reporting of required and unknown languages.
 
-```text
-clang-format --dry-run -Werror \
-  include/terminal_ui_kit/document/log_model.h \
-  src/terminal_ui_kit/document/log_model.cc \
-  tests/terminal_ui_kit/unit/log_model_test.cc
-git diff --check
-```
+Follow-up verification: SyntaxHighlighter 16/16 tests passed (one optional
+grammar test skipped because the weak-linked grammars are not linked into this
+unit binary); formatting and `git diff --check` passed.
 
-Both checks passed.
-
-## Concerns
-
-Retention limit `0` means unlimited storage. Severity ordering follows the
-declared enum order from trace through error. Filtering is rebuilt eagerly on
-append, clear, and filter changes; this is intentional for the small MVP and
-keeps `at()` constant-time for the visible sequence.
+The optional coverage was then split into independent Markdown, YAML, and diff
+tests so an unavailable grammar skips only its own test. Final verification:
+18/18 SyntaxHighlighter tests passed, with three independent expected skips in
+this unit binary; formatting and `git diff --check` passed.

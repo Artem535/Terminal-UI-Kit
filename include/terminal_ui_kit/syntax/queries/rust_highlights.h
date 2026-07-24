@@ -29,13 +29,13 @@ constexpr const char* kRustHighlights = R"QUERY(
 
 ; Visibility
 "pub" @keyword
-"crate" @keyword
-"super" @keyword
-"self" @keyword
+(self) @keyword
+(super) @keyword
+(crate) @keyword
+(mutable_specifier) @keyword
 
 ; Storage
 "let" @keyword
-"mut" @keyword
 "const" @keyword
 "static" @keyword
 "ref" @keyword
@@ -83,35 +83,36 @@ constexpr const char* kRustHighlights = R"QUERY(
 
 ; Macro calls
 (macro_invocation
-  macro: (identifier) @macro)
+  macro: (identifier) @macro.call)
 
 (macro_definition
-  name: (identifier) @macro)
+  name: (identifier) @macro.definition)
 
 ; Attributes
-(attribute_item) @attribute
-(inner_attribute_item) @attribute
+(attribute_item) @attribute.item
+(inner_attribute_item) @attribute.inner
 
 ; Parameters
 (parameter
   pattern: (identifier) @parameter)
 
-(parameter
-  pattern: (ref_pattern
-    pattern: (identifier) @parameter))
+(ref_pattern
+  (identifier) @parameter)
 
-(parameter
-  pattern: (mut_pattern
-    pattern: (identifier) @parameter))
+(mut_pattern
+  (identifier) @parameter)
 
 (closure_parameters
   (identifier) @parameter)
 
 ; Struct fields
-(field_identifier) @field
+(field_identifier) @field.member
 
 ; Type identifiers
 (type_identifier) @type
+
+; Labels
+(label) @label
 
 ; Primitive types
 ((primitive_type) @type.builtin
@@ -121,9 +122,6 @@ constexpr const char* kRustHighlights = R"QUERY(
 (string_literal) @string
 (raw_string_literal) @string
 (char_literal) @string
-(byte_string_literal) @string
-(raw_byte_string_literal) @string
-(byte_literal) @string
 
 ; Escape sequences
 (escape_sequence) @escape
@@ -138,7 +136,6 @@ constexpr const char* kRustHighlights = R"QUERY(
 
 ; Lifetimes
 (lifetime) @lifetime
-(lifetime_label) @lifetime
 
 ; Boolean constants
 "true" @constant.builtin
@@ -173,13 +170,11 @@ constexpr const char* kRustHighlights = R"QUERY(
 "&" @operator
 "|" @operator
 "^" @operator
-"~" @operator
 "<<" @operator
 ">>" @operator
 "?" @operator
 ".." @operator
-"..=" @operator
-"@" @operator
+".." @operator
 "=>" @operator
 "->" @operator
 
