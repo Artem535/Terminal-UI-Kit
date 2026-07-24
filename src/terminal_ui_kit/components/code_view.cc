@@ -29,37 +29,14 @@ ftxui::Element CodeView(std::string code, CodeViewOptions options) {
 #endif
 
   if (use_highlighting && !highlighted.spans().empty()) {
-    // Render highlighted spans line by line
-    std::string current_line;
-    TextStyle current_style;
+    // Render highlighted spans line by line, preserving per-span styles.
+    // Each span is individually styled; we split at newlines and group
+    // spans on the same line into an hbox so tokens keep their colour.
     std::size_t line_num = 1;
+    ftxui::Elements current_line_parts;  // styled spans accumulated for the current line
 
-    for (const auto& span : highlighted.spans()) {
-      std::size_t pos = 0;
-      while (pos < span.text.size()) {
-        auto nl = span.text.find('\n', pos);
-        if (nl == std::string::npos) {
-          current_line += span.text.substr(pos);
-          current_style = span.style;
-          break;
-        }
-        current_line += span.text.substr(pos, nl - pos);
-        // Flush line
-        ftxui::Elements parts;
-        if (options.show_line_numbers) {
-          std::string num = std::to_string(line_num);
-          num = std::string(4 - num.size(), ' ') + num;
-          parts.push_back(ftxui::text(num) | ftxui::color(ftxui::Color::GrayDark));
-          parts.push_back(ftxui::text(" "));
-        }
-        parts.push_back(ftxui::text(current_line) | to_decorator(current_style));
-        lines.push_back(ftxui::hbox(std::move(parts)));
-        current_line.clear();
-        ++line_num;
-        pos = nl + 1;
-      }
-    }
-    if (!current_line.empty()) {
+    // Helper: flush one line from current_line_parts.
+    auto flush_line = [&] {
       ftxui::Elements parts;
       if (options.show_line_numbers) {
         std::string num = std::to_string(line_num);
@@ -67,8 +44,35 @@ ftxui::Element CodeView(std::string code, CodeViewOptions options) {
         parts.push_back(ftxui::text(num) | ftxui::color(ftxui::Color::GrayDark));
         parts.push_back(ftxui::text(" "));
       }
-      parts.push_back(ftxui::text(current_line) | to_decorator(current_style));
+      for (auto& el : current_line_parts) parts.push_back(std::move(el));
       lines.push_back(ftxui::hbox(std::move(parts)));
+      current_line_parts.clear();
+      ++line_num;
+    };
+
+    for (const auto& span : highlighted.spans()) {
+      std::size_t pos = 0;
+      while (pos < span.text.size()) {
+        auto nl = span.text.find('\n', pos);
+        if (nl == std::string::npos) {
+          // No newline → push as one styled element.
+          current_line_parts.push_back(ftxui::text(std::string(span.text.substr(pos))) |
+                                       to_decorator(span.style));
+          break;
+        }
+        // Text before the newline, if any, gets its own element.
+        if (nl > pos) {
+          current_line_parts.push_back(ftxui::text(std::string(span.text.substr(pos, nl - pos))) |
+                                       to_decorator(span.style));
+        }
+        // The newline ends the current line.
+        flush_line();
+        pos = nl + 1;
+      }
+    }
+    // Flush any remaining content (no trailing newline).
+    if (!current_line_parts.empty()) {
+      flush_line();
     }
   } else {
     // Plain text fallback
@@ -90,11 +94,11 @@ ftxui::Element CodeView(std::string code, CodeViewOptions options) {
 
   if (!options.language.empty()) {
     result = ftxui::vbox({
-      ftxui::hbox({
-        ftxui::text(" ") | to_decorator(options.theme.muted),
-        ftxui::text(options.language) | to_decorator(options.theme.muted),
-      }),
-      result,
+        ftxui::hbox({
+            ftxui::text(" ") | to_decorator(options.theme.muted),
+            ftxui::text(options.language) | to_decorator(options.theme.muted),
+        }),
+        result,
     });
   }
 

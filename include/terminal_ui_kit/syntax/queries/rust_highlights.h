@@ -29,13 +29,13 @@ constexpr const char* kRustHighlights = R"QUERY(
 
 ; Visibility
 "pub" @keyword
-"crate" @keyword
-"super" @keyword
-"self" @keyword
+(self) @keyword
+(super) @keyword
+(crate) @keyword
+(mutable_specifier) @keyword
 
 ; Storage
 "let" @keyword
-"mut" @keyword
 "const" @keyword
 "static" @keyword
 "ref" @keyword
@@ -96,13 +96,11 @@ constexpr const char* kRustHighlights = R"QUERY(
 (parameter
   pattern: (identifier) @parameter)
 
-(parameter
-  pattern: (ref_pattern
-    pattern: (identifier) @parameter))
+(ref_pattern
+  (identifier) @parameter)
 
-(parameter
-  pattern: (mut_pattern
-    pattern: (identifier) @parameter))
+(mut_pattern
+  (identifier) @parameter)
 
 (closure_parameters
   (identifier) @parameter)
@@ -113,6 +111,9 @@ constexpr const char* kRustHighlights = R"QUERY(
 ; Type identifiers
 (type_identifier) @type
 
+; Labels
+(label) @label
+
 ; Primitive types
 ((primitive_type) @type.builtin
   (#match? @type.builtin "^(bool|char|f32|f64|i8|i16|i32|i64|i128|isize|str|u8|u16|u32|u64|u128|usize)$"))
@@ -121,9 +122,6 @@ constexpr const char* kRustHighlights = R"QUERY(
 (string_literal) @string
 (raw_string_literal) @string
 (char_literal) @string
-(byte_string_literal) @string
-(raw_byte_string_literal) @string
-(byte_literal) @string
 
 ; Escape sequences
 (escape_sequence) @escape
@@ -138,7 +136,6 @@ constexpr const char* kRustHighlights = R"QUERY(
 
 ; Lifetimes
 (lifetime) @lifetime
-(lifetime_label) @lifetime
 
 ; Boolean constants
 "true" @constant.builtin
@@ -173,13 +170,11 @@ constexpr const char* kRustHighlights = R"QUERY(
 "&" @operator
 "|" @operator
 "^" @operator
-"~" @operator
 "<<" @operator
 ">>" @operator
 "?" @operator
 ".." @operator
-"..=" @operator
-"@" @operator
+".." @operator
 "=>" @operator
 "->" @operator
 

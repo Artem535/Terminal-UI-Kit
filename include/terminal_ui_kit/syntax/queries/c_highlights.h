@@ -147,8 +147,9 @@ constexpr const char* kCHighlights = R"QUERY(
 (preproc_if) @macro
 (preproc_else) @macro
 (preproc_elif) @macro
-(preproc_endif) @macro
+(preproc_elifdef) @macro
 (preproc_defined) @macro
+(preproc_call) @macro
 
 ; Identifiers
 (identifier) @variable

@@ -52,7 +52,7 @@ constexpr const char* kJavascriptHighlights = R"QUERY(
 (function_declaration
   name: (identifier) @function)
 
-(function
+(function_expression
   name: (identifier) @function)
 
 (arrow_function) @function
@@ -81,18 +81,16 @@ constexpr const char* kJavascriptHighlights = R"QUERY(
   constructor: (identifier) @constructor)
 
 ; Parameters
-(required_parameter
-  pattern: (identifier) @parameter)
+(formal_parameters
+  (identifier) @parameter)
 
-(optional_parameter
-  pattern: (identifier) @parameter)
+(formal_parameters
+  (assignment_pattern
+    left: (identifier) @parameter))
 
 ; Property definitions
 (pair
   key: (property_identifier) @property)
-
-(assignment_pattern
-  left: (identifier) @property)
 
 ; Shorthand properties
 (shorthand_property_identifier) @property
@@ -112,17 +110,17 @@ constexpr const char* kJavascriptHighlights = R"QUERY(
 (comment) @comment
 
 ; Boolean constants
-"true" @constant.builtin
-"false" @constant.builtin
+(true) @constant.builtin
+(false) @constant.builtin
 
 ; Null constant
-"null" @constant.builtin
-
-; Undefined
-"undefined" @constant.builtin
+(null) @constant.builtin
 
 ; This
-"this" @variable.builtin
+(this) @variable.builtin
+
+; Undefined
+(undefined) @variable.builtin
 
 ; Operators
 "+" @operator
@@ -143,8 +141,6 @@ constexpr const char* kJavascriptHighlights = R"QUERY(
 "^=" @operator
 "<<=" @operator
 ">>=" @operator
-">>>=" @operator
-"**=" @operator
 "==" @operator
 "===" @operator
 "!=" @operator
@@ -162,10 +158,6 @@ constexpr const char* kJavascriptHighlights = R"QUERY(
 "~" @operator
 "<<" @operator
 ">>" @operator
-">>>" @operator
-"**" @operator
-"??" @operator
-"?." @operator
 "?" @operator
 ":" @operator
 "..." @operator

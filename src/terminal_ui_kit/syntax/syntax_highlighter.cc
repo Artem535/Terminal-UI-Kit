@@ -1,11 +1,11 @@
 #include "terminal_ui_kit/syntax/syntax_highlighter.h"
 
+#include <algorithm>
 #include <cstring>
 #include <string>
 #include <string_view>
 #include <unordered_map>
-
-#include <tree_sitter/api.h>
+#include <vector>
 
 #include "terminal_ui_kit/core/styled_text.h"
 #include "terminal_ui_kit/syntax/queries/bash_highlights.h"
@@ -19,6 +19,7 @@
 #include "terminal_ui_kit/syntax/queries/rust_highlights.h"
 #include "terminal_ui_kit/syntax/queries/yaml_highlights.h"
 #include "terminal_ui_kit/theme/theme.h"
+#include <tree_sitter/api.h>
 
 extern "C" {
 TSLanguage* tree_sitter_c();
@@ -40,6 +41,13 @@ namespace {
 struct LanguageInfo {
   TSLanguage* (*language_fn)();
   const char* query;
+};
+
+struct CaptureRange {
+  uint32_t start;
+  uint32_t end;
+  TextStyle style;
+  std::size_t order;
 };
 
 const std::unordered_map<std::string_view, LanguageInfo>& language_map() {
@@ -76,9 +84,8 @@ const std::unordered_map<std::string_view, LanguageInfo>& language_map() {
 }
 
 TextStyle style_for_capture(std::string_view capture, const Theme& theme) {
-  if (capture == "keyword" || capture == "keyword.return" ||
-      capture == "keyword.type" || capture == "keyword.operator" ||
-      capture == "import") {
+  if (capture == "keyword" || capture == "keyword.return" || capture == "keyword.type" ||
+      capture == "keyword.operator" || capture == "import") {
     return theme.accent;
   }
   if (capture == "string" || capture == "escape") {
@@ -93,15 +100,15 @@ TextStyle style_for_capture(std::string_view capture, const Theme& theme) {
   if (capture == "type" || capture == "type.builtin") {
     return theme.code;
   }
-  if (capture == "function" || capture == "method" ||
-      capture == "function.builtin" || capture == "constructor") {
+  if (capture == "function" || capture == "method" || capture == "function.builtin" ||
+      capture == "constructor") {
     return theme.primary;
   }
   if (capture == "variable" || capture == "parameter") {
     return theme.primary;
   }
-  if (capture == "operator" || capture == "punctuation" ||
-      capture == "punctuation.bracket" || capture == "punctuation.delimiter") {
+  if (capture == "operator" || capture == "punctuation" || capture == "punctuation.bracket" ||
+      capture == "punctuation.delimiter") {
     return theme.secondary;
   }
   if (capture == "property" || capture == "field") {
@@ -127,11 +134,14 @@ TextStyle style_for_capture(std::string_view capture, const Theme& theme) {
 
 }  // namespace
 
-StyledText SyntaxHighlighter::highlight(
-    std::string_view code,
-    std::string_view language,
-    const Theme& theme) {
+StyledText SyntaxHighlighter::highlight(std::string_view code, std::string_view language,
+                                        const Theme& theme) {
   StyledText result;
+
+  if (code.empty()) {
+    result.append(TextSpan{"", theme.primary, std::nullopt});
+    return result;
+  }
 
   const auto& map = language_map();
   auto it = map.find(language);
@@ -150,8 +160,8 @@ StyledText SyntaxHighlighter::highlight(
   TSParser* parser = ts_parser_new();
   ts_parser_set_language(parser, lang);
 
-  TSTree* tree = ts_parser_parse_string(
-      parser, nullptr, code.data(), static_cast<uint32_t>(code.size()));
+  TSTree* tree =
+      ts_parser_parse_string(parser, nullptr, code.data(), static_cast<uint32_t>(code.size()));
 
   if (!tree) {
     ts_parser_delete(parser);
@@ -161,9 +171,8 @@ StyledText SyntaxHighlighter::highlight(
 
   uint32_t error_offset = 0;
   TSQueryError error_type = TSQueryErrorNone;
-  TSQuery* query = ts_query_new(
-      lang, info.query, static_cast<uint32_t>(std::strlen(info.query)),
-      &error_offset, &error_type);
+  TSQuery* query = ts_query_new(lang, info.query, static_cast<uint32_t>(std::strlen(info.query)),
+                                &error_offset, &error_type);
 
   if (!query || error_type != TSQueryErrorNone) {
     ts_query_delete(query);
@@ -176,8 +185,9 @@ StyledText SyntaxHighlighter::highlight(
   TSQueryCursor* cursor = ts_query_cursor_new();
   ts_query_cursor_exec(cursor, query, ts_tree_root_node(tree));
 
+  std::vector<CaptureRange> captures;
   TSQueryMatch match;
-  uint32_t last_end = 0;
+  std::size_t capture_order = 0;
 
   while (ts_query_cursor_next_match(cursor, &match)) {
     for (uint32_t i = 0; i < match.capture_count; ++i) {
@@ -185,27 +195,46 @@ StyledText SyntaxHighlighter::highlight(
       uint32_t start = ts_node_start_byte(capture.node);
       uint32_t end = ts_node_end_byte(capture.node);
 
-      if (start > last_end) {
-        std::string_view gap = code.substr(last_end, start - last_end);
-        result.append(TextSpan{std::string(gap), theme.primary, std::nullopt});
-      }
-
       uint32_t name_len = 0;
-      const char* name = ts_query_capture_name_for_id(
-          query, capture.index, &name_len);
+      const char* name = ts_query_capture_name_for_id(query, capture.index, &name_len);
       std::string_view capture_name(name, name_len);
       TextStyle style = style_for_capture(capture_name, theme);
-
-      std::string_view text = code.substr(start, end - start);
-      result.append(TextSpan{std::string(text), style, std::nullopt});
-
-      last_end = end;
+      if (start < end) {
+        captures.push_back(CaptureRange{start, end, style, capture_order});
+      }
+      ++capture_order;
     }
   }
 
-  if (last_end < code.size()) {
-    std::string_view remaining = code.substr(last_end);
-    result.append(TextSpan{std::string(remaining), theme.primary, std::nullopt});
+  std::vector<uint32_t> boundaries = {0, static_cast<uint32_t>(code.size())};
+  boundaries.reserve(2 + captures.size() * 2);
+  for (const CaptureRange& capture : captures) {
+    boundaries.push_back(capture.start);
+    boundaries.push_back(capture.end);
+  }
+  std::sort(boundaries.begin(), boundaries.end());
+  boundaries.erase(std::unique(boundaries.begin(), boundaries.end()), boundaries.end());
+
+  for (std::size_t i = 0; i + 1 < boundaries.size(); ++i) {
+    const uint32_t start = boundaries[i];
+    const uint32_t end = boundaries[i + 1];
+    if (start == end) {
+      continue;
+    }
+
+    const CaptureRange* best = nullptr;
+    for (const CaptureRange& capture : captures) {
+      if (capture.start > start || capture.end < end) {
+        continue;
+      }
+      if (best == nullptr || capture.end - capture.start < best->end - best->start ||
+          (capture.end - capture.start == best->end - best->start && capture.order < best->order)) {
+        best = &capture;
+      }
+    }
+
+    const TextStyle& style = best == nullptr ? theme.primary : best->style;
+    result.append(TextSpan{std::string(code.substr(start, end - start)), style, std::nullopt});
   }
 
   ts_query_cursor_delete(cursor);
