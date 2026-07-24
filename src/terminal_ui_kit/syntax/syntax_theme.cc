@@ -23,37 +23,37 @@ TextStyle foreground(unsigned int value, bool bold = false, bool dim = false) {
 
 SyntaxTheme default_dark_syntax_theme(const Theme& theme) {
   SyntaxTheme syntax;
-  syntax.keyword = foreground(0xff7b72, true);
-  syntax.type = foreground(0x79c0ff);
-  syntax.function = foreground(0xd2a8ff);
+  syntax.keyword = foreground(0x79c0ff, true);
+  syntax.type = foreground(0x56d4dd);
+  syntax.function = foreground(0xe3b341);
   syntax.variable = theme.primary;
   syntax.variable.background.reset();
-  syntax.string = foreground(0xa5d6ff);
-  syntax.number = foreground(0xf2cc60);
+  syntax.string = foreground(0x7ee787);
+  syntax.number = foreground(0xffa657);
   syntax.comment = foreground(0x8b949e, false, true);
   syntax.operator_style = foreground(0xf0f6fc);
-  syntax.property = foreground(0x7ee787);
+  syntax.property = foreground(0xa5d6ff);
   syntax.namespace_style = foreground(0x56d4dd);
-  syntax.macro = foreground(0xffa657, true);
-  syntax.constant = foreground(0xffdf5d);
+  syntax.macro = foreground(0xff7b72, true);
+  syntax.constant = foreground(0xf2cc60);
   return syntax;
 }
 
 SyntaxTheme default_light_syntax_theme(const Theme& theme) {
   SyntaxTheme syntax;
-  syntax.keyword = foreground(0xcf222e, true);
-  syntax.type = foreground(0x0550ae);
-  syntax.function = foreground(0x8250df);
+  syntax.keyword = foreground(0x0969da, true);
+  syntax.type = foreground(0x0a7b83);
+  syntax.function = foreground(0x9a6700);
   syntax.variable = theme.primary;
   syntax.variable.background.reset();
-  syntax.string = foreground(0x0a3069);
-  syntax.number = foreground(0x953800);
+  syntax.string = foreground(0x116329);
+  syntax.number = foreground(0xbc4a00);
   syntax.comment = foreground(0x6e7781, false, true);
   syntax.operator_style = foreground(0x24292f);
-  syntax.property = foreground(0x116329);
+  syntax.property = foreground(0x0550ae);
   syntax.namespace_style = foreground(0x0969da);
-  syntax.macro = foreground(0xbc4a00, true);
-  syntax.constant = foreground(0x6639ba);
+  syntax.macro = foreground(0xcf222e, true);
+  syntax.constant = foreground(0x953800);
   return syntax;
 }
 
