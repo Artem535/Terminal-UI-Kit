@@ -102,10 +102,10 @@ TextStyle style_for_capture(std::string_view capture, const SyntaxTheme& syntax)
   if (is_capture_family(capture, "variable") || is_capture_family(capture, "parameter")) {
     return syntax.variable;
   }
-  if (capture == "string" || capture == "escape") {
+  if (is_capture_family(capture, "string") || is_capture_family(capture, "escape")) {
     return syntax.string;
   }
-  if (capture == "number" || capture == "float") {
+  if (is_capture_family(capture, "number") || is_capture_family(capture, "float")) {
     return syntax.number;
   }
   if (is_capture_family(capture, "constant")) {

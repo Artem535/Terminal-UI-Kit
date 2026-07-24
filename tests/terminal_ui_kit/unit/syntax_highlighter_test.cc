@@ -121,31 +121,37 @@ TEST(SyntaxHighlighter, PythonAndRustUseSharedSemanticPalette) {
   const SyntaxTheme syntax = default_dark_syntax_theme(theme);
 
   const StyledText python = SyntaxHighlighter::highlight(
-      "def greet(name: str): return \"hi\" + name 42 # note", "python", theme);
+      "def greet(name: str): return \"hi\" + \"x\\n\" + 1.5 # note", "python", theme);
   const TextStyle* python_keyword = style_for_text(python, "def");
   const TextStyle* python_function = style_for_text(python, "greet");
   const TextStyle* python_string = style_for_text(python, "\"hi\"");
+  const TextStyle* python_number = style_for_text(python, "1.5");
   ASSERT_NE(python_keyword, nullptr);
   ASSERT_NE(python_function, nullptr);
   ASSERT_NE(python_string, nullptr);
+  ASSERT_NE(python_number, nullptr);
   EXPECT_EQ(*python_keyword, syntax.keyword);
   EXPECT_EQ(*python_function, syntax.function);
   EXPECT_EQ(*python_string, syntax.string);
+  EXPECT_EQ(*python_number, syntax.number);
 
-  const StyledText rust =
-      SyntaxHighlighter::highlight("fn greet(name: &str) { println!(\"hi\"); }", "rust", theme);
+  const StyledText rust = SyntaxHighlighter::highlight(
+      "fn greet(name: &str) { println!(\"hi\"); let escaped = \"x\\n\"; }", "rust", theme);
   const TextStyle* rust_keyword = style_for_text(rust, "fn");
   const TextStyle* rust_function = style_for_text(rust, "greet");
   const TextStyle* rust_macro = style_for_text(rust, "println");
   const TextStyle* rust_string = style_for_text(rust, "\"hi\"");
+  const TextStyle* rust_escape = style_for_text(rust, "\\n");
   ASSERT_NE(rust_keyword, nullptr);
   ASSERT_NE(rust_function, nullptr);
   ASSERT_NE(rust_macro, nullptr);
   ASSERT_NE(rust_string, nullptr);
+  ASSERT_NE(rust_escape, nullptr);
   EXPECT_EQ(*rust_keyword, syntax.keyword);
   EXPECT_EQ(*rust_function, syntax.function);
   EXPECT_EQ(*rust_macro, syntax.macro);
   EXPECT_EQ(*rust_string, syntax.string);
+  EXPECT_EQ(*rust_escape, syntax.string);
 }
 
 }  // namespace

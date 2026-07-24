@@ -29,3 +29,12 @@ Pending commit in this worktree.
 - Runtime tests should be rerun by the parent agent using its cached dependency
   build; the focused assertions are intentionally strict about semantic role
   colors and background absence.
+
+## Review follow-up
+
+- Updated string/escape and number/float handling to use the same dotted-family
+  matching as keywords, types, and other capture groups.
+- Extended the Python and Rust checks with float and escape captures.
+- `g++` standalone compile, clang-format, and `git diff --check` pass. Full
+  CTest remains unavailable in this worktree because dependency fetching is
+  blocked by network DNS.
