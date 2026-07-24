@@ -18,6 +18,7 @@
 #include "terminal_ui_kit/syntax/queries/python_highlights.h"
 #include "terminal_ui_kit/syntax/queries/rust_highlights.h"
 #include "terminal_ui_kit/syntax/queries/yaml_highlights.h"
+#include "terminal_ui_kit/syntax/syntax_theme.h"
 #include "terminal_ui_kit/theme/theme.h"
 #include <tree_sitter/api.h>
 
@@ -83,53 +84,49 @@ const std::unordered_map<std::string_view, LanguageInfo>& language_map() {
   return map;
 }
 
-TextStyle style_for_capture(std::string_view capture, const Theme& theme) {
-  if (capture == "keyword" || capture == "keyword.return" || capture == "keyword.type" ||
-      capture == "keyword.operator" || capture == "import") {
-    return theme.accent;
+bool is_capture_family(std::string_view capture, std::string_view family) {
+  return capture == family || (capture.size() > family.size() && capture.starts_with(family) &&
+                               capture[family.size()] == '.');
+}
+
+TextStyle style_for_capture(std::string_view capture, const SyntaxTheme& syntax) {
+  if (is_capture_family(capture, "keyword") || capture == "import") {
+    return syntax.keyword;
+  }
+  if (is_capture_family(capture, "type")) {
+    return syntax.type;
+  }
+  if (is_capture_family(capture, "function") || capture == "method" || capture == "constructor") {
+    return syntax.function;
+  }
+  if (is_capture_family(capture, "variable") || is_capture_family(capture, "parameter")) {
+    return syntax.variable;
   }
   if (capture == "string" || capture == "escape") {
-    return theme.success;
+    return syntax.string;
   }
   if (capture == "number" || capture == "float") {
-    return theme.warning;
+    return syntax.number;
   }
-  if (capture == "comment") {
-    return theme.muted;
-  }
-  if (capture == "type" || capture == "type.builtin") {
-    return theme.code;
-  }
-  if (capture == "function" || capture == "method" || capture == "function.builtin" ||
-      capture == "constructor") {
-    return theme.primary;
-  }
-  if (capture == "variable" || capture == "parameter") {
-    return theme.primary;
-  }
-  if (capture == "operator" || capture == "punctuation" || capture == "punctuation.bracket" ||
-      capture == "punctuation.delimiter") {
-    return theme.secondary;
+  if (is_capture_family(capture, "constant")) {
+    return syntax.constant;
   }
   if (capture == "property" || capture == "field") {
-    return theme.secondary;
-  }
-  if (capture == "constant" || capture == "constant.builtin") {
-    return theme.warning;
-  }
-  if (capture == "attribute" || capture == "decorator") {
-    return theme.muted;
-  }
-  if (capture == "tag") {
-    return theme.accent;
-  }
-  if (capture == "label" || capture == "lifetime" || capture == "macro") {
-    return theme.accent;
+    return syntax.property;
   }
   if (capture == "namespace") {
-    return theme.code;
+    return syntax.namespace_style;
   }
-  return theme.primary;
+  if (capture == "macro" || capture == "attribute" || capture == "decorator") {
+    return syntax.macro;
+  }
+  if (capture == "comment") {
+    return syntax.comment;
+  }
+  if (capture == "operator" || is_capture_family(capture, "punctuation")) {
+    return syntax.operator_style;
+  }
+  return syntax.variable;
 }
 
 }  // namespace
@@ -151,6 +148,8 @@ StyledText SyntaxHighlighter::highlight(std::string_view code, std::string_view 
   }
 
   const LanguageInfo& info = it->second;
+  const SyntaxTheme syntax = theme == default_light_theme() ? default_light_syntax_theme(theme)
+                                                            : default_dark_syntax_theme(theme);
   TSLanguage* lang = info.language_fn();
   if (!lang) {
     result.append(TextSpan{std::string(code), theme.primary, std::nullopt});
@@ -198,7 +197,7 @@ StyledText SyntaxHighlighter::highlight(std::string_view code, std::string_view 
       uint32_t name_len = 0;
       const char* name = ts_query_capture_name_for_id(query, capture.index, &name_len);
       std::string_view capture_name(name, name_len);
-      TextStyle style = style_for_capture(capture_name, theme);
+      TextStyle style = style_for_capture(capture_name, syntax);
       if (start < end) {
         captures.push_back(CaptureRange{start, end, style, capture_order});
       }
