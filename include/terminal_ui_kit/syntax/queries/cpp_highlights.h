@@ -90,7 +90,7 @@ constexpr const char* kCppHighlights = R"QUERY(
 (namespace_definition
   name: (namespace_identifier) @namespace)
 
-(namespace_identifier) @namespace
+(namespace_identifier) @namespace.name
 
 ; Type identifiers
 (type_identifier) @type
@@ -166,10 +166,10 @@ constexpr const char* kCppHighlights = R"QUERY(
 (number_literal) @number
 
 ; Comments
-(comment) @comment
+(comment) @comment.line
 
 ; Operators
-"+" @operator
+"+" @operator.arithmetic
 "-" @operator
 "*" @operator
 "/" @operator

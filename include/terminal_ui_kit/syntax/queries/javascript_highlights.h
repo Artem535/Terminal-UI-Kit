@@ -90,10 +90,10 @@ constexpr const char* kJavascriptHighlights = R"QUERY(
 
 ; Property definitions
 (pair
-  key: (property_identifier) @property)
+  key: (property_identifier) @property.key)
 
 ; Shorthand properties
-(shorthand_property_identifier) @property
+(shorthand_property_identifier) @property.shorthand
 
 ; Strings
 (string) @string

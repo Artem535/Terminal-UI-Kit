@@ -47,9 +47,9 @@ constexpr const char* kPythonHighlights = R"QUERY(
   module_name: (dotted_name) @namespace)
 
 ; Decorators
-(decorator) @attribute
+(decorator) @attribute.decorator
 (decorator
-  (identifier) @attribute)
+  (identifier) @attribute.name)
 
 ; Function definitions
 (function_definition

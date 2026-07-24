@@ -83,14 +83,14 @@ constexpr const char* kRustHighlights = R"QUERY(
 
 ; Macro calls
 (macro_invocation
-  macro: (identifier) @macro)
+  macro: (identifier) @macro.call)
 
 (macro_definition
-  name: (identifier) @macro)
+  name: (identifier) @macro.definition)
 
 ; Attributes
-(attribute_item) @attribute
-(inner_attribute_item) @attribute
+(attribute_item) @attribute.item
+(inner_attribute_item) @attribute.inner
 
 ; Parameters
 (parameter
@@ -106,7 +106,7 @@ constexpr const char* kRustHighlights = R"QUERY(
   (identifier) @parameter)
 
 ; Struct fields
-(field_identifier) @field
+(field_identifier) @field.member
 
 ; Type identifiers
 (type_identifier) @type

@@ -30,10 +30,15 @@ TSLanguage* tree_sitter_json();
 TSLanguage* tree_sitter_bash();
 TSLanguage* tree_sitter_rust();
 TSLanguage* tree_sitter_javascript();
-// These may not be available if grammar fetch failed
-TSLanguage* tree_sitter_yaml() __attribute__((weak));
-TSLanguage* tree_sitter_markdown() __attribute__((weak));
-TSLanguage* tree_sitter_diff() __attribute__((weak));
+#if defined(TERMINAL_UI_KIT_HAS_TREE_SITTER_YAML)
+TSLanguage* tree_sitter_yaml();
+#endif
+#if defined(TERMINAL_UI_KIT_HAS_TREE_SITTER_MARKDOWN)
+TSLanguage* tree_sitter_markdown();
+#endif
+#if defined(TERMINAL_UI_KIT_HAS_TREE_SITTER_DIFF)
+TSLanguage* tree_sitter_diff();
+#endif
 }
 
 namespace terminal_ui_kit {
@@ -69,18 +74,17 @@ const std::unordered_map<std::string_view, LanguageInfo>& language_map() {
       {"typescript", {tree_sitter_javascript, syntax_queries::kJavascriptHighlights}},
       {"ts", {tree_sitter_javascript, syntax_queries::kJavascriptHighlights}},
   };
-  // Add optional grammars only if they were linked
-  if (tree_sitter_yaml) {
-    map["yaml"] = {tree_sitter_yaml, syntax_queries::kYamlHighlights};
-    map["yml"] = {tree_sitter_yaml, syntax_queries::kYamlHighlights};
-  }
-  if (tree_sitter_markdown) {
-    map["markdown"] = {tree_sitter_markdown, syntax_queries::kMarkdownHighlights};
-    map["md"] = {tree_sitter_markdown, syntax_queries::kMarkdownHighlights};
-  }
-  if (tree_sitter_diff) {
-    map["diff"] = {tree_sitter_diff, syntax_queries::kDiffHighlights};
-  }
+#if defined(TERMINAL_UI_KIT_HAS_TREE_SITTER_YAML)
+  map["yaml"] = {tree_sitter_yaml, syntax_queries::kYamlHighlights};
+  map["yml"] = {tree_sitter_yaml, syntax_queries::kYamlHighlights};
+#endif
+#if defined(TERMINAL_UI_KIT_HAS_TREE_SITTER_MARKDOWN)
+  map["markdown"] = {tree_sitter_markdown, syntax_queries::kMarkdownHighlights};
+  map["md"] = {tree_sitter_markdown, syntax_queries::kMarkdownHighlights};
+#endif
+#if defined(TERMINAL_UI_KIT_HAS_TREE_SITTER_DIFF)
+  map["diff"] = {tree_sitter_diff, syntax_queries::kDiffHighlights};
+#endif
   return map;
 }
 
@@ -111,19 +115,20 @@ TextStyle style_for_capture(std::string_view capture, const SyntaxTheme& syntax)
   if (is_capture_family(capture, "constant")) {
     return syntax.constant;
   }
-  if (capture == "property" || capture == "field") {
+  if (is_capture_family(capture, "property") || is_capture_family(capture, "field")) {
     return syntax.property;
   }
-  if (capture == "namespace") {
+  if (is_capture_family(capture, "namespace")) {
     return syntax.namespace_style;
   }
-  if (capture == "macro" || capture == "attribute" || capture == "decorator") {
+  if (is_capture_family(capture, "macro") || is_capture_family(capture, "attribute") ||
+      is_capture_family(capture, "decorator")) {
     return syntax.macro;
   }
-  if (capture == "comment") {
+  if (is_capture_family(capture, "comment")) {
     return syntax.comment;
   }
-  if (capture == "operator" || is_capture_family(capture, "punctuation")) {
+  if (is_capture_family(capture, "operator") || is_capture_family(capture, "punctuation")) {
     return syntax.operator_style;
   }
   return syntax.variable;

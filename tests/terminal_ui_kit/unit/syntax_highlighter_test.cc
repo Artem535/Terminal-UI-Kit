@@ -74,6 +74,28 @@ TEST(SyntaxHighlighter, JsonHighlightsStrings) {
   ASSERT_FALSE(result.spans().empty());
 }
 
+TEST(SyntaxHighlighter, DottedCaptureFamiliesUseSemanticRoles) {
+  const Theme& theme = default_dark_theme();
+  const SyntaxTheme syntax = default_dark_syntax_theme(theme);
+
+  const StyledText json = SyntaxHighlighter::highlight("{\"key\": 1}", "json", theme);
+  const TextStyle* property = style_for_text(json, "\"key\"");
+  ASSERT_NE(property, nullptr);
+  EXPECT_EQ(*property, syntax.property);
+
+  const StyledText python =
+      SyntaxHighlighter::highlight("@decorator\ndef f(): # note\n  return 1 + 2", "python", theme);
+  const TextStyle* attribute = style_for_text(python, "decorator");
+  ASSERT_NE(attribute, nullptr);
+  EXPECT_EQ(*attribute, syntax.macro);
+
+  const StyledText rust =
+      SyntaxHighlighter::highlight("#[derive(Debug)]\nstruct S { field: i32 }", "rust", theme);
+  const TextStyle* field = style_for_text(rust, "field");
+  ASSERT_NE(field, nullptr);
+  EXPECT_EQ(*field, syntax.property);
+}
+
 TEST(SyntaxHighlighter, RustHighlightsKeywords) {
   const Theme& theme = default_dark_theme();
   StyledText result = SyntaxHighlighter::highlight("fn main() {}", "rust", theme);

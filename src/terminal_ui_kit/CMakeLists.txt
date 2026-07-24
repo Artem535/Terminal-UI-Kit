@@ -140,6 +140,16 @@ if(TERMINAL_UI_KIT_ENABLE_TREE_SITTER)
     set(grammar_target "ts_grammar_${safe_name}")
     if(TARGET ${grammar_target})
       target_link_libraries(terminal_ui_kit_syntax PUBLIC ${grammar_target})
+      if(lang STREQUAL "yaml")
+        target_compile_definitions(terminal_ui_kit_syntax PRIVATE
+          TERMINAL_UI_KIT_HAS_TREE_SITTER_YAML)
+      elseif(lang STREQUAL "markdown")
+        target_compile_definitions(terminal_ui_kit_syntax PRIVATE
+          TERMINAL_UI_KIT_HAS_TREE_SITTER_MARKDOWN)
+      elseif(lang STREQUAL "diff")
+        target_compile_definitions(terminal_ui_kit_syntax PRIVATE
+          TERMINAL_UI_KIT_HAS_TREE_SITTER_DIFF)
+      endif()
     endif()
   endforeach()
   set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_syntax)
