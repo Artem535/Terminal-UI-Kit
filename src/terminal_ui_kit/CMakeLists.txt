@@ -117,7 +117,8 @@ if(TERMINAL_UI_KIT_ENABLE_TREE_SITTER)
   terminal_ui_kit_require_tree_sitter()
   terminal_ui_kit_require_tree_sitter_grammars()
   add_library(terminal_ui_kit_syntax
-    syntax/syntax_highlighter.cc)
+    syntax/syntax_highlighter.cc
+    syntax/syntax_theme.cc)
   add_library(TerminalUiKit::Syntax ALIAS terminal_ui_kit_syntax)
   target_include_directories(terminal_ui_kit_syntax PUBLIC
     $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>
