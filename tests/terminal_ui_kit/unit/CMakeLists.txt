@@ -1,4 +1,5 @@
 add_executable(terminal_ui_kit_unit_tests
+  unified_diff_parser_test.cc
   text_position_test.cc
   text_range_test.cc
   styled_text_test.cc
@@ -23,6 +24,7 @@ endif()
 target_link_libraries(terminal_ui_kit_unit_tests PRIVATE
   TerminalUiKit::Core
   TerminalUiKit::Document
+  TerminalUiKit::Diff
   GTest::gtest_main)
 
 if(TERMINAL_UI_KIT_ENABLE_MARKDOWN)
