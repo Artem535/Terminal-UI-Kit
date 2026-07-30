@@ -1,4 +1,5 @@
 add_executable(terminal_ui_kit_unit_tests
+  diff_parser_test.cc
   text_position_test.cc
   text_range_test.cc
   styled_text_test.cc
@@ -21,6 +22,7 @@ if(TERMINAL_UI_KIT_ENABLE_TREE_SITTER)
 endif()
 
 target_link_libraries(terminal_ui_kit_unit_tests PRIVATE
+  TerminalUiKit::Diff
   TerminalUiKit::Core
   TerminalUiKit::Document
   GTest::gtest_main)
