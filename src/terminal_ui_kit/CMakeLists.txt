@@ -50,13 +50,13 @@ target_terminal_ui_kit_warnings(terminal_ui_kit_core)
 set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_core)
 
 # Components has real implementation sources and, unlike the header-only
+terminal_ui_kit_require_ftxui()
 # modules below, unconditionally needs FTXUI: every component returns an
 # ftxui::Element or ftxui::Component (PRD section 8.1), so there is no
 # tests/examples-only path the way Testing has below. This means a bare
 # `cmake -S . -B build` (no tests, no examples) now fetches FTXUI too --
 # an accepted, unavoidable consequence of implementing real components,
 # not an oversight.
-terminal_ui_kit_require_ftxui()
 add_library(terminal_ui_kit_components
   components/style_bridge.cc
   components/status_indicator.cc
@@ -106,11 +106,20 @@ target_terminal_ui_kit_warnings(terminal_ui_kit_document)
 target_link_libraries(terminal_ui_kit_document PUBLIC terminal_ui_kit_core)
 set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_document)
 _terminal_ui_kit_add_module(editor)
-_terminal_ui_kit_add_module(diff)
+# Diff module: compiled library with unified-diff parser.
+add_library(terminal_ui_kit_diff
+  diff/unified_diff_parser.cc)
+add_library(TerminalUiKit::Diff ALIAS terminal_ui_kit_diff)
+target_include_directories(terminal_ui_kit_diff PUBLIC
+  $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>
+  $<INSTALL_INTERFACE:include>)
+target_compile_features(terminal_ui_kit_diff PUBLIC cxx_std_20)
+target_terminal_ui_kit_warnings(terminal_ui_kit_diff)
+target_link_libraries(terminal_ui_kit_diff PUBLIC terminal_ui_kit_core)
+set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_diff)
 _terminal_ui_kit_add_module(terminal)
 
 target_link_libraries(terminal_ui_kit_editor INTERFACE terminal_ui_kit_document)
-target_link_libraries(terminal_ui_kit_diff INTERFACE terminal_ui_kit_core)
 
 # Syntax module: compiled library when ENABLE_TREE_SITTER is ON, otherwise INTERFACE.
 if(TERMINAL_UI_KIT_ENABLE_TREE_SITTER)
@@ -223,7 +232,6 @@ target_link_libraries(terminal_ui_kit_testing INTERFACE terminal_ui_kit_core)
 # actually being built; Components already requires FTXUI during a bare
 # configure.
 if(TERMINAL_UI_KIT_BUILD_TESTS OR TERMINAL_UI_KIT_BUILD_EXAMPLES)
-  terminal_ui_kit_require_ftxui()
   target_link_libraries(terminal_ui_kit_testing INTERFACE ftxui::screen ftxui::dom ftxui::component)
 endif()
 
