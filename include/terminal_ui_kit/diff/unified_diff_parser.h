@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -20,12 +21,8 @@ class UnifiedDiffParser {
   // Парсинг одной строки diff и определение её типа.
   [[nodiscard]] DiffLine ParseLine(std::string_view line) const;
 
-  // Извлечение путей из заголовка файла.
-  [[nodiscard]] std::pair<std::string, std::string> ParseFileHeaders(
-      std::vector<std::string_view> lines) const;
-
-  // Извлечение номеров строк из заголовка ханка.
-  [[nodiscard]] std::optional<std::pair<int, int>> ParseHunkRange(std::string_view range_str) const;
+  // Утилита для обрезки пробельных символов.
+  [[nodiscard]] static std::string_view Trim(std::string_view s);
 };
 
 }  // namespace terminal_ui_kit

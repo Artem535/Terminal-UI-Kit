@@ -1,10 +1,22 @@
 #include <string>
+#include <cassert>
 
 #include "terminal_ui_kit/diff/unified_diff_parser.h"
 #include <gtest/gtest.h>
 
 namespace terminal_ui_kit {
 namespace {
+
+// Helper function to safely get text from a diff line's spans.
+// Asserts that the line has at least one span.
+static std::string GetLineText(const DiffLine& line) {
+  const auto& spans = line.content.spans();
+  EXPECT_FALSE(spans.empty());
+  if (spans.empty()) {
+    return "";
+  }
+  return spans[0].text;
+}
 
 // Простой тест diff
 static constexpr char kSimpleDiff[] =
@@ -31,19 +43,19 @@ TEST(UnifiedDiffParser, ParsesSimpleDiff) {
   ASSERT_EQ(hunk.lines.size(), 5U);
 
   EXPECT_EQ(hunk.lines[0].type, DiffLineType::kContext);
-  EXPECT_EQ(hunk.lines[0].content.spans()[0].text, " line one");
+  EXPECT_EQ(GetLineText(hunk.lines[0]), " line one");
 
   EXPECT_EQ(hunk.lines[1].type, DiffLineType::kDeletion);
-  EXPECT_EQ(hunk.lines[1].content.spans()[0].text, "old line two");
+  EXPECT_EQ(GetLineText(hunk.lines[1]), "old line two");
 
   EXPECT_EQ(hunk.lines[2].type, DiffLineType::kAddition);
-  EXPECT_EQ(hunk.lines[2].content.spans()[0].text, "new line two");
+  EXPECT_EQ(GetLineText(hunk.lines[2]), "new line two");
 
   EXPECT_EQ(hunk.lines[3].type, DiffLineType::kContext);
-  EXPECT_EQ(hunk.lines[3].content.spans()[0].text, " line three");
+  EXPECT_EQ(GetLineText(hunk.lines[3]), " line three");
 
   EXPECT_EQ(hunk.lines[4].type, DiffLineType::kAddition);
-  EXPECT_EQ(hunk.lines[4].content.spans()[0].text, "line four");
+  EXPECT_EQ(GetLineText(hunk.lines[4]), "line four");
 }
 
 TEST(UnifiedDiffParser, HandlesEmptyInput) {
@@ -64,8 +76,9 @@ TEST(UnifiedDiffParser, HandlesDiffWithoutIndexLine) {
   auto [success, file] = parser.Parse(kDiffNoIndex);
 
   EXPECT_TRUE(success);
-  EXPECT_EQ(file.old_path, "a/file.txt");
-  EXPECT_EQ(file.new_path, "b/file.txt");
+  // a/ and b/ prefixes should be removed
+  EXPECT_EQ(file.old_path, "file.txt");
+  EXPECT_EQ(file.new_path, "file.txt");
   ASSERT_EQ(file.hunks.size(), 1U);
   ASSERT_EQ(file.hunks[0].lines.size(), 1U);
   EXPECT_EQ(file.hunks[0].lines[0].type, DiffLineType::kAddition);

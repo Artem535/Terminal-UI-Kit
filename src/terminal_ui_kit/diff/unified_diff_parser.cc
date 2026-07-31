@@ -12,7 +12,7 @@
 namespace terminal_ui_kit {
 
 // Утилита для обрезки пробельных символов.
-static std::string_view Trim(std::string_view s) {
+std::string_view UnifiedDiffParser::Trim(std::string_view s) {
   s.remove_prefix(std::min(s.find_first_not_of(" \t"), s.size()));
   size_t last_not = s.find_last_not_of(" \t");
   if (last_not != std::string_view::npos) {
@@ -60,8 +60,17 @@ std::pair<bool, DiffFile> UnifiedDiffParser::Parse(std::string_view diff_text) c
   if (idx < lines.size()) {
     std::string_view trimmed = Trim(lines[idx]);
     if (trimmed.starts_with("---")) {
-      result.old_path = std::string(trimmed.substr(3));
-      result.old_path.erase(0, result.old_path.find_first_not_of(" \t"));
+      std::string path = std::string(trimmed.substr(3));
+      // Remove leading whitespace/tabs and a/ b/ prefixes
+      size_t start = path.find_first_not_of(" \t");
+      if (start != std::string::npos) {
+        path = path.substr(start);
+      }
+      // Remove a/ or b/ prefix if present
+      if (path.size() > 2 && (path.substr(0, 2) == "a/" || path.substr(0, 2) == "b/")) {
+        path = path.substr(2);
+      }
+      result.old_path = std::move(path);
       idx++;
     }
   }
@@ -69,8 +78,17 @@ std::pair<bool, DiffFile> UnifiedDiffParser::Parse(std::string_view diff_text) c
   if (idx < lines.size()) {
     std::string_view trimmed = Trim(lines[idx]);
     if (trimmed.starts_with("+++")) {
-      result.new_path = std::string(trimmed.substr(3));
-      result.new_path.erase(0, result.new_path.find_first_not_of(" \t"));
+      std::string path = std::string(trimmed.substr(3));
+      // Remove leading whitespace/tabs and a/ b/ prefixes
+      size_t start = path.find_first_not_of(" \t");
+      if (start != std::string::npos) {
+        path = path.substr(start);
+      }
+      // Remove a/ or b/ prefix if present
+      if (path.size() > 2 && (path.substr(0, 2) == "a/" || path.substr(0, 2) == "b/")) {
+        path = path.substr(2);
+      }
+      result.new_path = std::move(path);
       idx++;
     }
   }
@@ -90,12 +108,13 @@ std::pair<bool, DiffFile> UnifiedDiffParser::Parse(std::string_view diff_text) c
       while (idx < lines.size()) {
         std::string_view line = lines[idx];
 
-        // Проверка на следующий hunk или конец diff
+        // Проверка на следующий hunk
         if (line.substr(0, 2) == "@@") {
           break;
         }
 
-        if (line.empty()) {
+        // Пропускаем пустые строки и backslash lines (no newline at end)
+        if (line.empty() || line.starts_with("\\")) {
           idx++;
           continue;
         }
@@ -116,8 +135,6 @@ std::pair<bool, DiffFile> UnifiedDiffParser::Parse(std::string_view diff_text) c
 
 DiffLine UnifiedDiffParser::ParseLine(std::string_view line) const {
   DiffLine result;
-  result.old_line = std::nullopt;
-  result.new_line = std::nullopt;
 
   if (line.empty()) {
     result.type = DiffLineType::kContext;
@@ -129,28 +146,22 @@ DiffLine UnifiedDiffParser::ParseLine(std::string_view line) const {
 
   switch (prefix) {
     case ' ':
-      // Контекстная строка: пробел - это префикс типа, текст идет дальше
-      // В unified diff контекстные строки имеют формат " <text>" и пробел
-      // сохраняется как часть содержимого (это визуальный отступ в diff)
+      // Context line: keep the line as-is (space is part of the content)
       result.type = DiffLineType::kContext;
       content = line;
       break;
     case '+':
-      // Добавленная строка: текст без ведущего пробела
+      // Addition: content without the '+' prefix
       result.type = DiffLineType::kAddition;
       content = line.substr(1);
       break;
     case '-':
-      // Удаленная строка: текст без ведущего пробела
+      // Deletion: content without the '-' prefix
       result.type = DiffLineType::kDeletion;
       content = line.substr(1);
       break;
-    case '\\':
-      // Continuation line for no newline at end of file
-      result.type = DiffLineType::kContext;
-      content = line;
-      break;
     default:
+      // Unknown prefix: treat as context
       result.type = DiffLineType::kContext;
       content = line;
       break;

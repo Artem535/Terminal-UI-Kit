@@ -9,35 +9,35 @@
 
 namespace terminal_ui_kit {
 
-// Типы строк в unified diff (PRD section 28.3).
+// Line types in unified diff (PRD section 28.3).
 enum class DiffLineType {
-  kContext,     // 未 измененная строка (prefix ' ')
-  kAddition,    // Добавленная строка (prefix '+')
-  kDeletion,    // Удаленная строка (prefix '-')
-  kFileHeader,  // Строки индекса/заголовка файла
-  kSourcePath,  // Строки с путем к исходному файлу (prefix '---')
-  kTargetPath,  // Строки с путем к целевому файлу (prefix '+++')
-  kHunkHeader,  // Заголовок ханка (prefix '@@')
+  kContext,     // Unchanged line (prefix ' ')
+  kAddition,    // Added line (prefix '+')
+  kDeletion,    // Deleted line (prefix '-')
+  kFileHeader,  // Index/file header lines
+  kSourcePath,  // Source path line (prefix '---')
+  kTargetPath,  // Target path line (prefix '+++')
+  kHunkHeader,  // Hunk header (prefix '@@')
 };
 
-// Структура одной строки diff (PRD section 28.3).
+// Single diff line structure (PRD section 28.3).
 struct DiffLine {
   DiffLineType type;
-  std::optional<int> old_line;  // Номер строки в старом файле
-  std::optional<int> new_line;  // Номер строки в новом файле
-  StyledText content;           // Содержимое строки со стилями
+  std::optional<int> old_line = std::nullopt;
+  std::optional<int> new_line = std::nullopt;
+  StyledText content;
 };
 
-// Структура одного ханка diff (блок изменений) (PRD section 28.3).
+// Single hunk structure (change block) (PRD section 28.3).
 struct DiffHunk {
-  std::string header;  // Текст заголовка @@ -old_start,count +new_start,count @@
+  std::string header;  // Text of header like @@ -old_start,count +new_start,count @@
   std::vector<DiffLine> lines;
 };
 
-// Структура одного файла в diff (PRD section 28.3).
+// Single file diff structure (PRD section 28.3).
 struct DiffFile {
-  std::string old_path;  // Путь к старому файлу
-  std::string new_path;  // Путь к новому файлу
+  std::string old_path;  // Path to old file
+  std::string new_path;  // Path to new file
   std::vector<DiffHunk> hunks;
 };
 
