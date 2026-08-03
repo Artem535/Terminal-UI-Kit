@@ -274,11 +274,14 @@ TEST(DiffParser, TruncatedHunkKeepsSeenLines) {
 }
 
 TEST(DiffParser, DropsNoNewlineMarkerLine) {
+  // Old side has one context line, new side has that context plus one added
+  // line; the trailing "\ No newline at end of file" marker must not be
+  // counted as a diff line on either side.
   const std::string diff =
       "diff --git a/x.txt b/x.txt\n"
       "--- a/x.txt\n"
       "+++ b/x.txt\n"
-      "@@ -1,2 +1,2 @@\n"
+      "@@ -1,1 +1,2 @@\n"
       " keep\n"
       "+add\n"
       "\\ No newline at end of file\n";
@@ -290,7 +293,10 @@ TEST(DiffParser, DropsNoNewlineMarkerLine) {
   const DiffHunk& hunk = files[0].hunks[0];
   ASSERT_EQ(hunk.lines.size(), 2u);
   EXPECT_EQ(hunk.lines[0].type, DiffLineType::kContext);
+  EXPECT_EQ(hunk.lines[0].old_line, 1);
+  EXPECT_EQ(hunk.lines[0].new_line, 1);
   EXPECT_EQ(hunk.lines[1].type, DiffLineType::kAdded);
+  EXPECT_FALSE(hunk.lines[1].old_line.has_value());
   EXPECT_EQ(hunk.lines[1].new_line, 2);
 }
 
