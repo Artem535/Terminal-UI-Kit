@@ -10,18 +10,11 @@ namespace terminal_ui_kit {
 namespace {
 
 constexpr std::string_view kDiffGitPrefix = "diff --git ";
-constexpr std::string_view kIndexPrefix = "index ";
-constexpr std::string_view kSimilarityPrefix = "similarity index ";
-constexpr std::string_view kRenameFromPrefix = "rename from ";
-constexpr std::string_view kRenameToPrefix = "rename to ";
-constexpr std::string_view kNewFileMode = "new file mode ";
-constexpr std::string_view kDeletedFileMode = "deleted file mode ";
 constexpr std::string_view kBinaryFilesPrefix = "Binary files ";
 constexpr std::string_view kOldPathPrefix = "--- ";
 constexpr std::string_view kNewPathPrefix = "+++ ";
 constexpr std::string_view kHunkPrefix = "@@";
-constexpr std::string_view kNoNewlineOld = "\\ No newline at end of file";
-constexpr std::string_view kNoNewlineNew = "\\ No newline at end of file";
+constexpr std::string_view kNoNewline = "\\ No newline at end of file";
 
 std::string NormalizePath(std::string_view path) {
   if (!path.empty() && path.front() == '"' && path.back() == '"') {
@@ -297,7 +290,7 @@ UnifiedDiffResult UnifiedDiffParser::Parse(const std::string& raw) {
 
     // 6. No-newline markers.
     //    Git emits "\ No newline at end of file" after the last hunk line.
-    if (line == kNoNewlineOld || line == kNoNewlineNew) {
+    if (line == kNoNewline) {
       if (file->hunks.empty()) {
         file->old_no_newline = true;
       } else {
