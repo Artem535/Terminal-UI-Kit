@@ -33,5 +33,9 @@ if(TERMINAL_UI_KIT_ENABLE_TREE_SITTER)
   target_link_libraries(terminal_ui_kit_unit_tests PRIVATE TerminalUiKit::Syntax)
 endif()
 
+# Link the diff library for parser tests.
+target_link_libraries(terminal_ui_kit_unit_tests PRIVATE TerminalUiKit::Diff)
+
 target_terminal_ui_kit_warnings(terminal_ui_kit_unit_tests)
+target_sources(terminal_ui_kit_unit_tests PRIVATE diff_parser_test.cc)
 gtest_discover_tests(terminal_ui_kit_unit_tests)

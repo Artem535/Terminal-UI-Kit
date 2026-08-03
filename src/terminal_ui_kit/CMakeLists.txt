@@ -106,11 +106,20 @@ target_terminal_ui_kit_warnings(terminal_ui_kit_document)
 target_link_libraries(terminal_ui_kit_document PUBLIC terminal_ui_kit_core)
 set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_document)
 _terminal_ui_kit_add_module(editor)
-_terminal_ui_kit_add_module(diff)
+# Diff module now provides a compiled library (UnifiedDiffParser) rather than a header‑only INTERFACE.
+add_library(terminal_ui_kit_diff diff/unified_diff.cc)
+add_library(TerminalUiKit::Diff ALIAS terminal_ui_kit_diff)
+target_include_directories(terminal_ui_kit_diff PUBLIC
+  $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>
+  $<INSTALL_INTERFACE:include>)
+target_compile_features(terminal_ui_kit_diff PUBLIC cxx_std_20)
+target_terminal_ui_kit_warnings(terminal_ui_kit_diff)
+target_link_libraries(terminal_ui_kit_diff PUBLIC terminal_ui_kit_core)
+set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_diff)
 _terminal_ui_kit_add_module(terminal)
 
 target_link_libraries(terminal_ui_kit_editor INTERFACE terminal_ui_kit_document)
-target_link_libraries(terminal_ui_kit_diff INTERFACE terminal_ui_kit_core)
+# The diff library already links against core publicly above; no additional INTERFACE linkage needed.
 
 # Syntax module: compiled library when ENABLE_TREE_SITTER is ON, otherwise INTERFACE.
 if(TERMINAL_UI_KIT_ENABLE_TREE_SITTER)
