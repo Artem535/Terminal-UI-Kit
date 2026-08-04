@@ -8,7 +8,8 @@ add_executable(terminal_ui_kit_unit_tests
   ansi_parser_test.cc
   log_model_test.cc
   wrapped_document_test.cc
-  selection_manager_test.cc)
+  selection_manager_test.cc
+  unified_diff_parser_test.cc)
 
 if(TERMINAL_UI_KIT_ENABLE_MARKDOWN)
   target_sources(terminal_ui_kit_unit_tests PRIVATE markdown_document_test.cc)
@@ -23,6 +24,7 @@ endif()
 target_link_libraries(terminal_ui_kit_unit_tests PRIVATE
   TerminalUiKit::Core
   TerminalUiKit::Document
+  TerminalUiKit::Diff
   GTest::gtest_main)
 
 if(TERMINAL_UI_KIT_ENABLE_MARKDOWN)
