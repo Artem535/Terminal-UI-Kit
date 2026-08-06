@@ -9,7 +9,8 @@ add_executable(terminal_ui_kit_unit_tests
   log_model_test.cc
   wrapped_document_test.cc
   selection_manager_test.cc
-  diff_parser_test.cc)
+  diff_parser_test.cc
+  line_number_test.cc)
 
 if(TERMINAL_UI_KIT_ENABLE_MARKDOWN)
   target_sources(terminal_ui_kit_unit_tests PRIVATE markdown_document_test.cc)

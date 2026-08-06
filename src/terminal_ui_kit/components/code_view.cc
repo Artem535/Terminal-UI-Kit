@@ -6,6 +6,7 @@
 #include <ftxui/dom/elements.hpp>
 
 #include "terminal_ui_kit/components/style_bridge.h"
+#include "terminal_ui_kit/core/line_number.h"
 #include "terminal_ui_kit/core/styled_text.h"
 #include "terminal_ui_kit/core/text_wrap.h"
 
@@ -39,9 +40,10 @@ ftxui::Element CodeView(std::string code, CodeViewOptions options) {
     auto flush_line = [&] {
       ftxui::Elements parts;
       if (options.show_line_numbers) {
-        std::string num = std::to_string(line_num);
-        num = std::string(4 - num.size(), ' ') + num;
-        parts.push_back(ftxui::text(num) | ftxui::color(ftxui::Color::GrayDark));
+        const std::size_t gutter_width =
+            options.line_number_width > 0 ? static_cast<std::size_t>(options.line_number_width) : 0;
+        parts.push_back(ftxui::text(FormatLineNumber(line_num, gutter_width)) |
+                        ftxui::color(ftxui::Color::GrayDark));
         parts.push_back(ftxui::text(" "));
       }
       for (auto& el : current_line_parts) parts.push_back(std::move(el));
@@ -80,9 +82,10 @@ ftxui::Element CodeView(std::string code, CodeViewOptions options) {
     for (std::size_t i = 0; i < wrapped.size(); ++i) {
       ftxui::Elements parts;
       if (options.show_line_numbers) {
-        std::string num = std::to_string(i + 1);
-        num = std::string(4 - num.size(), ' ') + num;
-        parts.push_back(ftxui::text(num) | ftxui::color(ftxui::Color::GrayDark));
+        const std::size_t gutter_width =
+            options.line_number_width > 0 ? static_cast<std::size_t>(options.line_number_width) : 0;
+        parts.push_back(ftxui::text(FormatLineNumber(i + 1, gutter_width)) |
+                        ftxui::color(ftxui::Color::GrayDark));
         parts.push_back(ftxui::text(" "));
       }
       parts.push_back(ftxui::text(wrapped[i]) | to_decorator(options.theme.code));
