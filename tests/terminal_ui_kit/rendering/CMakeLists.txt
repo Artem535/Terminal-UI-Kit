@@ -11,7 +11,9 @@ add_executable(terminal_ui_kit_rendering_tests
   collapsible_panel_test.cc
   modal_stack_test.cc
   log_view_test.cc
-  virtual_document_test.cc)
+  virtual_document_test.cc
+  toast_manager_test.cc
+  toast_view_test.cc)
 
 if(TERMINAL_UI_KIT_ENABLE_MARKDOWN)
   target_sources(terminal_ui_kit_rendering_tests PRIVATE markdown_view_test.cc)

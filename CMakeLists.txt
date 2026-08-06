@@ -26,6 +26,11 @@ include(TerminalUiKitOptions)
 include(TerminalUiKitWarnings)
 include(TerminalUiKitDependencies)
 
+# Resolve FTXUI at the top level so the imported ftxui::* targets are visible
+# to sibling directories (examples/, benchmarks/) that link them directly;
+# directory-scoped resolution inside src/ alone hides them. Idempotent.
+terminal_ui_kit_require_ftxui()
+
 add_subdirectory(src/terminal_ui_kit)
 
 if(TERMINAL_UI_KIT_BUILD_TESTS)
