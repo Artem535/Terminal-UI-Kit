@@ -1,0 +1,5 @@
+add_executable(terminal_ui_kit_example_diff_parser main.cc)
+target_link_libraries(terminal_ui_kit_example_diff_parser PRIVATE
+  TerminalUiKit::Diff
+  TerminalUiKit::Core)
+target_terminal_ui_kit_warnings(terminal_ui_kit_example_diff_parser)
