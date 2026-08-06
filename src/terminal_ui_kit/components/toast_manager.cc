@@ -1,9 +1,8 @@
 #include "terminal_ui_kit/components/toast_manager.h"
 
-#include <algorithm>
 #include <chrono>
-#include <iterator>
-#include <type_traits>
+#include <cstdint>
+#include <functional>
 #include <utility>
 
 namespace terminal_ui_kit {
@@ -153,16 +152,17 @@ void ToastManager::MoveFocus(int delta) {
     return;
   }
 
-  const std::size_t magnitude =
-      static_cast<std::size_t>(static_cast<long long>(delta < 0 ? -delta : delta));
-  const std::size_t step = magnitude % n == 0 ? n : magnitude % n;
+  // Compute the magnitude in a wide type so delta == INT_MIN can't overflow
+  // when negated.
+  const long long magnitude =
+      delta < 0 ? -static_cast<long long>(delta) : static_cast<long long>(delta);
+  const std::size_t step = magnitude % static_cast<long long>(n) == 0
+                               ? n
+                               : static_cast<std::size_t>(magnitude % static_cast<long long>(n));
   if (delta > 0) {
     focus_ = (*focus_ + step) % n;
   } else {
     focus_ = (*focus_ + n - (step % n)) % n;
-  }
-  if (focus_ == n) {
-    focus_ = 0;
   }
 }
 
