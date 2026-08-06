@@ -42,7 +42,7 @@ ftxui::Element CodeView(std::string code, CodeViewOptions options) {
       if (options.show_line_numbers) {
         const std::size_t gutter_width =
             options.line_number_width > 0 ? static_cast<std::size_t>(options.line_number_width) : 0;
-        parts.push_back(ftxui::text(FormatLineNumber(line_num, gutter_width)) |
+        parts.push_back(ftxui::text(format_line_number(line_num, gutter_width)) |
                         ftxui::color(ftxui::Color::GrayDark));
         parts.push_back(ftxui::text(" "));
       }
@@ -84,7 +84,7 @@ ftxui::Element CodeView(std::string code, CodeViewOptions options) {
       if (options.show_line_numbers) {
         const std::size_t gutter_width =
             options.line_number_width > 0 ? static_cast<std::size_t>(options.line_number_width) : 0;
-        parts.push_back(ftxui::text(FormatLineNumber(i + 1, gutter_width)) |
+        parts.push_back(ftxui::text(format_line_number(i + 1, gutter_width)) |
                         ftxui::color(ftxui::Color::GrayDark));
         parts.push_back(ftxui::text(" "));
       }

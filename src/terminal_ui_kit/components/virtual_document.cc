@@ -126,7 +126,7 @@ class VirtualDocumentImpl {
       const std::size_t gutter_width =
           options_.line_number_width > 0 ? static_cast<std::size_t>(options_.line_number_width) : 0;
       if (line.sub_line == 0) {
-        parts.push_back(ftxui::text(FormatLineNumber(line.logical_line + 1, gutter_width)) |
+        parts.push_back(ftxui::text(format_line_number(line.logical_line + 1, gutter_width)) |
                         ftxui::color(ftxui::Color::GrayDark));
         parts.push_back(ftxui::text(" "));
       } else {
