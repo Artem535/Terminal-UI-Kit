@@ -2,7 +2,7 @@
 //
 // Interactive demo of the toast system: a ToastManager holds all retained
 // state (queue, focus, timing via an injected clock), and the ToastView
-// renders it and maps keyboard input. The view drives ToastManager::Update()
+// renders it and maps keyboard input. The view drives ToastManager::update()
 // on every frame, so timed toasts expire and the queue drains under a normal
 // ScreenInteractive loop -- nothing here creates its own event loop or
 // background thread.
@@ -54,7 +54,7 @@ int main() {
   auto show = [&](std::string message, ToastSeverity severity,
                   std::optional<std::chrono::milliseconds> timeout,
                   std::optional<ToastAction> action = std::nullopt) {
-    manager.Show(ToastOptions{std::move(message), severity, timeout, std::move(action)});
+    manager.show(ToastOptions{std::move(message), severity, timeout, std::move(action)});
   };
 
   auto screen = ftxui::ScreenInteractive::Fullscreen();
@@ -121,12 +121,12 @@ int main() {
       return true;
     }
     if (event == ftxui::Event::Character('c')) {
-      manager.ClearAll();
+      manager.clear_all();
       return true;
     }
     if (event == ftxui::Event::Character('t')) {
       color = !color;
-      toast_view.SetColor(color);
+      toast_view.set_color(color);
       return true;
     }
     if (event == ftxui::Event::Character('q') || event == ftxui::Event::Escape) {

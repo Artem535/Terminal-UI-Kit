@@ -100,15 +100,15 @@ class ToastViewImpl : public ftxui::ComponentBase {
         no_color_theme_(terminal_ui_kit::without_color(theme)),
         color_(true) {}
 
-  void SetColor(bool enabled) { color_ = enabled; }
-  bool Color() const { return color_; }
+  void set_color(bool enabled) { color_ = enabled; }
+  bool color() const { return color_; }
 
  private:
   ftxui::Element Render() override {
-    manager_.Update();
+    manager_.update();
     const Theme& theme = color_ ? color_theme_ : no_color_theme_;
     bool has_timed = false;
-    for (const ToastInfo& toast : manager_.Visible()) {
+    for (const ToastInfo& toast : manager_.visible()) {
       if (!toast.persistent) {
         has_timed = true;
         break;
@@ -128,24 +128,22 @@ class ToastViewImpl : public ftxui::ComponentBase {
       return false;
     }
     if (event == ftxui::Event::Tab) {
-      manager_.MoveFocus(1);
+      manager_.move_focus(1);
       return true;
     }
     if (event == ftxui::Event::TabReverse) {
-      manager_.MoveFocus(-1);
+      manager_.move_focus(-1);
       return true;
     }
     if (event == ftxui::Event::Return) {
-      if (manager_.Focus().has_value()) {
-        manager_.InvokeFocused();
-        return true;
-      }
-      return false;
+      // Only consume Enter when the focused toast has an invocable action;
+      // otherwise let the key fall through.
+      return manager_.invoke_focused();
     }
     if (event == ftxui::Event::Delete || event == ftxui::Event::Backspace) {
-      const std::optional<std::uint64_t> id = manager_.FocusedId();
+      const std::optional<std::uint64_t> id = manager_.focused_id();
       if (id.has_value()) {
-        manager_.Close(*id);
+        manager_.close(*id);
         return true;
       }
       return false;
@@ -160,7 +158,7 @@ class ToastViewImpl : public ftxui::ComponentBase {
 };
 
 ftxui::Element ToastElement(const ToastManager& manager, const Theme& theme) {
-  const std::vector<ToastInfo> toasts = manager.Visible();
+  const std::vector<ToastInfo> toasts = manager.visible();
   if (toasts.empty()) {
     return ftxui::text("");
   }
@@ -177,8 +175,8 @@ ToastView::ToastView(ToastManager& manager, const Theme& theme)
 
 ftxui::Component ToastView::component() const { return impl_; }
 
-void ToastView::SetColor(bool enabled) { impl_->SetColor(enabled); }
+void ToastView::set_color(bool enabled) { impl_->set_color(enabled); }
 
-bool ToastView::Color() const { return impl_->Color(); }
+bool ToastView::color() const { return impl_->color(); }
 
 }  // namespace terminal_ui_kit

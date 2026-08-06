@@ -72,49 +72,58 @@ class SystemToastClock final : public ToastClock {
 // increasing id; visible toasts keep insertion order; when a slot frees up the
 // longest-waiting queued toast is promoted into it. Timed toasts expire oldest
 // (lowest id) first when their remaining time elapses. The focused toast's
-// timeout is paused while it stays focused.
+// timeout is paused while it stays focused. Time spent in the queue does not
+// count toward a toast's timeout: its countdown starts when it becomes visible,
+// so a timed toast queued behind a persistent one only starts ticking once a
+// slot frees up.
 class ToastManager {
  public:
-  // `clock` must outlive the manager; `max_visible` caps how many toasts are
-  // shown at once (extra toasts wait in the queue).
+  // `clock` must outlive the manager and must not be null (a null clock turns
+  // `update()` into a no-op rather than crashing); `max_visible` caps how many
+  // toasts are shown at once (extra toasts wait in the queue).
   explicit ToastManager(std::shared_ptr<const ToastClock> clock, std::size_t max_visible = 5);
 
   // Adds a toast, returning its stable id. The toast is shown immediately if a
   // visible slot is free, otherwise it waits in the queue.
-  std::uint64_t Show(ToastOptions options);
+  std::uint64_t show(ToastOptions options);
 
   // Removes a visible or queued toast by id. No-op when the id is unknown.
-  void Close(std::uint64_t id);
+  void close(std::uint64_t id);
 
   // Removes every toast and clears focus.
-  void ClearAll();
+  void clear_all();
 
   // Advances time by the injected clock's delta and applies expirations and
   // queue promotion. Call each frame (the toast view does this on render).
-  void Update();
+  void update();
 
   // --- focus ----------------------------------------------------------------
-  // Focus is an index into the visible list; std::nullopt means no toast is
-  // focused. All focus operations keep the index valid (see Close/Update).
+  // focus is an index into the visible list; std::nullopt means no toast is
+  // focused. All focus operations keep the index valid (see close/update).
 
-  std::optional<std::size_t> Focus() const;
-  void SetFocus(std::optional<std::size_t> index);
+  std::optional<std::size_t> focus() const;
+  void set_focus(std::optional<std::size_t> index);
   // Moves focus by `delta` positions, wrapping around the visible toasts. With
   // no focus set, enters at the first toast (delta > 0) or last (delta < 0).
-  void MoveFocus(int delta);
-  [[nodiscard]] std::optional<std::uint64_t> FocusedId() const;
+  void move_focus(int delta);
+  [[nodiscard]] std::optional<std::uint64_t> focused_id() const;
 
-  // Invokes the focused toast's action (at most once) and closes the toast.
-  void InvokeFocused();
-  // Invokes the action of the toast with `id` (at most once) and closes it.
-  void Invoke(std::uint64_t id);
+  // Invokes the focused toast's action (at most once) and closes it, returning
+  // true when an action was actually invoked (false when unfocused or the
+  // focused toast has no action).
+  bool invoke_focused();
+  // Invokes the toast's action with `id` (at most once) and closes it,
+  // returning true when an action was invoked. Returns false when the id is
+  // unknown, the toast has no action, or its action was already invoked. A
+  // toast without an action is not closed by this call; use `close` instead.
+  bool invoke(std::uint64_t id);
 
   // --- read-only access ------------------------------------------------------
-  [[nodiscard]] std::vector<ToastInfo> Visible() const;
-  [[nodiscard]] std::size_t VisibleCount() const;
-  [[nodiscard]] std::size_t QueuedCount() const;
-  [[nodiscard]] std::size_t MaxVisible() const;
-  [[nodiscard]] bool Empty() const;
+  [[nodiscard]] std::vector<ToastInfo> visible() const;
+  [[nodiscard]] std::size_t visible_count() const;
+  [[nodiscard]] std::size_t queued_count() const;
+  [[nodiscard]] std::size_t max_visible() const;
+  [[nodiscard]] bool empty() const;
 
  private:
   struct StoredToast {

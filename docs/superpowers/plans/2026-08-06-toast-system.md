@@ -12,7 +12,7 @@ Split retained state from rendering (AGENTS.md architecture rule):
   id counter. Only depends on Core types.
 - **`ToastView`** (`components/toast_view.{h,cc}`) — a thin `ftxui::ComponentBase`
   wrapper. Renders the manager's visible toasts each frame, drives
-  `ToastManager::Update()` on render (so timed toasts expire naturally under a
+  `ToastManager::update()` on render (so timed toasts expire naturally under a
   live `ScreenInteractive` loop without creating its own event loop or threads),
   and maps keyboard input to the manager.
 
@@ -25,11 +25,11 @@ Split retained state from rendering (AGENTS.md architecture rule):
   `uint64_t` id. Visible toasts keep insertion order; a FIFO deque holds
   overflow; expiry/close promotes from the front of the queue to fill a free slot.
 - **Timeout pause while focused**: per-toast `remaining` duration decremented on
-  each `Update()` by the clock delta. The focused toast's counter is frozen, so
+  each `update()` by the clock delta. The focused toast's counter is frozen, so
   its timeout is paused while focused.
 - **Safe action callbacks**: `action_invoked` guards the at-most-once contract.
   The `std::function` callback and toast id are copied *before* the toast is
-  closed; the callback runs after `Close()`, so removing/adding toasts during a
+  closed; the callback runs after `close()`, so removing/adding toasts during a
   callback never dereferences freed storage.
 - **Focus stability**: focus is an index into the visible list. Removing a toast
   clears/clamps the index; promotion only grows the list; every mutation leaves

@@ -37,7 +37,7 @@ ToastManager::StoredToast ToastManager::MakeStored(const ToastOptions& options) 
   return toast;
 }
 
-std::uint64_t ToastManager::Show(ToastOptions options) {
+std::uint64_t ToastManager::show(ToastOptions options) {
   StoredToast toast = MakeStored(options);
   const std::uint64_t id = toast.id;
   if (visible_.size() < max_visible_) {
@@ -69,7 +69,7 @@ void ToastManager::SetFocusAfterRemoval(std::size_t removed_index) {
   }
 }
 
-void ToastManager::Close(std::uint64_t id) {
+void ToastManager::close(std::uint64_t id) {
   for (std::size_t i = 0; i < visible_.size(); ++i) {
     if (visible_[i].id != id) {
       continue;
@@ -87,13 +87,16 @@ void ToastManager::Close(std::uint64_t id) {
   }
 }
 
-void ToastManager::ClearAll() {
+void ToastManager::clear_all() {
   visible_.clear();
   queue_.clear();
   focus_.reset();
 }
 
-void ToastManager::Update() {
+void ToastManager::update() {
+  if (!clock_) {
+    return;  // A null clock is a no-op, never a crash (documented on the ctor).
+  }
   const std::chrono::steady_clock::time_point now = clock_->now();
   if (!last_tick_.has_value()) {
     last_tick_ = now;
@@ -132,16 +135,16 @@ void ToastManager::Update() {
   PromoteFromQueue();
 }
 
-std::optional<std::size_t> ToastManager::Focus() const { return focus_; }
+std::optional<std::size_t> ToastManager::focus() const { return focus_; }
 
-void ToastManager::SetFocus(std::optional<std::size_t> index) {
+void ToastManager::set_focus(std::optional<std::size_t> index) {
   focus_.reset();
   if (index.has_value() && *index < visible_.size()) {
     focus_ = index;
   }
 }
 
-void ToastManager::MoveFocus(int delta) {
+void ToastManager::move_focus(int delta) {
   if (visible_.empty()) {
     focus_.reset();
     return;
@@ -166,42 +169,44 @@ void ToastManager::MoveFocus(int delta) {
   }
 }
 
-std::optional<std::uint64_t> ToastManager::FocusedId() const {
+std::optional<std::uint64_t> ToastManager::focused_id() const {
   if (!focus_.has_value() || *focus_ >= visible_.size()) {
     return std::nullopt;
   }
   return visible_[*focus_].id;
 }
 
-void ToastManager::Invoke(std::uint64_t id) {
+bool ToastManager::invoke(std::uint64_t id) {
   for (std::size_t i = 0; i < visible_.size(); ++i) {
     if (visible_[i].id != id) {
       continue;
     }
     StoredToast& toast = visible_[i];
     if (!toast.action.has_value() || toast.action_invoked) {
-      return;
+      return false;
     }
     toast.action_invoked = true;
     // Copy the callback and id before closing so the callback can freely add
     // or remove toasts without this method touching freed storage.
     std::function<void()> callback = toast.action->callback;
-    Close(id);
+    close(id);
     if (callback) {
       callback();
     }
-    return;
+    return true;
   }
   // Queued toasts are not actionable until they become visible.
+  return false;
 }
 
-void ToastManager::InvokeFocused() {
+bool ToastManager::invoke_focused() {
   if (focus_.has_value() && *focus_ < visible_.size()) {
-    Invoke(visible_[*focus_].id);
+    return invoke(visible_[*focus_].id);
   }
+  return false;
 }
 
-std::vector<ToastInfo> ToastManager::Visible() const {
+std::vector<ToastInfo> ToastManager::visible() const {
   std::vector<ToastInfo> result;
   result.reserve(visible_.size());
   for (std::size_t i = 0; i < visible_.size(); ++i) {
@@ -220,12 +225,12 @@ std::vector<ToastInfo> ToastManager::Visible() const {
   return result;
 }
 
-std::size_t ToastManager::VisibleCount() const { return visible_.size(); }
+std::size_t ToastManager::visible_count() const { return visible_.size(); }
 
-std::size_t ToastManager::QueuedCount() const { return queue_.size(); }
+std::size_t ToastManager::queued_count() const { return queue_.size(); }
 
-std::size_t ToastManager::MaxVisible() const { return max_visible_; }
+std::size_t ToastManager::max_visible() const { return max_visible_; }
 
-bool ToastManager::Empty() const { return visible_.empty() && queue_.empty(); }
+bool ToastManager::empty() const { return visible_.empty() && queue_.empty(); }
 
 }  // namespace terminal_ui_kit

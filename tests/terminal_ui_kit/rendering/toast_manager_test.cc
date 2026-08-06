@@ -39,7 +39,7 @@ ToastOptions Persistent(std::string message) {
 
 std::vector<std::string> Messages(const ToastManager& manager) {
   std::vector<std::string> out;
-  for (const ToastInfo& toast : manager.Visible()) {
+  for (const ToastInfo& toast : manager.visible()) {
     out.push_back(toast.message);
   }
   return out;
@@ -54,21 +54,21 @@ class ToastManagerTest : public ::testing::Test {
 };
 
 TEST_F(ToastManagerTest, OneToastIsVisible) {
-  manager_.Show(Make("hello"));
+  manager_.show(Make("hello"));
 
-  ASSERT_EQ(manager_.VisibleCount(), 1u);
-  ASSERT_EQ(manager_.Visible().size(), 1u);
-  EXPECT_EQ(manager_.Visible()[0].message, "hello");
-  EXPECT_EQ(manager_.QueuedCount(), 0u);
+  ASSERT_EQ(manager_.visible_count(), 1u);
+  ASSERT_EQ(manager_.visible().size(), 1u);
+  EXPECT_EQ(manager_.visible()[0].message, "hello");
+  EXPECT_EQ(manager_.queued_count(), 0u);
 }
 
 TEST_F(ToastManagerTest, EachSeverityIsPreserved) {
-  manager_.Show(Make("i", ToastSeverity::kInfo));
-  manager_.Show(Make("s", ToastSeverity::kSuccess));
-  manager_.Show(Make("w", ToastSeverity::kWarning));
-  manager_.Show(Make("e", ToastSeverity::kError));
+  manager_.show(Make("i", ToastSeverity::kInfo));
+  manager_.show(Make("s", ToastSeverity::kSuccess));
+  manager_.show(Make("w", ToastSeverity::kWarning));
+  manager_.show(Make("e", ToastSeverity::kError));
 
-  const std::vector<ToastInfo> visible = manager_.Visible();
+  const std::vector<ToastInfo> visible = manager_.visible();
   ASSERT_EQ(visible.size(), 3u);
   EXPECT_EQ(visible[0].severity, ToastSeverity::kInfo);
   EXPECT_EQ(visible[1].severity, ToastSeverity::kSuccess);
@@ -76,227 +76,250 @@ TEST_F(ToastManagerTest, EachSeverityIsPreserved) {
 }
 
 TEST_F(ToastManagerTest, ShowReturnsStableIds) {
-  const std::uint64_t first = manager_.Show(Make("a"));
-  const std::uint64_t second = manager_.Show(Make("b"));
+  const std::uint64_t first = manager_.show(Make("a"));
+  const std::uint64_t second = manager_.show(Make("b"));
 
   EXPECT_NE(first, second);
-  EXPECT_EQ(manager_.Visible()[0].id, first);
-  EXPECT_EQ(manager_.Visible()[1].id, second);
+  EXPECT_EQ(manager_.visible()[0].id, first);
+  EXPECT_EQ(manager_.visible()[1].id, second);
 }
 
 TEST_F(ToastManagerTest, QueuePreservesInsertionOrder) {
   // max_visible = 3 (from fixture). Show 6 toasts.
   for (int i = 1; i <= 6; ++i) {
-    manager_.Show(Make("toast-" + std::to_string(i)));
+    manager_.show(Make("toast-" + std::to_string(i)));
   }
 
-  ASSERT_EQ(manager_.VisibleCount(), 3u);
-  ASSERT_EQ(manager_.QueuedCount(), 3u);
+  ASSERT_EQ(manager_.visible_count(), 3u);
+  ASSERT_EQ(manager_.queued_count(), 3u);
   EXPECT_EQ(Messages(manager_), (std::vector<std::string>{"toast-1", "toast-2", "toast-3"}));
 
   // Close the oldest visible; the longest-waiting queued toast is promoted.
-  manager_.Close(manager_.Visible()[0].id);
-  ASSERT_EQ(manager_.VisibleCount(), 3u);
+  manager_.close(manager_.visible()[0].id);
+  ASSERT_EQ(manager_.visible_count(), 3u);
   EXPECT_EQ(Messages(manager_), (std::vector<std::string>{"toast-2", "toast-3", "toast-4"}));
 }
 
 TEST_F(ToastManagerTest, VisibleCountRespectsLimit) {
   // max_visible = 3; adding 5 leaves 2 queued.
   for (int i = 1; i <= 5; ++i) {
-    const std::uint64_t id = manager_.Show(Make("t" + std::to_string(i)));
+    const std::uint64_t id = manager_.show(Make("t" + std::to_string(i)));
     EXPECT_NE(id, 0u);
   }
 
-  EXPECT_EQ(manager_.VisibleCount(), 3u);
-  EXPECT_EQ(manager_.QueuedCount(), 2u);
-  EXPECT_EQ(manager_.MaxVisible(), 3u);
+  EXPECT_EQ(manager_.visible_count(), 3u);
+  EXPECT_EQ(manager_.queued_count(), 2u);
+  EXPECT_EQ(manager_.max_visible(), 3u);
 }
 
 TEST_F(ToastManagerTest, TimedToastExpires) {
-  manager_.Show(Make("ephemeral", ToastSeverity::kInfo, 5s));
+  manager_.show(Make("ephemeral", ToastSeverity::kInfo, 5s));
 
-  manager_.Update();  // establish the clock baseline
-  ASSERT_EQ(manager_.VisibleCount(), 1u);
+  manager_.update();  // establish the clock baseline
+  ASSERT_EQ(manager_.visible_count(), 1u);
   clock_->Advance(6s);
-  manager_.Update();
+  manager_.update();
 
-  EXPECT_TRUE(manager_.Empty());
+  EXPECT_TRUE(manager_.empty());
 }
 
 TEST_F(ToastManagerTest, TimedToastNeverExpiresBeforeItsDeadline) {
-  manager_.Show(Make("ephemeral", ToastSeverity::kInfo, 5s));
+  manager_.show(Make("ephemeral", ToastSeverity::kInfo, 5s));
 
-  manager_.Update();
+  manager_.update();
   clock_->Advance(4s);
-  manager_.Update();
+  manager_.update();
 
-  ASSERT_EQ(manager_.VisibleCount(), 1u);
-  EXPECT_EQ(manager_.Visible()[0].message, "ephemeral");
+  ASSERT_EQ(manager_.visible_count(), 1u);
+  EXPECT_EQ(manager_.visible()[0].message, "ephemeral");
 }
 
 TEST_F(ToastManagerTest, PersistentToastNeverTimesOut) {
-  manager_.Show(Persistent("sticky"));
+  manager_.show(Persistent("sticky"));
 
-  manager_.Update();
+  manager_.update();
   clock_->Advance(3600s);
-  manager_.Update();
+  manager_.update();
 
-  ASSERT_EQ(manager_.VisibleCount(), 1u);
-  EXPECT_EQ(manager_.Visible()[0].persistent, true);
+  ASSERT_EQ(manager_.visible_count(), 1u);
+  EXPECT_EQ(manager_.visible()[0].persistent, true);
 }
 
 TEST_F(ToastManagerTest, ManualCloseRemovesVisibleToast) {
-  const std::uint64_t id = manager_.Show(Make("closable"));
-  ASSERT_EQ(manager_.VisibleCount(), 1u);
+  const std::uint64_t id = manager_.show(Make("closable"));
+  ASSERT_EQ(manager_.visible_count(), 1u);
 
-  manager_.Close(id);
+  manager_.close(id);
 
-  EXPECT_TRUE(manager_.Empty());
+  EXPECT_TRUE(manager_.empty());
 }
 
 TEST_F(ToastManagerTest, ActionCallbackRunsAndClosesToast) {
   int calls = 0;
   const std::uint64_t id =
-      manager_.Show(Make("act", ToastSeverity::kInfo, 5s, ToastAction{"go", [&] { ++calls; }}));
+      manager_.show(Make("act", ToastSeverity::kInfo, 5s, ToastAction{"go", [&] { ++calls; }}));
 
-  manager_.Invoke(id);
+  manager_.invoke(id);
 
   EXPECT_EQ(calls, 1);
-  EXPECT_TRUE(manager_.Empty());
+  EXPECT_TRUE(manager_.empty());
 }
 
 TEST_F(ToastManagerTest, ActionRunsAtMostOnce) {
   int calls = 0;
   const std::uint64_t id =
-      manager_.Show(Make("act", ToastSeverity::kInfo, 5s, ToastAction{"go", [&] { ++calls; }}));
+      manager_.show(Make("act", ToastSeverity::kInfo, 5s, ToastAction{"go", [&] { ++calls; }}));
 
-  manager_.Invoke(id);
-  manager_.Invoke(id);  // toast is already gone; must be a no-op
-  manager_.Invoke(id);
+  manager_.invoke(id);
+  manager_.invoke(id);  // toast is already gone; must be a no-op
 
   EXPECT_EQ(calls, 1);
 }
 
+TEST_F(ToastManagerTest, InvokeReturnsFalseForActionlessToast) {
+  const std::uint64_t id = manager_.show(Make("no-action"));
+
+  // No action: invoke reports failure and does not close the toast.
+  EXPECT_FALSE(manager_.invoke(id));
+  EXPECT_EQ(manager_.visible_count(), 1u);
+}
+
+TEST_F(ToastManagerTest, InvokeReturnsTrueAndClosesWithAction) {
+  int calls = 0;
+  const std::uint64_t id =
+      manager_.show(Make("act", ToastSeverity::kInfo, 5s, ToastAction{"go", [&] { ++calls; }}));
+
+  EXPECT_TRUE(manager_.invoke(id));
+  EXPECT_TRUE(manager_.empty());
+  EXPECT_EQ(calls, 1);
+}
+
+TEST_F(ToastManagerTest, NullClockUpdateIsANoOp) {
+  ToastManager manager(nullptr);  // documented: a null clock never crashes
+  EXPECT_NO_FATAL_FAILURE(manager.update());
+  EXPECT_NO_FATAL_FAILURE(manager.clear_all());
+}
+
 TEST_F(ToastManagerTest, FocusNavigationWraps) {
-  manager_.Show(Make("a"));
-  manager_.Show(Make("b"));
-  manager_.Show(Make("c"));
+  manager_.show(Make("a"));
+  manager_.show(Make("b"));
+  manager_.show(Make("c"));
 
-  EXPECT_FALSE(manager_.Focus().has_value());
+  EXPECT_FALSE(manager_.focus().has_value());
 
-  manager_.MoveFocus(1);
-  EXPECT_EQ(*manager_.Focus(), 0u);
-  EXPECT_EQ(manager_.Visible()[0].focused, true);
+  manager_.move_focus(1);
+  EXPECT_EQ(*manager_.focus(), 0u);
+  EXPECT_EQ(manager_.visible()[0].focused, true);
 
-  manager_.MoveFocus(1);
-  EXPECT_EQ(*manager_.Focus(), 1u);
-  manager_.MoveFocus(1);
-  EXPECT_EQ(*manager_.Focus(), 2u);
-  manager_.MoveFocus(1);  // wrap to first
-  EXPECT_EQ(*manager_.Focus(), 0u);
-  manager_.MoveFocus(-1);  // wrap to last
-  EXPECT_EQ(*manager_.Focus(), 2u);
+  manager_.move_focus(1);
+  EXPECT_EQ(*manager_.focus(), 1u);
+  manager_.move_focus(1);
+  EXPECT_EQ(*manager_.focus(), 2u);
+  manager_.move_focus(1);  // wrap to first
+  EXPECT_EQ(*manager_.focus(), 0u);
+  manager_.move_focus(-1);  // wrap to last
+  EXPECT_EQ(*manager_.focus(), 2u);
 }
 
 TEST_F(ToastManagerTest, FocusedIdTracksFocus) {
-  const std::uint64_t first = manager_.Show(Make("a"));
-  manager_.Show(Make("b"));
+  const std::uint64_t first = manager_.show(Make("a"));
+  manager_.show(Make("b"));
 
-  EXPECT_FALSE(manager_.FocusedId().has_value());
-  manager_.SetFocus(1);
-  ASSERT_TRUE(manager_.FocusedId().has_value());
-  EXPECT_NE(manager_.FocusedId().value(), first);
+  EXPECT_FALSE(manager_.focused_id().has_value());
+  manager_.set_focus(1);
+  ASSERT_TRUE(manager_.focused_id().has_value());
+  EXPECT_NE(manager_.focused_id().value(), first);
 }
 
 TEST_F(ToastManagerTest, TimeoutPausedWhileFocused) {
-  manager_.Show(Make("timed", ToastSeverity::kInfo, 5s));
-  manager_.SetFocus(0);
+  manager_.show(Make("timed", ToastSeverity::kInfo, 5s));
+  manager_.set_focus(0);
 
-  manager_.Update();  // clock baseline
+  manager_.update();  // clock baseline
   clock_->Advance(300ms);
-  manager_.Update();
+  manager_.update();
   clock_->Advance(1s);
-  manager_.Update();
+  manager_.update();
   clock_->Advance(5s);  // would be 6.3s elapsed: past the 5s deadline
-  manager_.Update();
+  manager_.update();
 
   // The focused toast's timer is paused, so it must still be present.
-  ASSERT_EQ(manager_.VisibleCount(), 1u);
-  EXPECT_EQ(manager_.Visible()[0].message, "timed");
+  ASSERT_EQ(manager_.visible_count(), 1u);
+  EXPECT_EQ(manager_.visible()[0].message, "timed");
 }
 
 TEST_F(ToastManagerTest, TimeoutResumesWhenFocusMovesAway) {
-  manager_.Show(Make("timed", ToastSeverity::kInfo, 5s));
-  manager_.SetFocus(0);
+  manager_.show(Make("timed", ToastSeverity::kInfo, 5s));
+  manager_.set_focus(0);
 
-  manager_.Update();
+  manager_.update();
   clock_->Advance(6s);
-  manager_.Update();
-  ASSERT_EQ(manager_.VisibleCount(), 1u);  // paused while focused
+  manager_.update();
+  ASSERT_EQ(manager_.visible_count(), 1u);  // paused while focused
 
-  manager_.SetFocus(std::nullopt);  // leave focus -> timer resumes
+  manager_.set_focus(std::nullopt);  // leave focus -> timer resumes
   clock_->Advance(6s);
-  manager_.Update();
+  manager_.update();
 
-  EXPECT_TRUE(manager_.Empty());
+  EXPECT_TRUE(manager_.empty());
 }
 
 TEST_F(ToastManagerTest, ClearAllEmptiesEverythingAndDropsFocus) {
-  manager_.Show(Make("a"));
-  manager_.Show(Make("b"));
-  manager_.SetFocus(0);
-  manager_.Update();
+  manager_.show(Make("a"));
+  manager_.show(Make("b"));
+  manager_.set_focus(0);
+  manager_.update();
 
-  manager_.ClearAll();
+  manager_.clear_all();
 
-  EXPECT_TRUE(manager_.Empty());
-  EXPECT_FALSE(manager_.Focus().has_value());
+  EXPECT_TRUE(manager_.empty());
+  EXPECT_FALSE(manager_.focus().has_value());
 }
 
 TEST_F(ToastManagerTest, RemovingFocusedToastDropsFocusToNullopt) {
-  manager_.Show(Make("a"));
-  manager_.Show(Make("b"));
-  manager_.SetFocus(0);
-  ASSERT_TRUE(manager_.Focus().has_value());
+  manager_.show(Make("a"));
+  manager_.show(Make("b"));
+  manager_.set_focus(0);
+  ASSERT_TRUE(manager_.focus().has_value());
 
-  manager_.Close(manager_.Visible()[0].id);
+  manager_.close(manager_.visible()[0].id);
 
-  EXPECT_FALSE(manager_.Focus().has_value());
+  EXPECT_FALSE(manager_.focus().has_value());
 }
 
 TEST_F(ToastManagerTest, FocusStaysValidWhenNonFocusedToastIsRemoved) {
-  manager_.Show(Make("a"));
-  manager_.Show(Make("b"));
-  manager_.Show(Make("c"));
-  manager_.SetFocus(2);  // on "c"
+  manager_.show(Make("a"));
+  manager_.show(Make("b"));
+  manager_.show(Make("c"));
+  manager_.set_focus(2);  // on "c"
 
-  manager_.Close(manager_.Visible()[0].id);  // remove "a"; focus shifts to index 1
+  manager_.close(manager_.visible()[0].id);  // remove "a"; focus shifts to index 1
 
-  ASSERT_TRUE(manager_.Focus().has_value());
-  EXPECT_EQ(*manager_.Focus(), 1u);
-  ASSERT_TRUE(manager_.FocusedId().has_value());
-  EXPECT_EQ(manager_.FocusedId().value(), manager_.Visible()[1].id);
+  ASSERT_TRUE(manager_.focus().has_value());
+  EXPECT_EQ(*manager_.focus(), 1u);
+  ASSERT_TRUE(manager_.focused_id().has_value());
+  EXPECT_EQ(manager_.focused_id().value(), manager_.visible()[1].id);
 }
 
 TEST_F(ToastManagerTest, RemoveDuringCallbackIsSafe) {
-  const std::uint64_t victim = manager_.Show(Make("victim"));
+  const std::uint64_t victim = manager_.show(Make("victim"));
   int calls = 0;
-  const std::uint64_t first = manager_.Show(Make(
+  const std::uint64_t first = manager_.show(Make(
       "first", ToastSeverity::kInfo, 5s, ToastAction{"go", [&] {
                                                        ++calls;
                                                        // The callback removes a *different* toast
-                                                       // and adds one while the manager's Invoke()
+                                                       // and adds one while the manager's invoke()
                                                        // is mid-flight.
-                                                       manager_.Close(victim);
-                                                       manager_.Show(Make("new-from-callback"));
+                                                       manager_.close(victim);
+                                                       manager_.show(Make("new-from-callback"));
                                                      }}));
 
-  manager_.Invoke(first);
+  manager_.invoke(first);
 
   EXPECT_EQ(calls, 1);
   bool victim_present = false;
   bool new_present = false;
-  for (const ToastInfo& toast : manager_.Visible()) {
+  for (const ToastInfo& toast : manager_.visible()) {
     if (toast.message == "victim") victim_present = true;
     if (toast.message == "new-from-callback") new_present = true;
   }
@@ -308,44 +331,44 @@ TEST_F(ToastManagerTest, TimedExpiryPromotesFromQueueAndKeepsFocusValid) {
   auto fake = std::make_shared<FakeClock>();
   ToastManager small(fake, /*max_visible=*/1);
 
-  small.Show(Make("one", ToastSeverity::kInfo, 5s));    // visible
-  small.Show(Make("two", ToastSeverity::kInfo, 5s));    // queued
-  small.Show(Make("three", ToastSeverity::kInfo, 5s));  // queued
-  ASSERT_EQ(small.VisibleCount(), 1u);
-  ASSERT_EQ(small.QueuedCount(), 2u);
+  small.show(Make("one", ToastSeverity::kInfo, 5s));    // visible
+  small.show(Make("two", ToastSeverity::kInfo, 5s));    // queued
+  small.show(Make("three", ToastSeverity::kInfo, 5s));  // queued
+  ASSERT_EQ(small.visible_count(), 1u);
+  ASSERT_EQ(small.queued_count(), 2u);
 
-  small.Update();     // clock baseline
+  small.update();     // clock baseline
   fake->Advance(6s);  // "one" expires
-  small.Update();
+  small.update();
 
   // The oldest queued toast is promoted into the freed slot.
-  ASSERT_EQ(small.VisibleCount(), 1u);
-  ASSERT_EQ(small.QueuedCount(), 1u);
-  EXPECT_EQ(small.Visible()[0].message, "two");
+  ASSERT_EQ(small.visible_count(), 1u);
+  ASSERT_EQ(small.queued_count(), 1u);
+  EXPECT_EQ(small.visible()[0].message, "two");
 
   fake->Advance(6s);
-  small.Update();
-  ASSERT_EQ(small.Visible()[0].message, "three");
-  EXPECT_TRUE(small.Empty() == false);
+  small.update();
+  ASSERT_EQ(small.visible()[0].message, "three");
+  EXPECT_TRUE(small.empty() == false);
 
   fake->Advance(6s);
-  small.Update();
-  EXPECT_TRUE(small.Empty());
+  small.update();
+  EXPECT_TRUE(small.empty());
 
-  // Focus stays valid (unfocused) through removals/promotions.
-  EXPECT_FALSE(small.Focus().has_value());
+  // focus stays valid (unfocused) through removals/promotions.
+  EXPECT_FALSE(small.focus().has_value());
 }
 
 TEST_F(ToastManagerTest, ZeroMaxVisibleIsClampedToOne) {
   auto fake = std::make_shared<FakeClock>();
   ToastManager clamped(fake, /*max_visible=*/0);
 
-  clamped.Show(Make("a"));
-  clamped.Show(Make("b"));
+  clamped.show(Make("a"));
+  clamped.show(Make("b"));
 
-  EXPECT_EQ(clamped.MaxVisible(), 1u);
-  EXPECT_EQ(clamped.VisibleCount(), 1u);
-  EXPECT_EQ(clamped.QueuedCount(), 1u);
+  EXPECT_EQ(clamped.max_visible(), 1u);
+  EXPECT_EQ(clamped.visible_count(), 1u);
+  EXPECT_EQ(clamped.queued_count(), 1u);
 }
 
 }  // namespace

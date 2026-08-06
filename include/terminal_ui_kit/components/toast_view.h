@@ -21,9 +21,9 @@ class ToastViewImpl;
 
 // Interactive toast tray. It holds no state of its own beyond the theme; all
 // retained state lives in the `ToastManager` passed to the constructor, which
-// must outlive the view. Rendering calls `ToastManager::Update()` each frame so
+// must outlive the view. Rendering calls `ToastManager::update()` each frame so
 // timed toasts expire under a live `ScreenInteractive` loop without an event
-// loop or background thread of its own. Focus, queueing and actions are wholly
+// loop or background thread of its own. focus, queueing and actions are wholly
 // delegated to the manager.
 class ToastView {
  public:
@@ -34,8 +34,8 @@ class ToastView {
   // Enables/disables color. When color is off the render uses
   // `Theme::without_color(theme)`; severity stays legible via tags/icons and
   // the focus marker.
-  void SetColor(bool enabled);
-  [[nodiscard]] bool Color() const;
+  void set_color(bool enabled);
+  [[nodiscard]] bool color() const;
 
  private:
   std::shared_ptr<ToastViewImpl> impl_;
