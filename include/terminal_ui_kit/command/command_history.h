@@ -95,9 +95,10 @@ class CommandHistory {
   // ignored, as is a command identical to the most recently added one
   // (consecutive duplicates are deduplicated). The retained history is bounded
   // by the configured capacity, evicting the oldest entry when already full.
-  // Adding a command resets the navigation cursor to the end (behind the
-  // newest entry). If the command is sensitive per the active policy it is kept
-  // in memory but not written to the persistence adapter. A persistence failure
+  // Submitting any command (including one that is ignored as blank or a
+  // duplicate) resets the navigation cursor to the end, behind the newest
+  // entry. If the command is sensitive per the active policy it is kept in
+  // memory but not written to the persistence adapter. A persistence failure
   // never modifies the in-memory history.
   void Add(const std::string& command);
 
@@ -171,14 +172,19 @@ inline bool CommandHistory::IsBlank(std::string_view command) const {
 }
 
 inline void CommandHistory::Add(const std::string& command) {
-  if (IsBlank(command)) {
-    return;
-  }
   // A command identical to the most recently added one is not stored again, and
   // the configured capacity bounds retention (oldest evicted first). When the
   // capacity is 0 nothing is retained at all.
+  // Submitting a command, even one that is ignored (blank or a consecutive
+  // duplicate), returns navigation to the end (behind the newest entry) so an
+  // unrelated Edit/Previous no longer picks up a mid-list position.
   const bool duplicate = !entries_.empty() && entries_.back() == command;
+  if (IsBlank(command)) {
+    cursor_ = entries_.size();
+    return;
+  }
   if (duplicate || max_entries_ == 0) {
+    cursor_ = entries_.size();
     return;
   }
   if (entries_.size() == max_entries_) {

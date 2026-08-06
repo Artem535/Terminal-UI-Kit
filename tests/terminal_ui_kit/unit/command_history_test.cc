@@ -87,6 +87,15 @@ TEST(CommandHistoryTest, CapacityZeroStillRejectsBlank) {
   EXPECT_EQ(history.Size(), 0u);
 }
 
+TEST(CommandHistoryTest, CapacityZeroDoesNotPersist) {
+  auto persistence = std::make_shared<FakePersistence>();
+  CommandHistory history(0, persistence);
+  history.Add("ls");
+  history.Add("pwd");
+  EXPECT_EQ(history.Size(), 0u);
+  ExpectCommands(persistence->saved_, {});  // nothing retained, nothing saved
+}
+
 // ---- One item ------------------------------------------------------------
 
 TEST(CommandHistoryTest, OneItem) {
@@ -156,6 +165,23 @@ TEST(CommandHistoryTest, AddingResetsNavigationCursor) {
   EXPECT_EQ(history.Previous(), std::optional<std::string>("c"));
 }
 
+TEST(CommandHistoryTest, RejectedSubmitResetsNavigationCursor) {
+  CommandHistory history(10);
+  history.Add("a");
+  history.Add("b");
+  history.Add("b");    // consecutive duplicate (rejected)
+  history.Add(" ");    // blank (rejected)
+  history.Previous();  // cursor now at "b"
+  history.Previous();  // cursor now at "a"
+
+  // A rejected submit (duplicate / blank) still returns the cursor to the end,
+  // so the next Previous recalls the newest entry rather than a mid-list one.
+  history.Add("b");  // duplicate of newest -> rejected, but cursor resets
+  EXPECT_EQ(history.Previous(), std::optional<std::string>("b"));
+  history.Add("   ");  // blank -> rejected, but cursor resets
+  EXPECT_EQ(history.Previous(), std::optional<std::string>("b"));
+}
+
 // ---- Capacity eviction ---------------------------------------------------
 
 TEST(CommandHistoryTest, EvictsOldestWhenFull) {
@@ -209,6 +235,12 @@ TEST(CommandHistoryTest, EmptyAndWhitespaceOnlyInputIgnored) {
   history.Add("real");
   EXPECT_EQ(history.Size(), 1u);
   EXPECT_EQ(history.Previous(), std::optional<std::string>("real"));
+}
+
+TEST(CommandHistoryTest, EmptyQueryOnEmptyHistoryIsEmpty) {
+  CommandHistory history(10);
+  ExpectCommands(history.Search(""), {});
+  ExpectCommands(history.SearchPrefix(""), {});
 }
 
 // ---- Substring search ----------------------------------------------------
@@ -351,6 +383,29 @@ TEST(CommandHistoryTest, NeverSensitivePolicyPersistsEverything) {
   CommandHistory history(10, persistence, std::make_shared<NeverSensitivePolicy>());
   history.Add("anything");
   ExpectCommands(persistence->saved_, {"anything"});
+}
+
+TEST(CommandHistoryTest, EmptyPrefixMarksEverythingSensitive) {
+  auto persistence = std::make_shared<FakePersistence>();
+  // An empty prefix matches every command, so nothing is persisted.
+  CommandHistory history(10, persistence, std::make_shared<PrefixSensitivePolicy>(""));
+  history.Add("ls");
+  history.Add("cd /tmp");
+  ExpectCommands(persistence->saved_, {});
+  ASSERT_EQ(history.Size(), 2u);
+  ExpectCommands(history.Search(""), {"ls", "cd /tmp"});
+}
+
+TEST(CommandHistoryTest, PersistenceReceivesEveryAddEvenWhenEvicted) {
+  auto persistence = std::make_shared<FakePersistence>();
+  CommandHistory history(2, persistence);  // tiny capacity
+  history.Add("a");
+  history.Add("b");
+  history.Add("c");  // evicts "a" from memory, but "c" is still persisted
+
+  ASSERT_EQ(history.Size(), 2u);
+  ExpectCommands(history.Search(""), {"b", "c"});
+  ExpectCommands(persistence->saved_, {"a", "b", "c"});
 }
 
 // ---- Ownership / lifetime ------------------------------------------------

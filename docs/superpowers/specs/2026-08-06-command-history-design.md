@@ -15,8 +15,9 @@ Header-only module `terminal_ui_kit/command/` exposing:
   - Storage: `std::deque<std::string>` (owned), oldest -> newest, bounded by a
     configurable capacity. Capacity `0` disables retention (`Add` is a no-op).
   - `Add` ignores empty / whitespace-only commands and consecutive duplicates
-    (exact match with the most recent entry). It resets the navigation cursor
-    to "at the end" (behind the newest entry).
+    (exact match with the most recent entry). Submitting any command (including
+    one ignored as blank or a duplicate) resets the navigation cursor to "at
+    the end" (behind the newest entry).
   - `Previous()`/`Next()`: deterministic boundary behavior. `Previous()` at the
     oldest entry returns it again (cursor never goes below 0); on empty history
     returns `nullopt`. `Next()` past the newest entry (or already there)
