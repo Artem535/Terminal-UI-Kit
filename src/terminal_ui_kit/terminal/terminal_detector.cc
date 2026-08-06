@@ -34,7 +34,8 @@ bool MatchesBase(std::string_view value, std::string_view needle) {
 }
 
 // True when `value` contains `needle` anywhere (used for program names and
-// tone markers such as "256color").
+// tone markers such as "256color"). Container detection deliberately does not
+// use this, to avoid substring false positives on TERM names.
 bool Contains(std::string_view value, std::string_view needle) {
   return value.find(needle) != std::string_view::npos;
 }
@@ -54,68 +55,135 @@ struct UxProfile {
 };
 
 // A recognition rule: matches when a recognized program name is present, or
-// when the TERM base matches.
+// when the TERM base matches. `minimum_color` is the color depth the program
+// guarantees by protocol (kTrueColor for modern emulators); it is applied as a
+// floor, so COLORTERM/TERM can raise it further but it never lowers.
 struct RecognitionRule {
   std::string_view needle;
   bool match_program;
   bool match_term_base;
   UxProfile profile;
+  ColorDepth minimum_color;
 };
-
-using enum ColorDepth;
 
 // Recognized terminals/programs, most specific first. The first rule whose
 // TERM_PROGRAM or TERM matches wins and establishes the boolean baseline.
 constexpr RecognitionRule kRecognitionRules[] = {
-    {"kitty", true, true, {true, true, true, true, true, false, false, true, true}},
-    {"ghostty", true, true, {true, true, true, true, false, true, false, true, true}},
-    {"wezterm", true, true, {true, true, true, true, false, true, false, true, true}},
-    {"foot", true, true, {true, true, true, false, false, true, false, true, true}},
-    {"iterm", true, false, {true, true, true, true, false, true, true, true, true}},
-    {"alacritty", true, true, {true, true, true, true, false, false, false, true, true}},
-    {"vscode", true, false, {true, true, true, true, false, false, false, true, true}},
-    {"apple", true, false, {true, true, true, true, false, false, false, true, true}},
-    // TERM-base defaults for classic terminal classes.
-    {"xterm", false, true, {true, true, true, true, false, false, false, true, true}},
-    {"screen", false, true, {true, true, true, false, false, false, false, true, true}},
-    {"tmux", false, true, {true, true, true, true, false, false, false, true, true}},
-    {"rxvt", false, true, {true, false, true, false, false, false, false, true, true}},
-    {"eterm", false, true, {true, true, true, false, false, false, false, true, true}},
-    {"linux", false, true, {true, false, true, false, false, false, false, false, true}},
-    {"vt100", false, true, {false, false, false, false, false, false, false, false, false}},
-    {"vt220", false, true, {false, false, false, false, false, false, false, false, false}},
-    {"ansi", false, true, {false, false, false, false, false, false, false, false, false}},
-    {"dumb", false, true, {false, false, false, false, false, false, false, false, false}},
+    {"kitty",
+     true,
+     true,
+     {true, true, true, true, true, false, false, true, true},
+     ColorDepth::kTrueColor},
+    {"ghostty",
+     true,
+     true,
+     {true, true, true, true, false, true, false, true, true},
+     ColorDepth::kTrueColor},
+    {"wezterm",
+     true,
+     true,
+     {true, true, true, true, false, true, false, true, true},
+     ColorDepth::kTrueColor},
+    {"foot",
+     true,
+     true,
+     {true, true, true, false, false, true, false, true, true},
+     ColorDepth::kTrueColor},
+    {"iterm",
+     true,
+     false,
+     {true, true, true, true, false, true, true, true, true},
+     ColorDepth::kTrueColor},
+    {"alacritty",
+     true,
+     true,
+     {true, true, true, true, false, false, false, true, true},
+     ColorDepth::kTrueColor},
+    {"vscode",
+     true,
+     false,
+     {true, true, true, true, false, false, false, true, true},
+     ColorDepth::kTrueColor},
+    {"apple",
+     true,
+     false,
+     {true, true, true, true, false, false, false, true, true},
+     ColorDepth::kTrueColor},
+    // TERM-base defaults for classic terminal classes. Color depth is left to
+    // TERM/COLORTERM (16 vs 256 varies), so minimum_color stays kNone here.
+    {"xterm",
+     false,
+     true,
+     {true, true, true, true, false, false, false, true, true},
+     ColorDepth::kNone},
+    {"screen",
+     false,
+     true,
+     {true, true, true, false, false, false, false, true, true},
+     ColorDepth::kNone},
+    {"tmux",
+     false,
+     true,
+     {true, true, true, true, false, false, false, true, true},
+     ColorDepth::kNone},
+    {"rxvt",
+     false,
+     true,
+     {true, false, true, false, false, false, false, true, true},
+     ColorDepth::kNone},
+    {"eterm",
+     false,
+     true,
+     {true, true, true, false, false, false, false, true, true},
+     ColorDepth::kNone},
+    {"linux",
+     false,
+     true,
+     {true, false, true, false, false, false, false, false, true},
+     ColorDepth::kNone},
+    {"vt100",
+     false,
+     true,
+     {false, false, false, false, false, false, false, false, false},
+     ColorDepth::kNone},
+    {"vt220",
+     false,
+     true,
+     {false, false, false, false, false, false, false, false, false},
+     ColorDepth::kNone},
+    {"ansi",
+     false,
+     true,
+     {false, false, false, false, false, false, false, false, false},
+     ColorDepth::kNone},
+    {"dumb",
+     false,
+     true,
+     {false, false, false, false, false, false, false, false, false},
+     ColorDepth::kNone},
 };
 
-// Applies the first matching recognition rule to `caps` (boolean fields only).
-// Returns true when a profile matched.
-bool ApplyBaseline(TerminalCapabilities& caps, std::string_view program, std::string_view term) {
+// Applies the first matching recognition rule to `caps` (boolean fields only)
+// and reports the program's minimum color depth. Returns true on a match.
+bool ApplyBaseline(TerminalCapabilities& caps, ColorDepth& min_color, std::string_view program,
+                   std::string_view term) {
   for (const RecognitionRule& rule : kRecognitionRules) {
-    if (rule.match_program && Contains(program, rule.needle)) {
-      caps.unicode = rule.profile.unicode;
-      caps.mouse = rule.profile.mouse;
-      caps.bracketed_paste = rule.profile.bracketed_paste;
-      caps.hyperlinks = rule.profile.hyperlinks;
-      caps.kitty_graphics = rule.profile.kitty_graphics;
-      caps.sixel = rule.profile.sixel;
-      caps.iterm_images = rule.profile.iterm_images;
-      caps.osc52 = rule.profile.osc52;
-      caps.alternate_screen = rule.profile.alternate_screen;
-      return true;
+    const bool matches = (rule.match_program && Contains(program, rule.needle)) ||
+                         (rule.match_term_base && MatchesBase(term, rule.needle));
+    if (!matches) {
+      continue;
     }
-    if (rule.match_term_base && MatchesBase(term, rule.needle)) {
-      caps.unicode = rule.profile.unicode;
-      caps.mouse = rule.profile.mouse;
-      caps.bracketed_paste = rule.profile.bracketed_paste;
-      caps.hyperlinks = rule.profile.hyperlinks;
-      caps.kitty_graphics = rule.profile.kitty_graphics;
-      caps.sixel = rule.profile.sixel;
-      caps.iterm_images = rule.profile.iterm_images;
-      caps.osc52 = rule.profile.osc52;
-      caps.alternate_screen = rule.profile.alternate_screen;
-      return true;
-    }
+    caps.unicode = rule.profile.unicode;
+    caps.mouse = rule.profile.mouse;
+    caps.bracketed_paste = rule.profile.bracketed_paste;
+    caps.hyperlinks = rule.profile.hyperlinks;
+    caps.kitty_graphics = rule.profile.kitty_graphics;
+    caps.sixel = rule.profile.sixel;
+    caps.iterm_images = rule.profile.iterm_images;
+    caps.osc52 = rule.profile.osc52;
+    caps.alternate_screen = rule.profile.alternate_screen;
+    min_color = rule.minimum_color;
+    return true;
   }
   return false;
 }
@@ -123,7 +191,7 @@ bool ApplyBaseline(TerminalCapabilities& caps, std::string_view program, std::st
 // Stable, self-describing identity: a recognized program name wins, else the
 // normalized TERM, else the normalized TERM_PROGRAM, else empty.
 std::string ResolveIdentity(std::string_view program, std::string_view term,
-                            std::string_view raw_program, std::string_view raw_term) {
+                            std::string_view raw_program) {
   if (!program.empty()) {
     if (Contains(program, "kitty")) return "kitty";
     if (Contains(program, "ghostty")) return "ghostty";
@@ -141,15 +209,7 @@ std::string ResolveIdentity(std::string_view program, std::string_view term,
   if (!raw_program.empty()) {
     return std::string(raw_program);
   }
-  (void)raw_term;
   return std::string();
-}
-
-// A 16-color-capable "classic" terminal base.
-bool IsClassicColorBase(std::string_view term) {
-  return MatchesBase(term, "xterm") || MatchesBase(term, "rxvt") || MatchesBase(term, "eterm") ||
-         MatchesBase(term, "linux") || MatchesBase(term, "vt100") || MatchesBase(term, "vt220") ||
-         MatchesBase(term, "ansi") || MatchesBase(term, "screen") || MatchesBase(term, "tmux");
 }
 
 // Applies a tri-state override to a detected boolean.
@@ -165,39 +225,59 @@ bool ResolveBool(bool detected, TriState state) {
   return detected;
 }
 
-// Resolves color depth by precedence: override > NO_COLOR > COLORTERM >
-// TERM-derived > conservative default.
-ColorDepth ResolveColor(const CapabilityOverrides& overrides, bool has_no_color,
-                        std::optional<std::string> colorterm, std::string_view term) {
-  if (overrides.color_depth) {
-    return *overrides.color_depth;
-  }
-  if (has_no_color) {
-    return ColorDepth::kNone;
-  }
-  if (colorterm) {
-    const std::string ncolor = Normalize(*colorterm);
-    if (ncolor == "truecolor" || ncolor == "24bit") {
-      return ColorDepth::kTrueColor;
-    }
-    if (ncolor == "256color") {
-      return ColorDepth::k256Color;
-    }
-    if (ncolor == "16color") {
-      return ColorDepth::k16Color;
-    }
-  }
+// Colors are ordered kNone < k16Color < k256Color < kTrueColor; take the
+// higher of two.
+ColorDepth MaxColor(ColorDepth a, ColorDepth b) { return a > b ? a : b; }
+
+// Resolves the TERM-derived color depth (before COLORTERM). Conservative:
+// returns kNone for dumb/unknown.
+ColorDepth TermColor(std::string_view term) {
   if (Contains(term, "256color")) {
     return ColorDepth::k256Color;
   }
   if (Contains(term, "16color")) {
     return ColorDepth::k16Color;
   }
-  if (IsClassicColorBase(term)) {
-    // TERM says nothing about depth but names a classic color-capable class.
+  if (MatchesBase(term, "xterm") || MatchesBase(term, "rxvt") || MatchesBase(term, "eterm") ||
+      MatchesBase(term, "linux") || MatchesBase(term, "vt100") || MatchesBase(term, "vt220") ||
+      MatchesBase(term, "ansi") || MatchesBase(term, "screen") || MatchesBase(term, "tmux")) {
     return ColorDepth::k16Color;
   }
   return ColorDepth::kNone;
+}
+
+// Resolves the COLORTERM-derived color depth, or kNone when absent/unknown.
+ColorDepth ColortermDepth(const std::optional<std::string>& colorterm) {
+  if (!colorterm) {
+    return ColorDepth::kNone;
+  }
+  const std::string ncolor = Normalize(*colorterm);
+  if (ncolor == "truecolor" || ncolor == "24bit") {
+    return ColorDepth::kTrueColor;
+  }
+  if (ncolor == "256color") {
+    return ColorDepth::k256Color;
+  }
+  if (ncolor == "16color") {
+    return ColorDepth::k16Color;
+  }
+  return ColorDepth::kNone;
+}
+
+// Resolves color depth by precedence: override > NO_COLOR > floor of
+// (program minimum, TERM-derived, COLORTERM-derived). COLORTERM only ever
+// raises the depth; NO_COLOR and an explicit override are the only ways to
+// lower it.
+ColorDepth ResolveColor(const CapabilityOverrides& overrides, bool has_no_color,
+                        const std::optional<std::string>& colorterm, std::string_view term,
+                        ColorDepth program_minimum) {
+  if (overrides.color_depth) {
+    return *overrides.color_depth;
+  }
+  if (has_no_color) {
+    return ColorDepth::kNone;
+  }
+  return MaxColor(MaxColor(TermColor(term), ColortermDepth(colorterm)), program_minimum);
 }
 
 }  // namespace
@@ -221,12 +301,16 @@ TerminalCapabilities TerminalDetector::Detect(const EnvironmentProvider& env,
   TerminalCapabilities caps;
 
   // Container context: composable (tmux-over-SSH sets both tmux and ssh).
-  caps.tmux = tmux.has_value() || Contains(term, "tmux");
-  caps.screen = sty.has_value() || Contains(term, "screen");
+  // The TERM probes use MatchesBase so a "screen-256color" TERM (used by
+  // GNU screen and older tmux) still registers, without substring
+  // false-positives from unrelated names.
+  caps.tmux = tmux.has_value() || MatchesBase(term, "tmux");
+  caps.screen = sty.has_value() || MatchesBase(term, "screen");
   caps.ssh = ssh_tty.has_value() || ssh_client.has_value() || ssh_connection.has_value();
 
   // Recognized program / TERM preset establishes the boolean baseline.
-  ApplyBaseline(caps, program, term);
+  ColorDepth program_minimum = ColorDepth::kNone;
+  ApplyBaseline(caps, program_minimum, program, term);
 
   // Descriptive TERM tone markers that a base-name match cannot capture
   // (e.g. "xterm-256color-sixel" advertises sixel beyond a plain xterm).
@@ -235,11 +319,10 @@ TerminalCapabilities TerminalDetector::Detect(const EnvironmentProvider& env,
   }
 
   caps.terminal_identity =
-      ResolveIdentity(program, term, raw_program ? *raw_program : std::string_view(),
-                      raw_term ? *raw_term : std::string_view());
+      ResolveIdentity(program, term, raw_program ? *raw_program : std::string_view());
 
   // Color depth, then explicit color override is resolved inside.
-  caps.color_depth = ResolveColor(overrides, has_no_color, colorterm, term);
+  caps.color_depth = ResolveColor(overrides, has_no_color, colorterm, term, program_minimum);
 
   // Explicit boolean overrides (highest precedence).
   caps.unicode = ResolveBool(caps.unicode, overrides.unicode);

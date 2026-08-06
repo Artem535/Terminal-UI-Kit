@@ -83,9 +83,18 @@ TEST(TerminalCapabilities, Detects16Color) {
   EXPECT_TRUE(caps.unicode);
 }
 
-TEST(TerminalCapabilities, Detects16ColorFromColorterm) {
+TEST(TerminalCapabilities, ColortermRaisesAboveTerm) {
+  // COLORTERM may raise the depth above the TERM guess (16 -> 256).
+  const TerminalCapabilities caps = Detect({{"TERM", "xterm"}, {"COLORTERM", "256color"}});
+  EXPECT_EQ(caps.color_depth, ColorDepth::k256Color);
+}
+
+TEST(TerminalCapabilities, ColortermDoesNotLowerBelowTerm) {
+  // COLORTERM only ever raises depth; a lower hint must not undo the 256
+  // already implied by TERM=xterm-256color (no_color/override are the only
+  // ways to lower).
   const TerminalCapabilities caps = Detect({{"TERM", "xterm-256color"}, {"COLORTERM", "16color"}});
-  EXPECT_EQ(caps.color_depth, ColorDepth::k16Color);
+  EXPECT_EQ(caps.color_depth, ColorDepth::k256Color);
 }
 
 TEST(TerminalCapabilities, Detects256Color) {
@@ -146,6 +155,40 @@ TEST(TerminalCapabilities, WeztermEnablesSixelAndImages) {
   EXPECT_TRUE(caps.hyperlinks);
   EXPECT_TRUE(caps.osc52);
   EXPECT_EQ(caps.terminal_identity, "wezterm");
+}
+
+TEST(TerminalCapabilities, TruecolorProgramImpliesTrueColorWithoutColorterm) {
+  // A recognized truecolor emulator grants kTrueColor as a floor even when
+  // COLORTERM is unset.
+  const TerminalCapabilities caps = Detect({{"TERM", "xterm-256color"}, {"TERM_PROGRAM", "kitty"}});
+  EXPECT_EQ(caps.color_depth, ColorDepth::kTrueColor);
+  EXPECT_TRUE(caps.kitty_graphics);
+}
+
+TEST(TerminalCapabilities, FootProfile) {
+  const TerminalCapabilities caps = Detect({{"TERM_PROGRAM", "foot"}});
+  EXPECT_TRUE(caps.sixel);
+  EXPECT_EQ(caps.color_depth, ColorDepth::kTrueColor);
+  EXPECT_EQ(caps.terminal_identity, "foot");
+}
+
+TEST(TerminalCapabilities, GhosttyProfile) {
+  const TerminalCapabilities caps = Detect({{"TERM_PROGRAM", "ghostty"}});
+  EXPECT_TRUE(caps.sixel);
+  EXPECT_TRUE(caps.hyperlinks);
+  EXPECT_EQ(caps.terminal_identity, "ghostty");
+}
+
+TEST(TerminalCapabilities, TmuxDetectedFromTermName) {
+  const TerminalCapabilities caps = Detect({{"TERM", "tmux-256color"}});
+  EXPECT_TRUE(caps.tmux);
+  EXPECT_FALSE(caps.screen);
+}
+
+TEST(TerminalCapabilities, ScreenDetectedFromTermName) {
+  const TerminalCapabilities caps = Detect({{"TERM", "screen-256color"}});
+  EXPECT_TRUE(caps.screen);
+  EXPECT_FALSE(caps.tmux);
 }
 
 TEST(TerminalCapabilities, SixelAdvertisedViaTermTone) {
@@ -254,12 +297,50 @@ TEST(TerminalCapabilities, ExplicitDisableOverrideBeatsTerminal) {
   EXPECT_TRUE(caps.unicode);
 }
 
-TEST(TerminalCapabilities, ExplicitDisableBeatsColortermTrueColor) {
+TEST(TerminalCapabilities, ExplicitDisableBeatsColorTermTrueColor) {
   CapabilityOverrides overrides;
   overrides.color_depth = ColorDepth::k16Color;
   const TerminalCapabilities caps =
       Detect({{"COLORTERM", "truecolor"}, {"TERM", "xterm-256color"}}, overrides);
   EXPECT_EQ(caps.color_depth, ColorDepth::k16Color);
+}
+
+TEST(TerminalCapabilities, EnableOverridesCoverRemainingCapabilities) {
+  CapabilityOverrides overrides;
+  overrides.mouse = TriState::kEnable;
+  overrides.bracketed_paste = TriState::kEnable;
+  overrides.hyperlinks = TriState::kEnable;
+  overrides.sixel = TriState::kEnable;
+  overrides.iterm_images = TriState::kEnable;
+  overrides.alternate_screen = TriState::kEnable;
+  // Empty/unknown environment, so only the overrides turn these on.
+  const TerminalCapabilities caps = Detect({}, overrides);
+  EXPECT_TRUE(caps.mouse);
+  EXPECT_TRUE(caps.bracketed_paste);
+  EXPECT_TRUE(caps.hyperlinks);
+  EXPECT_TRUE(caps.sixel);
+  EXPECT_TRUE(caps.iterm_images);
+  EXPECT_TRUE(caps.alternate_screen);
+  EXPECT_FALSE(caps.unicode);
+}
+
+TEST(TerminalCapabilities, DisableOverridesCoverRemainingCapabilities) {
+  CapabilityOverrides overrides;
+  overrides.mouse = TriState::kDisable;
+  overrides.bracketed_paste = TriState::kDisable;
+  overrides.hyperlinks = TriState::kDisable;
+  overrides.sixel = TriState::kDisable;
+  overrides.iterm_images = TriState::kDisable;
+  overrides.alternate_screen = TriState::kDisable;
+  const TerminalCapabilities caps = Detect({{"TERM", "xterm-256color"}}, overrides);
+  EXPECT_FALSE(caps.mouse);
+  EXPECT_FALSE(caps.bracketed_paste);
+  EXPECT_FALSE(caps.hyperlinks);
+  EXPECT_FALSE(caps.sixel);
+  EXPECT_FALSE(caps.iterm_images);
+  EXPECT_FALSE(caps.alternate_screen);
+  // Unrelated capability untouched.
+  EXPECT_TRUE(caps.unicode);
 }
 
 TEST(TerminalCapabilities, UnknownTermProgramFallsBackToTerm) {
@@ -288,7 +369,8 @@ TEST(TerminalCapabilities, MalformedVersionIsTolerated) {
                                            overrides);
   EXPECT_TRUE(caps.kitty_graphics);
   EXPECT_EQ(caps.terminal_identity, "kitty");
-  EXPECT_EQ(caps.color_depth, ColorDepth::k256Color);
+  // kitty is a recognized truecolor emulator, so it implies kTrueColor.
+  EXPECT_EQ(caps.color_depth, ColorDepth::kTrueColor);
 }
 
 TEST(TerminalCapabilities, EmptyVersionIsTolerated) {

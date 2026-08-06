@@ -21,6 +21,9 @@ enum class TriState {
 // field defaults to kDefault / nullopt, so an override only ever changes the
 // specific capabilities it names. An explicit kEnable / kDisable wins over
 // every environment signal, including NO_COLOR.
+//
+// Container flags (tmux/screen/ssh) and terminal_identity are environment
+// facts, not display capabilities, and are intentionally not overridable here.
 struct CapabilityOverrides {
   TriState unicode = TriState::kDefault;
   TriState mouse = TriState::kDefault;

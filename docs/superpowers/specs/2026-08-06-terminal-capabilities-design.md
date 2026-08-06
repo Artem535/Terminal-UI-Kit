@@ -54,24 +54,28 @@ All windows default to the most conservative state; detection raises them.
 `TerminalDetector::Detect(env, overrides)` is a deterministic, side-effect-free
 function. Signals, in increasing weight:
 
-1. **Container context** — `tmux` (env `TMUX` non-empty or `TERM` contains
-   `"tmux"`), `screen` (env `STY` non-empty or `TERM` contains `"screen"`),
-   `ssh` (any of `SSH_TTY`, `SSH_CLIENT`, `SSH_CONNECTION` non-empty). These are
-   orthogonal and composable (tmux-over-SSH).
+1. **Container context** — `tmux` (env `TMUX` non-empty or `TERM` matches the
+   `tmux` base), `screen` (env `STY` non-empty or `TERM` matches the `screen`
+   base — also used by older tmux), `ssh` (any of `SSH_TTY`, `SSH_CLIENT`,
+   `SSH_CONNECTION` non-empty). These are orthogonal and composable
+   (tmux-over-SSH).
 2. **Program identity + capability defaults** — a conservative preset table
    keyed by program/terminal. Modern programs (kitty, iTerm2, WezTerm, foot,
-   vscode) grant truecolor + Unicode + mouse + bracketed paste + OSC 52 +
-   alternate screen; kitty additionally grants kitty graphics and hyperlinks;
-   iTerm2 grants iTerm images and sixel; `xterm`-class defaults to 16-color,
-   `-256color` raises to 256. Unknown terminals inherit the conservative base
-   (no color, no extras).
-3. **`COLORTERM`** — `truecolor`/`24bit` → `kTrueColor`; `256color` →
-   `k256Color`. Overrides the `TERM`-derived guess upward.
+   ghostty, vscode) grant Unicode + mouse + bracketed paste + OSC 52 +
+   alternate screen, and imply **truecolor as a floor** (their `minimum_color`);
+   kitty additionally grants kitty graphics and hyperlinks; iTerm2 grants iTerm
+   images and sixel; `xterm`-class defaults to 16-color, `-256color` raises to
+   256. Unknown terminals inherit the conservative base (no color, no extras).
+3. **`COLORTERM`** — `truecolor`/`24bit` → `kTrueColor`; `256color`→`k256Color`,
+   `16color`→`k16Color`. `COLORTERM` **only ever raises** the color depth
+   opened by the TERM/program floor; it never lowers it.
 4. **`NO_COLOR`** — when set (any value), forces `color_depth` to `kNone`.
    Affects only color; every unrelated capability is untouched.
 5. **Explicit overrides** (highest) — `CapabilityOverrides` with `kEnable`/
    `kDisable` for each boolean and an optional color-depth pin. An explicit
    override wins over `NO_COLOR`, `COLORTERM`, and every preset default.
+   Container flags (tmux/screen/ssh) and `terminal_identity` are environment
+   facts and are not overridable.
 
 `terminal_identity` is the most specific known name: the normalized
 `TERM_PROGRAM` when present, else the normalized `TERM` lowercased (e.g.
