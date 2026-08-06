@@ -106,9 +106,25 @@ target_terminal_ui_kit_warnings(terminal_ui_kit_document)
 target_link_libraries(terminal_ui_kit_document PUBLIC terminal_ui_kit_core)
 set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_document)
 _terminal_ui_kit_add_module(editor)
-_terminal_ui_kit_add_module(terminal)
 
 target_link_libraries(terminal_ui_kit_editor INTERFACE terminal_ui_kit_document)
+
+# Terminal has real implementation sources (environment.cc, terminal_detector.cc),
+# so it is a compiled library rather than an INTERFACE target (matching how
+# Diff, above, is compiled). It depends only on Core, keeping detection
+# independent of FTXUI and any terminal backend so pure-data consumers and the
+# unit tests can link it with no FTXUI.
+add_library(terminal_ui_kit_terminal
+  terminal/environment.cc
+  terminal/terminal_detector.cc)
+add_library(TerminalUiKit::Terminal ALIAS terminal_ui_kit_terminal)
+target_include_directories(terminal_ui_kit_terminal PUBLIC
+  $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>
+  $<INSTALL_INTERFACE:include>)
+target_compile_features(terminal_ui_kit_terminal PUBLIC cxx_std_20)
+target_terminal_ui_kit_warnings(terminal_ui_kit_terminal)
+target_link_libraries(terminal_ui_kit_terminal PUBLIC terminal_ui_kit_core)
+set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_terminal)
 
 # Diff has real implementation sources (unified_diff_parser.cc), so it is a
 # compiled library rather than an INTERFACE target. It depends only on Core
