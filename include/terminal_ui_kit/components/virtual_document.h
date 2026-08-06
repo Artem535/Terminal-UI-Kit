@@ -20,6 +20,7 @@ struct VirtualDocumentOptions {
   bool follow = true;
   int tab_width = 8;
   bool show_line_numbers = false;
+  int line_number_width = 5;
   std::function<void(std::string)> on_copy;
 };
 

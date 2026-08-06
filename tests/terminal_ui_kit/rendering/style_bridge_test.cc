@@ -70,7 +70,7 @@ TEST(StyleBridge, RenderStyledTextBoldSpan) {
   StyledText text;
   TextStyle bold_style;
   bold_style.bold = true;
-  text.append(TextSpan{"hello", bold_style});
+  text.append(TextSpan{"hello", bold_style, {}});
   ftxui::Element elem = render_styled_text(text);
   ftxui::Screen screen = test_support::render_to_screen(elem, 10, 1);
   EXPECT_TRUE(screen.PixelAt(0, 0).bold);
@@ -81,8 +81,8 @@ TEST(StyleBridge, RenderStyledTextMultipleSpans) {
   StyledText text;
   TextStyle bold_style;
   bold_style.bold = true;
-  text.append(TextSpan{"ab", bold_style});
-  text.append(TextSpan{"cd", TextStyle{}});
+  text.append(TextSpan{"ab", bold_style, {}});
+  text.append(TextSpan{"cd", TextStyle{}, {}});
   ftxui::Screen screen = test_support::render_to_screen(render_styled_text(text), 10, 1);
   EXPECT_EQ(screen.PixelAt(0, 0).character, "a");
   EXPECT_EQ(screen.PixelAt(0, 0).bold, true);

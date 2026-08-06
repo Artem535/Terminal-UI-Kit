@@ -11,6 +11,7 @@ namespace terminal_ui_kit {
 struct CodeViewOptions {
   std::string language;
   bool show_line_numbers = false;
+  int line_number_width = 4;
   Theme theme = default_dark_theme();
 };
 
