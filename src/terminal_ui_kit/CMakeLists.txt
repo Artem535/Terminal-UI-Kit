@@ -108,6 +108,12 @@ set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_k
 _terminal_ui_kit_add_module(editor)
 _terminal_ui_kit_add_module(terminal)
 
+# Command is a header-only (INTERFACE) module with no dependency on FTXUI,
+# mirroring the compiled-model modules (Core, Document, Diff) that stay usable
+# from pure-data code. It exposes the command-history model, a persistence
+# adapter, and sensitive-command policies.
+_terminal_ui_kit_add_module(command)
+
 target_link_libraries(terminal_ui_kit_editor INTERFACE terminal_ui_kit_document)
 
 # Diff has real implementation sources (unified_diff_parser.cc), so it is a
@@ -251,6 +257,7 @@ target_link_libraries(terminal_ui_kit_all INTERFACE
   terminal_ui_kit_markdown
   terminal_ui_kit_syntax
   terminal_ui_kit_terminal
+  terminal_ui_kit_command
   terminal_ui_kit_images)
 
 set(TERMINAL_UI_KIT_INSTALL_TARGETS
@@ -260,6 +267,7 @@ set(TERMINAL_UI_KIT_INSTALL_TARGETS
   terminal_ui_kit_editor
   terminal_ui_kit_diff
   terminal_ui_kit_terminal
+  terminal_ui_kit_command
   terminal_ui_kit_images
   terminal_ui_kit_testing
   PARENT_SCOPE)

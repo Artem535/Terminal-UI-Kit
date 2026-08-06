@@ -83,6 +83,7 @@ TEST(VirtualList, LegacyAggregateInitializationKeepsFixedRowHeight) {
       },
       2,
       {},
+      {},  // on_select, estimate_height
   };
 
   VirtualListModel model(std::move(options));
