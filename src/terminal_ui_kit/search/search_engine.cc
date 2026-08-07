@@ -38,6 +38,9 @@ std::size_t find_folded(std::string_view haystack, std::string_view folded_needl
   if (folded_needle.empty()) {
     return from;
   }
+  if (folded_needle.size() > haystack.size()) {
+    return std::string_view::npos;
+  }
   const std::size_t last_possible_plus_one = haystack.size() - folded_needle.size() + 1;
   for (std::size_t i = from; i < last_possible_plus_one; ++i) {
     bool matched = true;

@@ -28,6 +28,16 @@ TEST(SearchEngine, EmptyQueryYieldsEmptyQueryStatus) {
   EXPECT_TRUE(matches.empty());
 }
 
+TEST(SearchEngine, QueryLongerThanLineNoOutOfBounds) {
+  // The case-insensitive path must not underflow when the query is longer
+  // than a line (an out-of-bounds read would follow).
+  std::vector<std::string_view> lines{"abc"};
+  std::vector<TextMatch> matches;
+  SearchOptions options;  // case-insensitive by default
+  EXPECT_EQ(DoSearch(lines, "abcdef", options, matches), SearchStatus::kNoResults);
+  EXPECT_TRUE(matches.empty());
+}
+
 TEST(SearchEngine, EmptyDocumentYieldsNoResults) {
   std::vector<std::string_view> lines;
   std::vector<TextMatch> matches;
