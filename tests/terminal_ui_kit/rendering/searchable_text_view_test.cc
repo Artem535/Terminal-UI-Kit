@@ -254,6 +254,18 @@ TEST(SearchableTextView, RenderDoesNotRebuildSearchIndex) {
   EXPECT_EQ(view.match_count(), 2u);
 }
 
+TEST(SearchableTextView, BackspaceRemovesFullUtf8Codepoint) {
+  SearchableTextView view;
+  view.set_lines({"hello"});
+  view.open_search();
+  // Type a two-byte UTF-8 code point ("п").
+  view.component()->OnEvent(ftxui::Event::Character("\xD0\xBF"));
+  EXPECT_EQ(view.query(), "\xD0\xBF");
+  // Backspace must remove the whole code point, never split a multi-byte seq.
+  view.component()->OnEvent(ftxui::Event::Backspace);
+  EXPECT_EQ(view.query(), "");
+}
+
 TEST(SearchableTextView, KeyFlowSearchesAndNavigates) {
   SearchableTextView view;
   view.set_lines({"apple", "banana apple"});

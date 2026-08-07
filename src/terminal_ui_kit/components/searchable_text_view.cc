@@ -54,6 +54,20 @@ struct HighlightRun {
   bool active;
 };
 
+// Returns `text` with the last UTF-8 code point removed. Multi-byte sequences
+// are never split: this steps back over any trailing continuation bytes to the
+// leading byte. For a lone/lead byte (or ASCII) exactly one byte is dropped.
+std::string_view RemoveLastUtf8Codepoint(std::string_view text) {
+  if (text.empty()) {
+    return text;
+  }
+  std::size_t i = text.size() - 1;
+  while (i > 0 && (static_cast<unsigned char>(text[i]) & 0xC0U) == 0x80U) {
+    --i;
+  }
+  return text.substr(0, i);
+}
+
 }  // namespace
 
 class SearchableTextViewImpl {
@@ -300,7 +314,7 @@ class SearchableTextViewImpl {
       }
       if (event == ftxui::Event::Backspace) {
         if (!query_.empty()) {
-          set_query(std::string_view(query_).substr(0, query_.size() - 1));
+          set_query(RemoveLastUtf8Codepoint(query_));
         }
         return true;
       }
