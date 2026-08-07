@@ -357,13 +357,18 @@ class CompletionPopupImpl : public ftxui::ComponentBase {
   bool accept() {
     const std::string line = text_;
     const int cursor = cursor_;
-    const CompletionItem item = [this] {
+    CompletionItem item;
+    bool has_item = false;
+    {
       std::lock_guard<std::mutex> lock(shared_->mutex);
-      if (shared_->status != CompletionState::kResults || shared_->items.empty()) {
-        return CompletionItem{};
+      if (shared_->status == CompletionState::kResults && !shared_->items.empty()) {
+        item = shared_->items[std::min(shared_->selected, shared_->items.size() - 1)];
+        has_item = true;
       }
-      return shared_->items[std::min(shared_->selected, shared_->items.size() - 1)];
-    }();
+    }
+    if (!has_item) {
+      return false;  // Nothing selectable; do not alter state or notify.
+    }
     hide();
 
     // Clamp against the actual line length so an item with a range that

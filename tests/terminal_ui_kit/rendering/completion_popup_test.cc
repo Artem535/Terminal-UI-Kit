@@ -192,6 +192,17 @@ TEST(CompletionPopup, EscapeCancelsAndHides) {
   EXPECT_EQ(model.state(), CompletionState::kHidden);
 }
 
+TEST(CompletionPopup, AcceptWithNothingSelectableDoesNotHideOrNotify) {
+  int notified = 0;
+  CompletionPopupModel model(SyncProvider(Items()));
+  model.set_on_accept([&](const CompletionItem&, const std::string&, int) { ++notified; });
+  model.set_input("zzz", 3);
+  ASSERT_EQ(model.state(), CompletionState::kNoResults);
+  EXPECT_FALSE(model.accept());
+  EXPECT_EQ(model.state(), CompletionState::kNoResults);  // not hidden
+  EXPECT_EQ(notified, 0);
+}
+
 TEST(CompletionPopup, ExplicitReplacementRangeIsApplied) {
   std::vector<CompletionItem> items = {{
       "foobar",
