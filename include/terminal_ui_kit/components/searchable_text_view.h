@@ -29,10 +29,11 @@ struct SearchableTextViewOptions {
 // (see the key bindings below) and the component owns all search state.
 //
 // Key bindings handled by the component:
-//   /            open the search prompt (empty query)
+//   /            open the search prompt (retains the current/last query;
+//                after Esc the query is empty)
 //   <type>       when the prompt is open, edit the query incrementally
 //   Enter        apply the query (closes the prompt, keeps results)
-//   Backspace    when the prompt is open, delete the last query character
+//   Backspace    when the prompt is open, delete the last query codepoint
 //   Esc          when open: cancel (clear the query and close); otherwise
 //                falls through to the caller
 //   n            next match (wraps)

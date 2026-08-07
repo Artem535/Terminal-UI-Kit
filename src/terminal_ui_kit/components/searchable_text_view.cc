@@ -74,8 +74,7 @@ class SearchableTextViewImpl {
  public:
   explicit SearchableTextViewImpl(SearchableTextViewOptions options)
       : options_(std::move(options)),
-        wrapped_(WrappedDocument(80, options_.tab_width)),
-        last_revision_(0) {
+        wrapped_(WrappedDocument(80, options_.tab_width)) {
     VirtualListOptions list_opts;
     list_opts.item_count = [this] { return wrapped_.display_line_count(); };
     list_opts.item_height = 1;
@@ -109,7 +108,6 @@ class SearchableTextViewImpl {
       source_.finish();
     }
     wrapped_.rebuild_from(source_);
-    last_revision_ = source_.revision();
     run_search();
   }
 
@@ -192,13 +190,18 @@ class SearchableTextViewImpl {
 
  private:
   void run_search() {
-    search_lines_.resize(source_.line_count());
+    // Build the search input as a local so the view list borrows into
+    // `source_` only for the duration of this call. `source_` is not mutated
+    // in between, but keeping the borrowed views local (rather than a cached
+    // member) removes any risk of them surviving a `source_` reallocation.
+    std::vector<std::string_view> search_lines;
+    search_lines.resize(source_.line_count());
     for (std::size_t i = 0; i < source_.line_count(); ++i) {
-      search_lines_[i] = source_.line_at(i);
+      search_lines[i] = source_.line_at(i);
     }
 
     std::vector<TextMatch> matches;
-    status_ = SearchEngine::search(search_lines_, query_, search_options_, matches);
+    status_ = SearchEngine::search(search_lines, query_, search_options_, matches);
     navigator_.set_matches(std::move(matches));
     jump_to_first_match();
     if (options_.on_status_change) {
@@ -265,12 +268,14 @@ class SearchableTextViewImpl {
   }
 
   ftxui::Element render_line_number(const WrappedLine& line) {
+    // Numbered rows render "<5-wide number> ", i.e. 6 leading columns.
+    // Continuation rows emit 6 spaces so wrapped content lines up.
     if (line.sub_line == 0) {
       std::string num = std::to_string(line.logical_line + 1);
       num = std::string(5 - std::min<std::size_t>(5, num.size()), ' ') + num;
       return ftxui::text(num + " ") | ftxui::color(ftxui::Color::GrayDark);
     }
-    return ftxui::text("       ") | ftxui::color(ftxui::Color::GrayDark);
+    return ftxui::text(std::string(6, ' ')) | ftxui::color(ftxui::Color::GrayDark);
   }
 
   // Computes the highlight runs for one display segment, intersecting the
@@ -360,7 +365,6 @@ class SearchableTextViewImpl {
   WrappedDocument wrapped_;
   std::shared_ptr<VirtualListModel> model_;
   ftxui::Component component_;
-  std::uint64_t last_revision_ = 0;
   int current_width_ = 0;
   int last_width_ = 0;
 
@@ -369,7 +373,6 @@ class SearchableTextViewImpl {
   SearchStatus status_ = SearchStatus::kEmptyQuery;
   bool search_open_ = false;
   bool search_applied_once_ = false;
-  std::vector<std::string_view> search_lines_;
   MatchNavigator navigator_;
 };
 
