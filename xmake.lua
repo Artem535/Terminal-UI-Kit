@@ -25,7 +25,7 @@ option_end()
 -- headers for discoverability and does not compile them (PRD section
 -- 11.2 -- Xmake is a secondary, developer-facing frontend; CMake remains
 -- authoritative for what actually gets built and tested).
-for _, name in ipairs({"core", "components", "document", "editor", "diff", "markdown", "syntax", "terminal"}) do
+for _, name in ipairs({"core", "components", "document", "search", "editor", "diff", "markdown", "syntax", "terminal"}) do
     target("terminal_ui_kit_" .. name)
         set_kind("headeronly")
         add_includedirs("include", {public = true})
