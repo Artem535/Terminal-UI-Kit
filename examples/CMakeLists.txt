@@ -10,6 +10,7 @@ add_subdirectory(task_dashboard)
 add_subdirectory(virtual_list_viewer)
 add_subdirectory(streaming_log_viewer)
 add_subdirectory(virtual_document_viewer)
+add_subdirectory(searchable_text_view_example)
 add_subdirectory(diff_parser)
 
 if(TERMINAL_UI_KIT_ENABLE_MARKDOWN)
