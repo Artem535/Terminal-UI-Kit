@@ -74,6 +74,7 @@ areas remain experimental or planned.
 | Streaming documents | Available | Incremental UTF-8 input, logical lines, revisions, and tail replacement |
 | Document views | Available | Wrapped rendering, follow mode, line numbers, selection, and copy callbacks |
 | Log views | Available | Structured log entries, severity, timestamps, ANSI text, and follow mode |
+| Completion popup | Available | Sync/async providers, fuzzy filtering, categories, descriptions, replacement ranges, and viewport-aware placement |
 | Code rendering | Available | Code blocks with optional Tree-sitter highlighting |
 | Markdown | Experimental | `cmark-gfm`-based document parsing and rendering |
 | Syntax highlighting | Experimental | Optional Tree-sitter integration and language grammars |
