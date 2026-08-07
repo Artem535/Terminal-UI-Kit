@@ -192,6 +192,15 @@ TEST(CompletionPopup, EscapeCancelsAndHides) {
   EXPECT_EQ(model.state(), CompletionState::kHidden);
 }
 
+TEST(CompletionPopup, LargeNegativeSelectionDeltaClampsToZero) {
+  CompletionPopupModel model(SyncProvider(Items()));
+  model.set_input("f", 1);
+  ASSERT_EQ(model.state(), CompletionState::kResults);
+  model.select_index(1);
+  EXPECT_TRUE(model.select_relative(-1000000000));  // huge negative, no UB
+  EXPECT_EQ(model.selected(), 0U);
+}
+
 TEST(CompletionPopup, AcceptWithNothingSelectableDoesNotHideOrNotify) {
   int notified = 0;
   CompletionPopupModel model(SyncProvider(Items()));

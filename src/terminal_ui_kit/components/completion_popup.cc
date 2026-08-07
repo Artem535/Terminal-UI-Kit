@@ -129,7 +129,16 @@ void Deliver(const std::shared_ptr<SharedState>& shared, std::uint64_t generatio
     return;
   }
   shared->error.clear();
-  shared->items = FilterAndSort(shared->query, std::move(result.items));
+  try {
+    shared->items = FilterAndSort(shared->query, std::move(result.items));
+  } catch (...) {
+    // Filtering/moving items can throw (e.g. std::bad_alloc). Keep the async
+    // callback from propagating out of the provider's thread and terminate().
+    shared->status = CompletionState::kError;
+    shared->error = "completion filtering failed";
+    shared->items.clear();
+    return;
+  }
   shared->status = shared->items.empty() ? CompletionState::kNoResults : CompletionState::kResults;
 }
 
@@ -348,7 +357,8 @@ class CompletionPopupImpl : public ftxui::ComponentBase {
       shared_->selected =
           std::min(shared_->selected + static_cast<std::size_t>(delta), shared_->items.size() - 1);
     } else if (delta < 0) {
-      const std::size_t step = static_cast<std::size_t>(-delta);
+      // Widen before negating so the most-negative int is not UB.
+      const std::size_t step = static_cast<std::size_t>(-static_cast<long long>(delta));
       shared_->selected = (step > shared_->selected) ? 0 : shared_->selected - step;
     }
     return true;
@@ -418,7 +428,20 @@ class CompletionPopupImpl : public ftxui::ComponentBase {
 
   ftxui::Element Render() override {
     recompute_placement();
-    const CompletionState status = state();
+
+    // Read all shared state in a single locked scope so the snapshot is
+    // consistent even if a provider callback lands mid-render.
+    CompletionState status;
+    std::vector<CompletionItem> current_items;
+    std::string current_error;
+    std::size_t current_selected = 0;
+    {
+      std::lock_guard<std::mutex> lock(shared_->mutex);
+      status = shared_->status;
+      current_items = shared_->items;
+      current_error = shared_->error;
+      current_selected = shared_->selected;
+    }
     if (status == CompletionState::kHidden) {
       return ftxui::text("");
     }
@@ -426,15 +449,6 @@ class CompletionPopupImpl : public ftxui::ComponentBase {
 
     ftxui::Elements contents;
     contents.push_back(ftxui::text("Completion") | ftxui::bold | ftxui::dim);
-    std::vector<CompletionItem> current_items;
-    std::string current_error;
-    std::size_t current_selected = 0;
-    {
-      std::lock_guard<std::mutex> lock(shared_->mutex);
-      current_items = shared_->items;
-      current_error = shared_->error;
-      current_selected = shared_->selected;
-    }
     switch (status) {
       case CompletionState::kLoading:
         contents.push_back(ftxui::text("Loading\u2026") | ftxui::dim);
