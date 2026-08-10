@@ -38,6 +38,12 @@ if(TERMINAL_UI_KIT_BUILD_TESTS)
 endif()
 
 if(TERMINAL_UI_KIT_BUILD_EXAMPLES)
+  # FTXUI imported targets are directory-scoped to where find_package() runs.
+  # Components resolves them inside src/terminal_ui_kit, which is a sibling of
+  # examples/ and benchmarks/. Resolve them at the root scope first so every
+  # example/benchmark target can reference ftxui::dom|component|screen. This is
+  # a no-op if a previous build already resolved FTXUI.
+  terminal_ui_kit_require_ftxui()
   if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/CMakeLists.txt")
     add_subdirectory(examples)
   else()
@@ -46,6 +52,9 @@ if(TERMINAL_UI_KIT_BUILD_EXAMPLES)
 endif()
 
 if(TERMINAL_UI_KIT_BUILD_BENCHMARKS)
+  if(NOT TARGET ftxui::screen)
+    terminal_ui_kit_require_ftxui()
+  endif()
   if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/CMakeLists.txt")
     add_subdirectory(benchmarks)
   else()

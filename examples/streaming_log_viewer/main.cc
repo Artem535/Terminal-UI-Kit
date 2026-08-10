@@ -67,7 +67,7 @@ int main() {
       LogEntry entry;
       entry.timestamp = timestamp;
       entry.severity = sev_map[sev_idx];
-      entry.message = parse_ansi(messages[std::rand() % kMsgCount]);
+      entry.message = parse_ansi(messages[static_cast<std::size_t>(std::rand()) % kMsgCount]);
 
       {
         std::lock_guard<std::mutex> lock(log_mutex);

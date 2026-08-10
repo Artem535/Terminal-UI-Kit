@@ -9,6 +9,11 @@ section 45 for the project's specific stability rules before/after 1.0).
 
 === Added
 
+- TranscriptView component (`components/transcript.h`, `components/transcript_model.h`)
+  with a heterogeneous block list, a mutable streaming tail, follow-end,
+  virtualized mixed-height rendering, search, bookmarks, and copy/details
+  callbacks. Includes unit/rendering/interaction tests, a benchmark, and the
+  `transcript_view_example` interactive application (#H3).
 - LogView component with follow/pause and severity badges (#PR7B)
 - streaming_log_viewer interactive example application
 - render_styled_text utility for StyledText-to-FTXUI Element conversion
