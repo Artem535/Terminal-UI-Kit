@@ -185,6 +185,7 @@ TEST(DiffParser, BinaryFileNoticeYieldsFileWithoutHunks) {
   EXPECT_EQ(files[0].old_path, "img.png");
   EXPECT_EQ(files[0].new_path, "img.png");
   EXPECT_TRUE(files[0].hunks.empty());
+  EXPECT_TRUE(files[0].binary);
 }
 
 TEST(DiffParser, DeletedOrAddedLineStartingWithDashesOrPlusesNotMistakenForFileHeader) {
