@@ -65,6 +65,10 @@ std::string truncate(std::string_view text, int max_cells) {
 // track the current viewport width and height across frames.
 class ObservingBoxDecorator : public ftxui::Node {
  public:
+  // `observed_box` is Impl::box_. This decorator only lives for the duration of
+  // a single frame's element tree, while Impl (and its box_) is owned by the
+  // shared_ptr held by UnifiedDiffView/component, so the reference is valid for
+  // the decorator's whole lifetime. Do not point it at a frame-local object.
   ObservingBoxDecorator(ftxui::Element child, ftxui::Box& observed_box)
       : Node({std::move(child)}), observed_box_(observed_box) {}
 
@@ -471,8 +475,10 @@ class UnifiedDiffView::Impl : public ftxui::ComponentBase {
   }
 
   std::string header_text(const diff::DiffFile& file) const {
+    // Same old→new separator as file_header_text so a binary notice and its
+    // file header read consistently.
     if (file.old_path == file.new_path) return file.new_path;
-    return file.old_path + " / " + file.new_path;
+    return file.old_path + " -> " + file.new_path;
   }
 
   std::string empty_message() const { return files_.empty() ? "empty diff" : ""; }

@@ -79,8 +79,7 @@ class UnifiedDiffView {
   UnifiedDiffView(const UnifiedDiffView&) = delete;
   UnifiedDiffView& operator=(const UnifiedDiffView&) = delete;
 
-  ftxui::Component component() const;
-
+  [[nodiscard]] ftxui::Component component() const;
   // --- File / hunk navigation -------------------------------------------
   void next_file();
   void prev_file();
@@ -108,10 +107,10 @@ class UnifiedDiffView {
   // Selects a specific row in the flattened layout (0-based). Rows are laid
   // out in model order; use status()/row_count() to map to visible content.
   // Returns true if the selection changed.
-  bool select_row(std::size_t row_index);
+  [[nodiscard]] bool select_row(std::size_t row_index);
   void scroll_to_row(std::size_t row_index);
   // Invokes on_copy with the selected row's source text.
-  bool copy_selection();
+  [[nodiscard]] bool copy_selection();
   [[nodiscard]] bool has_selection() const;
 
   // --- Status ----------------------------------------------------------------

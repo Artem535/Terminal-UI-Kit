@@ -34,12 +34,18 @@ Diff rows are single-screen-height by construction: long lines are truncated
 line each. The flattened presentation is therefore a fixed-height row list
 `rows_`, built once per model + collapse-state change, never per frame.
 
-The existing `VirtualListModel` provides the virtualized windowing (prefix-sum
-scrolling, mouse wheel, page up/down, home/end, selection, and resize-stable
-scroll offsets) over that fixed-height row list. Because it virtualizes by row
-index over a stable layout, a 100,000-line diff renders only the visible
-rows and does not rebuild the flattened layout while model and collapse state
-are unchanged.
+The view rolls its own small fixed-height virtual window inside `Impl` (a scroll
+offset over `rows_`, an observing decorator that captures the viewport box, and
+events handled in `OnEvent`). It deliberately does not reuse `VirtualListModel`
+because the status line and resize-stability require direct access to the exact
+first/last visible row and to the scroll offset, which `VirtualListModel` does
+not expose. Because all rows are height 1, `scroll_offset_` is simply the first
+visible row index and the visible window is `[scroll_offset_, scroll_offset_ +
+box_height)`. Only those rows are rendered each frame; `ObservingBoxDecorator`
+records the viewport and requests a follow-up frame on size change so the window
+tracking converges after the first layout. This keeps a 100,000-line diff
+rendering only the visible rows and never rebuilding the flattened layout while
+model and collapse state are unchanged.
 
 ## Flattened layout (`rows_`)
 
@@ -67,17 +73,20 @@ given to content). This keeps single-line rows and navigation stable.
 
 ## Interaction
 
-`UnifiedDiffView` wraps `VirtualListModel` and adds a `CatchEvent` layer:
+`UnifiedDiffView` handles navigation directly in `Impl::OnEvent` (it does not
+depend on `VirtualListModel` or a `CatchEvent` wrapper):
 
-* `j`/`k` and up/down — scroll/select (VirtualList).
-* `n`/`N` — next/previous hunk (scroll to and select the hunk header row).
-* `]`/`[` — next/previous file.
-* Enter — collapse/expand the current file (rebuilds `rows_`, preserves the
-  selected file and best-effort selection).
-* `/` — enter search (see below).
+* `j`/`k` and up/down — select the previous/next row (`select_row`, which
+  `ensure_visible`s the target).
+* `n`/`N` — next/previous hunk (moves to the next/previous hunk-header row).
+* `]`/`[` — next/previous file (moves to the target file's header row; collapsed
+  files keep a visible header row, so they remain selectable).
+* Enter — collapse/expand the current file (rebuilds `rows_`, keeps the toggled
+  file's header selected).
 * `y` — invoke the copy callback with the selected line's original source text
   (plain, marker-stripped content; `content` spans concatenated).
-* Mouse wheel, PageUp/Down, Home/End — delegated to VirtualList.
+* Mouse wheel, PageUp/Down, Home/End — handled in `OnEvent` against
+  `scroll_offset_`/`selected_row_`.
 
 Collapsed state is a `std::vector<bool>` over files, stored independently of the
 row list, so it remains stable during navigation and is consulted when `rows_`
@@ -85,18 +94,19 @@ is rebuilt.
 
 ## Search
 
-`set_search(query)` scans the retained model once, collecting for each hunk line
-whose content contains the query a `{row_index, line_index}` match. The current
-match advances with `jump_to_next_match` / `jump_to_prev_match` and the
-`scroll_to_match` keeps the matched row visible. The match set is rebuilt only on
-`set_search` or on layout change, not per frame.
+`set_search(query)` scans the retained model once, collecting the **row indices**
+of every hunk line whose content contains the query. The current match advances
+with `jump_to_next_match` / `jump_to_prev_match`, and each jump `select_row`s the
+matched row so it becomes visible. There is no separate `scroll_to_match`: match
+selection reuses the normal scroll/select path. The match set is rebuilt only on
+`set_search` or on a layout change (collapse/expand), not per frame.
 
 ## Resize stability
 
-Row heights are 1 for every row and independent of width, so the VirtualList
-scroll offset (in rows) — and therefore the selected file / hunk / row — is
-unchanged across a width or height change. Gutter visibility may flip at the
-narrow threshold, but selection and scroll position are preserved.
+Row heights are 1 for every row and independent of width, so the view's scroll
+offset (in rows) — and therefore the selected file / hunk / row — is unchanged
+across a width or height change. Gutter visibility may flip at the narrow
+threshold, but selection and scroll position are preserved.
 
 ## Status
 

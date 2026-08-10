@@ -328,7 +328,7 @@ TEST(UnifiedDiffViewTest, JumpToNextMatchCycles) {
 TEST(UnifiedDiffViewTest, SelectRowChangesStatus) {
   auto view = UnifiedDiffView(parse(kSingleFileDiff));
   auto s1 = view.status();
-  view.select_row(s1.selected_row + 2);
+  (void)view.select_row(s1.selected_row + 2);
   auto s2 = view.status();
   EXPECT_NE(s1.selected_row, s2.selected_row);
 }
@@ -339,7 +339,7 @@ TEST(UnifiedDiffViewTest, CopyCallbackInvoked) {
   opts.on_copy = [&](std::string text) { copied = std::move(text); };
   auto view = UnifiedDiffView(parse(kSingleFileDiff), opts);
   // Row layout: 0=file header, 1=hunk header, 2="alpha", 3="beta", ...
-  view.select_row(2);  // context line with "alpha"
+  (void)view.select_row(2);  // context line with "alpha"
   EXPECT_TRUE(view.copy_selection());
   EXPECT_EQ(copied, "alpha");
 }
@@ -350,7 +350,7 @@ TEST(UnifiedDiffViewTest, CopyCallbackInvoked) {
 
 TEST(UnifiedDiffViewTest, ResizePreservesSelection) {
   auto view = UnifiedDiffView(parse(kSingleFileDiff));
-  view.select_row(5);
+  (void)view.select_row(5);
   auto s_before = view.status();
   const std::size_t row_before = s_before.selected_row;
   // Render at different widths
@@ -398,7 +398,7 @@ TEST(UnifiedDiffViewTest, LargeDiffRendersAndNavigates) {
 
   // Navigate to the last row (the last line of the last file). There are 11
   // files in total (start.txt + file_0..file_9), so the last index is 10.
-  view.select_row(view.row_count() - 1);
+  (void)view.select_row(view.row_count() - 1);
   const std::string rendered_end = render_view(view, 80, 10);
   EXPECT_EQ(view.status().file_index, 10u);
   // The selected last line belongs to file_9 and must be visible.
@@ -411,7 +411,7 @@ TEST(UnifiedDiffViewTest, LargeDiffRendersAndNavigates) {
 
 TEST(UnifiedDiffViewTest, StableStateAfterResizeUsesOriginalOffset) {
   auto view = UnifiedDiffView(parse(kMultiFileDiff));
-  view.select_row(3);
+  (void)view.select_row(3);
   const auto s1 = view.status();
   // Render at different sizes
   test_support::render_to_screen(view.component()->Render(), 80, 40);
