@@ -282,6 +282,21 @@ TEST(EditorDocument, SetCursorClampsOutOfRange) {
   EXPECT_EQ(doc.cursor().column, 2U);  // clamped to line length
 }
 
+TEST(EditorDocument, SetCursorClampsPreferredColumnToClampedCursor) {
+  EditorDocument doc = DocumentFrom({"ab", "cccccccc"});
+  doc.set_cursor({0, 99});  // clamped to col 2; preferred must match, not 99
+  EXPECT_EQ(doc.preferred_column(), 2U);
+  doc.move_down();  // preferred 2 on an 8-char line -> column 2
+  EXPECT_EQ(doc.cursor(), (TextPosition{1, 2}));
+}
+
+TEST(EditorDocument, ViewportHeightMinClampedToOne) {
+  EditorDocument doc = DocumentFrom({"x"});
+  doc.set_viewport_size(5, 0);
+  EXPECT_EQ(doc.viewport_width(), 5U);
+  EXPECT_EQ(doc.viewport_height(), 1U);
+}
+
 TEST(EditorDocument, ViewportScrollsVerticallyToCursor) {
   EditorDocument doc;
   std::vector<std::string> lines;

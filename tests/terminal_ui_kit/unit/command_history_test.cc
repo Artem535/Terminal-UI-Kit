@@ -99,7 +99,7 @@ TEST(CommandHistory, NextWhenNotNavigatingReturnsFalse) {
   EXPECT_FALSE(history.next(out));
 }
 
-TEST(CommandHistory, AddExitsNavigationAndClearsDraft) {
+TEST(CommandHistory, AddExitsNavigationClearsDraft) {
   CommandHistory history;
   history.add("a");
   history.add("b");
@@ -110,6 +110,20 @@ TEST(CommandHistory, AddExitsNavigationAndClearsDraft) {
   history.add("c");  // a new submission resets navigation
   EXPECT_FALSE(history.navigating());
   EXPECT_FALSE(history.next(out));
+}
+
+TEST(CommandHistory, AddExitsNavigationEvenForBlankOrDuplicate) {
+  CommandHistory history;
+  history.add("a");
+  history.set_draft("draft");
+  std::string out;
+  ASSERT_TRUE(history.previous(out));
+  EXPECT_TRUE(history.navigating());
+  history.add("");  // blank entries must also exit navigation mode
+  EXPECT_FALSE(history.navigating());
+  history.previous(out);
+  history.add("a");  // duplicate of the newest entry must also exit
+  EXPECT_FALSE(history.navigating());
 }
 
 TEST(CommandHistory, EndNavigationClearsDraft) {

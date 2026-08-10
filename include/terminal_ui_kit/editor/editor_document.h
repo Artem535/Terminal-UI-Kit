@@ -27,6 +27,13 @@ namespace terminal_ui_kit {
 //    viewport (invariant: viewport contains cursor after an action).
 //  * A "preferred column" is preserved across vertical movement so moving
 //    up/down across lines of differing length stays aligned (deterministic).
+//
+// Known MVP limitation: the viewport width is measured in cells while the
+// cursor column is a byte offset / code-point index. This is exact for
+// single-width (Latin/Cyrillic) text, but double-width glyphs (CJK, emoji)
+// occupy two cells per code point, so horizontal scroll and caret placement
+// are approximate when such glyphs are present. Wide-glyph-aware column
+// tracking (e.g. wcwidth) is deferred beyond the MVP.
 class EditorDocument {
  public:
   EditorDocument();

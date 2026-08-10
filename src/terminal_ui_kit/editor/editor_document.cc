@@ -60,8 +60,8 @@ std::size_t EditorDocument::cursor_column() const { return cursor_.column; }
 
 void EditorDocument::set_cursor(TextPosition position) {
   cursor_ = position;
-  update_preferred_column();
   normalize();
+  update_preferred_column();
   ensure_cursor_visible();
 }
 
@@ -322,6 +322,9 @@ void EditorDocument::move_word_right() {
 void EditorDocument::set_viewport_size(std::size_t width, std::size_t height) {
   if (width == 0) {
     width = 1;
+  }
+  if (height == 0) {
+    height = 1;
   }
   viewport_width_ = width;
   viewport_height_ = height;

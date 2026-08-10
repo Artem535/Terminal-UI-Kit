@@ -248,7 +248,15 @@ class MultilineEditorImpl : public ftxui::ComponentBase {
 
   ftxui::Element render_line(std::size_t line_index) {
     const std::string& raw = document_.line(line_index);
-    const std::size_t start = document_.scroll_left();
+    std::size_t start = document_.scroll_left();
+    // scroll_left_ is guaranteed to be a code-point boundary for the cursor
+    // line, but other visible lines may have multi-byte characters at
+    // different byte offsets. Round the start down to a code-point boundary in
+    // *this* line so no visible line is ever sliced mid-codepoint.
+    while (start > 0 && start < raw.size() &&
+           IsContinuationByte(static_cast<unsigned char>(raw[start]))) {
+      --start;
+    }
     const std::size_t width = document_.viewport_width();
     std::string visible = TakeCodePoints(raw, start, width);
 

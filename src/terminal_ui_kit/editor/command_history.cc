@@ -10,6 +10,9 @@ namespace terminal_ui_kit {
 CommandHistory::CommandHistory(std::size_t max_entries) : max_entries_(max_entries) {}
 
 void CommandHistory::add(std::string entry) {
+  // Any submission exits navigation (and clears the draft), including blank
+  // or duplicate entries.
+  end_navigation();
   // Skip blank and whitespace-only submissions.
   const bool blank = std::all_of(entry.begin(), entry.end(), [](unsigned char c) {
     return c == ' ' || c == '\t' || c == '\r' || c == '\n';
@@ -27,7 +30,6 @@ void CommandHistory::add(std::string entry) {
     entries_.pop_front();
   }
   entries_.push_back(std::move(entry));
-  end_navigation();
 }
 
 void CommandHistory::clear() {
