@@ -339,18 +339,34 @@ class TranscriptViewImpl {
   void scroll_to_index(std::size_t index) { list_->scroll_to_index(index); }
 
   bool find(const std::string& query) {
+    const std::optional<std::size_t> prior = current_match_;
     search_query_ = query;
-    const std::optional<std::size_t> match = model_->find(query);
-    if (match) {
-      current_match_ = match;
-      list_->select_index(*match);
-      // Searching implies the user wants to inspect a location, not ride the
-      // streaming tail; disable follow so the next append does not snap back.
-      follow_ = false;
-      return true;
+    const std::optional<std::size_t> first = model_->find(query);
+    if (!first) {
+      current_match_.reset();
+      return false;
     }
-    current_match_.reset();
-    return false;
+    if (!prior) {
+      current_match_ = first;
+    } else {
+      // Search-as-you-type anchors the cursor: keep the prior position when it
+      // still matches, otherwise move to the next match at/after it (or wrap to
+      // the first) instead of jumping back to the first hit on every keystroke.
+      const std::vector<std::size_t>& hits = model_->matches();
+      const auto it = std::lower_bound(hits.begin(), hits.end(), *prior);
+      if (it != hits.end() && *it == *prior) {
+        current_match_ = *prior;
+      } else if (it != hits.end()) {
+        current_match_ = *it;
+      } else {
+        current_match_ = hits.front();
+      }
+    }
+    list_->select_index(*current_match_);
+    // Searching implies the user wants to inspect a location, not ride the
+    // streaming tail; disable follow so the next append does not snap back.
+    follow_ = false;
+    return true;
   }
 
   bool find_next() {

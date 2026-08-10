@@ -89,6 +89,28 @@ TEST(TranscriptView, SearchDisablesFollow) {
   EXPECT_TRUE(view.follow());
 }
 
+TEST(TranscriptView, SearchAsYouTypeAnchorsCursor) {
+  TranscriptModel model;
+  // Prior match (index 3, "z a") stops matching "q", while blocks 1,2,4 still
+  // match; the cursor must anchor at the next match after the prior position
+  // (4), not jump back to the first hit (1).
+  model.append(TextBlock{"x"});
+  model.append(TextBlock{"q a"});
+  model.append(TextBlock{"q"});
+  model.append(TextBlock{"z a"});
+  model.append(TextBlock{"q"});
+  TranscriptView view = MakeView(&model);
+  view.component()->Render();
+
+  EXPECT_EQ(view.find("a"), true);
+  EXPECT_EQ(view.current_match(), std::optional<std::size_t>{1});
+  view.find_next();
+  EXPECT_EQ(view.current_match(), std::optional<std::size_t>{3});
+
+  view.find("q");
+  EXPECT_EQ(view.current_match(), std::optional<std::size_t>{4});
+}
+
 TEST(TranscriptView, MutableTailRendersAtFixedHeightAndStreamsInPlace) {
   TranscriptModel model;
   model.begin_tail(TextBlock{""});
