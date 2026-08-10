@@ -11,7 +11,8 @@ add_executable(terminal_ui_kit_rendering_tests
   collapsible_panel_test.cc
   modal_stack_test.cc
   log_view_test.cc
-  virtual_document_test.cc)
+  virtual_document_test.cc
+  multiline_editor_test.cc)
 
 if(TERMINAL_UI_KIT_ENABLE_MARKDOWN)
   target_sources(terminal_ui_kit_rendering_tests PRIVATE markdown_view_test.cc)
@@ -21,6 +22,7 @@ target_link_libraries(terminal_ui_kit_rendering_tests PRIVATE
   TerminalUiKit::Testing
   TerminalUiKit::Components
   TerminalUiKit::Document
+  TerminalUiKit::Editor
   GTest::gtest_main)
 
 if(TERMINAL_UI_KIT_ENABLE_MARKDOWN)
