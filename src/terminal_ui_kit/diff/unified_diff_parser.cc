@@ -296,8 +296,15 @@ std::vector<DiffFile> UnifiedDiffParser::Parse(std::string_view text) const {
       hunk = nullptr;
       continue;
     }
-    // Header noise (index, mode, similarity, Binary files lines, etc.) that
-    // is neither a file header nor a hunk is ignored outside of a hunk body.
+    // A binary-file notice has no hunks or textual body; record it so a view
+    // can render a distinct "Binary files differ" notice.
+    if (line.starts_with("Binary files ")) {
+      file->binary = true;
+      continue;
+    }
+    // Header noise (index, mode, similarity, other Binary files lines, etc.)
+    // that is neither a file header nor a hunk is ignored outside of a hunk
+    // body.
   }
 
   return files;
