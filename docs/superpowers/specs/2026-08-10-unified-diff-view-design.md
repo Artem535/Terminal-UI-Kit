@@ -119,8 +119,8 @@ a 120x40 viewport. Measured on the development machine (16x 3.8 GHz, GCC 16,
 
 | Benchmark                             | Per-iteration time | row_count |
 |--------------------------------------|--------------------|-----------|
-| RenderAndPaint (full viewport)       | ~2.0 ms            | 100.02k   |
-| Navigation (scroll jump + render)    | ~2.1 ms            | 100.02k   |
+| RenderAndPaint (full viewport)       | ~0.7–2.0 ms        | 100.02k   |
+| Navigation (scroll jump + render)    | ~0.7–2.1 ms        | 100.02k   |
 
 Only the visible rows (~40) are rendered per frame; the flattened row list is
 built once per model+collapse change and never rebuilt per frame. Both numbers
