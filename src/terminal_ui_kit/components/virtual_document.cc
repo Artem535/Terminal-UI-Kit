@@ -16,6 +16,7 @@
 
 #include "terminal_ui_kit/components/style_bridge.h"
 #include "terminal_ui_kit/components/virtual_list.h"
+#include "terminal_ui_kit/core/line_number.h"
 #include "terminal_ui_kit/core/selection.h"
 #include "terminal_ui_kit/core/styled_text.h"
 #include "terminal_ui_kit/document/streaming_document.h"
@@ -23,6 +24,8 @@
 
 namespace terminal_ui_kit {
 namespace {
+
+constexpr std::size_t kGutterWidth = 5;
 
 class WidthTracker : public ftxui::Node {
  public:
@@ -123,9 +126,8 @@ class VirtualDocumentImpl {
     ftxui::Elements parts;
     if (options_.show_line_numbers) {
       if (line.sub_line == 0) {
-        std::string num = std::to_string(line.logical_line + 1);
-        num = std::string(5 - num.size(), ' ') + num;
-        parts.push_back(ftxui::text(num) | ftxui::color(ftxui::Color::GrayDark));
+        parts.push_back(ftxui::text(format_line_number(line.logical_line + 1, kGutterWidth)) |
+                        ftxui::color(ftxui::Color::GrayDark));
         parts.push_back(ftxui::text(" "));
       } else {
         parts.push_back(ftxui::text("       "));
