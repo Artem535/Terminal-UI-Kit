@@ -12,6 +12,10 @@ section 45 for the project's specific stability rules before/after 1.0).
 - LogView component with follow/pause and severity badges (#PR7B)
 - streaming_log_viewer interactive example application
 - render_styled_text utility for StyledText-to-FTXUI Element conversion
+- `format_line_number` shared helper and line-number gutter underflow fix in
+  `CodeView` and `VirtualDocument` (numbers wider than the gutter render fully
+  without truncation, underflow, or excessive padding)
+- line_number_formatting_example interactive example application
 
 * Repository foundation: CMake + Xmake build systems, vcpkg manifest,
   directory skeleton for `include/`, `src/`, `tests/`, `examples/`,

@@ -5,10 +5,10 @@
 
 #include <ftxui/component/event.hpp>
 #include <ftxui/screen/screen.hpp>
-#include <gtest/gtest.h>
 
 #include "terminal_ui_kit/document/streaming_document.h"
 #include "terminal_ui_kit/testing/virtual_screen.h"
+#include <gtest/gtest.h>
 
 namespace terminal_ui_kit {
 namespace {
@@ -173,4 +173,37 @@ TEST(VirtualDocument, VThenArrowThenYSelectsAndYanks) {
 }
 
 }  // namespace
+
+TEST(VirtualDocument, ShortLineNumbersRightAligned) {
+  StreamingDocument doc;
+  doc.append("a\nb\nc");
+  doc.finish();
+  VirtualDocumentOptions opts;
+  opts.document = &doc;
+  opts.show_line_numbers = true;
+  opts.follow = false;
+  VirtualDocument view(opts);
+  std::string text = test_support::render_to_text(view.component()->Render(), 40, 3);
+  EXPECT_NE(text.find("   1"), std::string::npos);
+  EXPECT_NE(text.find("   2"), std::string::npos);
+}
+TEST(VirtualDocument, LineNumbersWiderThanGutterRenderFully) {
+  StreamingDocument doc;
+  std::string content;
+  for (int i = 1; i <= 100003; ++i) content += "x\n";
+  content.pop_back();  // drop trailing newline so the last line is line 100003
+  doc.append(content);
+  doc.finish();
+  VirtualDocumentOptions opts;
+  opts.document = &doc;
+  opts.show_line_numbers = true;
+  opts.follow = true;
+  VirtualDocument view(opts);
+  // Gutter width is 5; numbers with 6+ digits exceed it and must render
+  // fully without underflowing. Follow mode scrolls to the bottom. The old
+  // implementation underflows and throws std::bad_alloc here.
+  std::string text = test_support::render_to_text(view.component()->Render(), 40, 5);
+  EXPECT_NE(text.find("100003"), std::string::npos);
+}
+
 }  // namespace terminal_ui_kit
