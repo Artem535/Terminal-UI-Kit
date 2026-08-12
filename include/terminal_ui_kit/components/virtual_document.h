@@ -20,6 +20,9 @@ struct VirtualDocumentOptions {
   bool follow = true;
   int tab_width = 8;
   bool show_line_numbers = false;
+  // Column width of the line-number gutter. Numbers wider than this render in
+  // full without padding; numbers narrower are right-aligned within it.
+  std::size_t line_number_width = 5;
   std::function<void(std::string)> on_copy;
 };
 
