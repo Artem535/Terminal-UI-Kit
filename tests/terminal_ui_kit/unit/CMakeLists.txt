@@ -3,6 +3,7 @@ add_executable(terminal_ui_kit_unit_tests
   text_range_test.cc
   styled_text_test.cc
   text_wrap_test.cc
+  padded_text_test.cc
   theme_test.cc
   streaming_document_test.cc
   ansi_parser_test.cc
