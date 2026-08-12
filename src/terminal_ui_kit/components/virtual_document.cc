@@ -14,6 +14,7 @@
 #include <ftxui/dom/node.hpp>
 #include <ftxui/screen/box.hpp>
 
+#include "terminal_ui_kit/components/line_number_format.h"
 #include "terminal_ui_kit/components/style_bridge.h"
 #include "terminal_ui_kit/components/virtual_list.h"
 #include "terminal_ui_kit/core/selection.h"
@@ -123,12 +124,12 @@ class VirtualDocumentImpl {
     ftxui::Elements parts;
     if (options_.show_line_numbers) {
       if (line.sub_line == 0) {
-        std::string num = std::to_string(line.logical_line + 1);
-        num = std::string(5 - num.size(), ' ') + num;
-        parts.push_back(ftxui::text(num) | ftxui::color(ftxui::Color::GrayDark));
+        parts.push_back(
+            ftxui::text(format_line_number(line.logical_line + 1, options_.line_number_width)) |
+            ftxui::color(ftxui::Color::GrayDark));
         parts.push_back(ftxui::text(" "));
       } else {
-        parts.push_back(ftxui::text("       "));
+        parts.push_back(ftxui::text(std::string(options_.line_number_width + 1, ' ')));
       }
     }
 
