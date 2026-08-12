@@ -46,10 +46,9 @@ byte-for-byte as before. `code_view.cc` uses `options.gutter_width`;
 `virtual_document.cc` uses `options_.gutter_width`.
 
 VirtualDocument continuation (sub_line != 0) lines are indented
-`gutter_width + 1` spaces so they align with the number column's text start
-(`gutter_width` digits + 1 separator space); at the default width 5 this is 6
-spaces, and the first-sub-line gutter is also 6 (`5` + separator) — making the
-gutter internally consistent.
+`gutter_width + 2` spaces, mirroring the pre-fix fixed 7-space offset at the
+default width 5 so ordinary wrapped documents render unchanged, while scaling
+with a configurable gutter width.
 
 ### 3. Tests
 - Unit (`unit/padded_text_test.cc`): covers `1`, `9`, `99`, `9999`, `10000`,
