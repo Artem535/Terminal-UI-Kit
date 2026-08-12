@@ -18,7 +18,7 @@
 //
 // Build/run (CMake):
 //   cmake --build --preset debug --target terminal_ui_kit_example_line_number_formatting
-//   ./build/debug/examples/line_number_formatting/terminal_ui_kit_example_line_number_formatting
+//   ./build/debug/examples/terminal_ui_kit_example_line_number_formatting
 
 #include <cstddef>
 #include <memory>

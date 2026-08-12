@@ -79,8 +79,10 @@ TEST(LineNumberFormat, VirtualDocumentWideNumberRendersInFull) {
   // No enormous padding is produced after the (previously underflowing)
   // subtraction: the whole rendered output stays small.
   EXPECT_LT(text.size(), 2000u);
-  // The 6-digit line number is rendered fully (never truncated).
-  EXPECT_NE(text.find("10000"), std::string::npos);
+  // The bottom visible line number equals doc.line_count() and has 6 digits
+  // (wider than the default gutter width of 5). Assert the full number is
+  // rendered, proving it is never truncated by the wide-number handling.
+  EXPECT_NE(text.find(std::to_string(doc.line_count())), std::string::npos);
 }
 
 TEST(LineNumberFormat, VirtualDocumentZeroWidthIsSafe) {
