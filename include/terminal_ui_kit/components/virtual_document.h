@@ -20,6 +20,11 @@ struct VirtualDocumentOptions {
   bool follow = true;
   int tab_width = 8;
   bool show_line_numbers = false;
+  // Width of the line-number gutter in columns. Line numbers longer than this
+  // are rendered in full without truncation and without any padding; shorter
+  // numbers are right-aligned within the gutter. A value of 0 is handled
+  // safely (numbers render unpadded).
+  std::size_t gutter_width = 5;
   std::function<void(std::string)> on_copy;
 };
 

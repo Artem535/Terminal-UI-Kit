@@ -6,6 +6,7 @@
 #include <ftxui/dom/elements.hpp>
 
 #include "terminal_ui_kit/components/style_bridge.h"
+#include "terminal_ui_kit/core/padded_text.h"
 #include "terminal_ui_kit/core/styled_text.h"
 #include "terminal_ui_kit/core/text_wrap.h"
 
@@ -39,8 +40,7 @@ ftxui::Element CodeView(std::string code, CodeViewOptions options) {
     auto flush_line = [&] {
       ftxui::Elements parts;
       if (options.show_line_numbers) {
-        std::string num = std::to_string(line_num);
-        num = std::string(4 - num.size(), ' ') + num;
+        std::string num = pad_left_to_width(std::to_string(line_num), options.gutter_width);
         parts.push_back(ftxui::text(num) | ftxui::color(ftxui::Color::GrayDark));
         parts.push_back(ftxui::text(" "));
       }
@@ -80,8 +80,7 @@ ftxui::Element CodeView(std::string code, CodeViewOptions options) {
     for (std::size_t i = 0; i < wrapped.size(); ++i) {
       ftxui::Elements parts;
       if (options.show_line_numbers) {
-        std::string num = std::to_string(i + 1);
-        num = std::string(4 - num.size(), ' ') + num;
+        std::string num = pad_left_to_width(std::to_string(i + 1), options.gutter_width);
         parts.push_back(ftxui::text(num) | ftxui::color(ftxui::Color::GrayDark));
         parts.push_back(ftxui::text(" "));
       }
