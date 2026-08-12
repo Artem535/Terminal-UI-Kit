@@ -137,6 +137,53 @@ TEST(VirtualDocument, GutterWidthZeroIsSafe) {
   EXPECT_NE(text.find("1 hello"), std::string::npos);
 }
 
+TEST(VirtualDocument, GutterWidthEqualToDigitsHasNoPadding) {
+  StreamingDocument doc;
+  doc.append("hello");
+  doc.finish();
+
+  VirtualDocumentOptions opts;
+  opts.document = &doc;
+  opts.show_line_numbers = true;
+  opts.gutter_width = 1;  // "1" is exactly one digit wide
+  VirtualDocument view(opts);
+
+  std::string text = StripAnsi(test_support::render_to_text(view.component()->Render(), 30, 3));
+  EXPECT_NE(text.find("1 hello"), std::string::npos);
+}
+
+TEST(VirtualDocument, GutterWidthLargerThanDigits) {
+  StreamingDocument doc;
+  doc.append("hello");
+  doc.finish();
+
+  VirtualDocumentOptions opts;
+  opts.document = &doc;
+  opts.show_line_numbers = true;
+  opts.gutter_width = 3;
+  VirtualDocument view(opts);
+
+  std::string text = StripAnsi(test_support::render_to_text(view.component()->Render(), 30, 3));
+  EXPECT_NE(text.find("  1 hello"), std::string::npos);
+}
+
+TEST(VirtualDocument, WrappedContinuationLinesIndentByGutterWidth) {
+  StreamingDocument doc;
+  doc.append(std::string(250, 'A'));  // wraps into multiple display lines
+  doc.finish();
+
+  VirtualDocumentOptions opts;
+  opts.document = &doc;
+  opts.show_line_numbers = true;
+  opts.gutter_width = 5;
+  VirtualDocument view(opts);  // follow defaults to true -> scrolls to bottom
+
+  // The bottom-most display line is a continuation sub-line, indented by
+  // gutter_width + 2 = 7 spaces (mirroring the pre-fix fixed gutter).
+  std::string text = StripAnsi(test_support::render_to_text(view.component()->Render(), 40, 10));
+  EXPECT_NE(text.find("       A"), std::string::npos);
+}
+
 TEST(VirtualDocument, ArrowUpDisablesFollow) {
   StreamingDocument doc;
   doc.append("line1\nline2\nline3");
