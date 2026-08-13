@@ -290,6 +290,33 @@ TEST(CommandHistory, PersistenceFailureDoesNotCorruptHistory) {
   EXPECT_TRUE(history.Search("o").size() == 2u);  // "one" and "two" still present.
 }
 
+// A policy whose ShouldPersist always throws, to prove a throwing user-supplied
+// policy also cannot corrupt the in-memory history.
+class ThrowingPolicy : public CommandPersistencePolicy {
+ public:
+  bool ShouldPersist(std::string_view) const override {
+    throw std::runtime_error("policy failure");
+  }
+};
+
+TEST(CommandHistory, PolicyFailureDoesNotCorruptHistoryOrEscape) {
+  CommandHistory history(10);
+  auto store = std::make_unique<RecordingStore>();
+  RecordingStore* raw = store.get();
+  history.SetPersistentStore(std::move(store));
+  history.SetPersistencePolicy(std::make_unique<ThrowingPolicy>());
+
+  // ShouldPersist throws for every command; the add must still succeed in
+  // memory and the exception must not escape.
+  history.Add("one");
+  history.Add("two");
+  ASSERT_EQ(history.Size(), 2u);
+  EXPECT_EQ(history.Previous(), "two");
+  EXPECT_EQ(history.Previous(), "one");
+  // Nothing was ultimately persisted.
+  EXPECT_TRUE(raw->persisted().empty());
+}
+
 TEST(CommandHistory, SensitiveCommandNotPersistedButStillStored) {
   CommandHistory history(10);
   auto store = std::make_unique<RecordingStore>();

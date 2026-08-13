@@ -40,9 +40,10 @@ class SensitiveCommandPolicy : public CommandPersistencePolicy {
 
 // Optional persistence abstraction for a CommandHistory. CommandHistory calls
 // Persist() best-effort after a command has been accepted into in-memory
-// history; any exception thrown by a store is swallowed so that a failing
-// store never corrupts the in-memory history. Thread-safety, if required, is
-// the store's own responsibility.
+// history; any exception thrown by a store (or by a policy consulted on the
+// way to it) is swallowed so that a failing store never corrupts the
+// in-memory history. Thread-safety, if required, is the store's own
+// responsibility.
 class CommandHistoryStore {
  public:
   virtual ~CommandHistoryStore() = default;

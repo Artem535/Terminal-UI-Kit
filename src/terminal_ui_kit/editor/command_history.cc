@@ -56,11 +56,13 @@ void CommandHistory::Add(std::string command) {
   // Adding a new command resets the navigation cursor.
   cursor_ = std::nullopt;
 
-  if (store_ != nullptr && (policy_ == nullptr || policy_->ShouldPersist(entries_.back()))) {
+  if (store_ != nullptr) {
     try {
-      store_->Persist(entries_.back());
+      if (policy_ == nullptr || policy_->ShouldPersist(entries_.back())) {
+        store_->Persist(entries_.back());
+      }
     } catch (...) {
-      // A failing store must never corrupt the in-memory history.
+      // A failing store (or policy) must never corrupt the in-memory history.
     }
   }
 }
