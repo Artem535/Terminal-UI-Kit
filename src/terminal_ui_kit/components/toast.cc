@@ -51,11 +51,6 @@ void ToastManager::ClearAll() {
   focused_.reset();
 }
 
-std::size_t ToastManager::VisibleIndexToPosition(std::size_t visible_index) const {
-  // Visible toasts occupy positions [0, visible_count) in insertion order.
-  return std::min(visible_index, visible_count());
-}
-
 void ToastManager::ClampFocus() {
   if (!focused_) {
     return;
