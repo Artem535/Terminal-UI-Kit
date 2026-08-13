@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <deque>
 #include <memory>
 #include <optional>
 #include <string>
@@ -81,14 +82,16 @@ class CommandHistory {
   CommandHistory& operator=(CommandHistory&&) noexcept = default;
 
   // Attach an optional persistence sink. Passing nullptr detaches it.
-  void SetPersistentStore(std::unique_ptr<CommandHistoryStore> store);
+  void SetPersistenceStore(std::unique_ptr<CommandHistoryStore> store);
   // Attach an optional persistence policy. Passing nullptr restores the
   // default behavior (persist every accepted command).
   void SetPersistencePolicy(std::unique_ptr<CommandPersistencePolicy> policy);
 
   // Adds a command to history and resets the navigation cursor. Empty,
-  // whitespace-only and consecutive-duplicate commands are ignored. When the
-  // store and policy allow, the accepted command is also persisted.
+  // whitespace-only and consecutive-duplicate commands are ignored (ignored
+  // commands leave the navigation cursor unchanged). When the store and policy
+  // allow, the accepted command is also persisted. Storage is bounded: adding
+  // at capacity evicts the oldest command.
   void Add(std::string command);
 
   // Moves the cursor one step toward the oldest command and returns it, or
@@ -120,7 +123,7 @@ class CommandHistory {
 
  private:
   std::size_t max_entries_;
-  std::vector<std::string> entries_;
+  std::deque<std::string> entries_;
   std::optional<std::size_t> cursor_;
   std::unique_ptr<CommandHistoryStore> store_;
   std::unique_ptr<CommandPersistencePolicy> policy_;

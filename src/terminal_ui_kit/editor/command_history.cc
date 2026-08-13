@@ -27,7 +27,7 @@ bool SensitiveCommandPolicy::ShouldPersist(std::string_view command) const {
 CommandHistory::CommandHistory(std::size_t max_entries)
     : max_entries_(max_entries), cursor_(std::nullopt) {}
 
-void CommandHistory::SetPersistentStore(std::unique_ptr<CommandHistoryStore> store) {
+void CommandHistory::SetPersistenceStore(std::unique_ptr<CommandHistoryStore> store) {
   store_ = std::move(store);
 }
 
@@ -49,8 +49,9 @@ void CommandHistory::Add(std::string command) {
     return;
   }
   if (entries_.size() == max_entries_) {
-    // Bounded storage: evict the oldest entry to make room.
-    entries_.erase(entries_.begin());
+    // Bounded storage: evict the oldest entry to make room. A deque makes
+    // this O(1) at capacity rather than O(n) per add on a shifted vector.
+    entries_.pop_front();
   }
   entries_.push_back(std::move(command));
   // Adding a new command resets the navigation cursor.

@@ -261,7 +261,7 @@ TEST(CommandHistory, PersistenceMockRecordsAcceptedCommands) {
   CommandHistory history(10);
   auto store = std::make_unique<RecordingStore>();
   RecordingStore* raw = store.get();
-  history.SetPersistentStore(std::move(store));
+  history.SetPersistenceStore(std::move(store));
 
   history.Add("ls");
   history.Add("git status");
@@ -276,7 +276,7 @@ TEST(CommandHistory, PersistenceMockRecordsAcceptedCommands) {
 
 TEST(CommandHistory, PersistenceFailureDoesNotCorruptHistory) {
   CommandHistory history(10);
-  history.SetPersistentStore(std::make_unique<ThrowingStore>());
+  history.SetPersistenceStore(std::make_unique<ThrowingStore>());
 
   // None of these may throw or lose entries even though every Persist throws.
   history.Add("one");
@@ -303,7 +303,7 @@ TEST(CommandHistory, PolicyFailureDoesNotCorruptHistoryOrEscape) {
   CommandHistory history(10);
   auto store = std::make_unique<RecordingStore>();
   RecordingStore* raw = store.get();
-  history.SetPersistentStore(std::move(store));
+  history.SetPersistenceStore(std::move(store));
   history.SetPersistencePolicy(std::make_unique<ThrowingPolicy>());
 
   // ShouldPersist throws for every command; the add must still succeed in
@@ -321,7 +321,7 @@ TEST(CommandHistory, SensitiveCommandNotPersistedButStillStored) {
   CommandHistory history(10);
   auto store = std::make_unique<RecordingStore>();
   RecordingStore* raw = store.get();
-  history.SetPersistentStore(std::move(store));
+  history.SetPersistenceStore(std::move(store));
   history.SetPersistencePolicy(
       std::make_unique<SensitiveCommandPolicy>(std::vector<std::string>{"rm -rf /", "secret"}));
 
@@ -345,7 +345,7 @@ TEST(CommandHistory, SensitivePolicyUsesExactMatchNotPrefix) {
   CommandHistory history(10);
   auto store = std::make_unique<RecordingStore>();
   RecordingStore* raw = store.get();
-  history.SetPersistentStore(std::move(store));
+  history.SetPersistenceStore(std::move(store));
   history.SetPersistencePolicy(
       std::make_unique<SensitiveCommandPolicy>(std::vector<std::string>{"secret"}));
 
@@ -374,7 +374,7 @@ TEST(CommandHistory, DefaultPolicyPersistsEverything) {
   CommandHistory history(10);
   auto store = std::make_unique<RecordingStore>();
   RecordingStore* raw = store.get();
-  history.SetPersistentStore(std::move(store));
+  history.SetPersistenceStore(std::move(store));
   // No policy set: default behavior persists every accepted command.
   history.Add("alpha");
   history.Add("beta");
@@ -387,7 +387,7 @@ TEST(CommandHistory, AlwaysPersistPolicyPersistsEverything) {
   CommandHistory history(10);
   auto store = std::make_unique<RecordingStore>();
   RecordingStore* raw = store.get();
-  history.SetPersistentStore(std::move(store));
+  history.SetPersistenceStore(std::move(store));
   history.SetPersistencePolicy(std::make_unique<AlwaysPersistPolicy>());
   history.Add("x");
   const std::vector<std::string> persisted = raw->persisted();
@@ -399,7 +399,7 @@ TEST(CommandHistory, DetachingStoreStopsPersistence) {
   CommandHistory history(10);
   auto store = std::make_unique<RecordingStore>();
   RecordingStore* raw = store.get();
-  history.SetPersistentStore(std::move(store));
+  history.SetPersistenceStore(std::move(store));
   history.SetPersistencePolicy(
       std::make_unique<SensitiveCommandPolicy>(std::vector<std::string>{"topsecret"}));
 
@@ -408,11 +408,11 @@ TEST(CommandHistory, DetachingStoreStopsPersistence) {
   EXPECT_EQ(raw->persisted().size(), 1u);  // Only "ok" reached the store.
 
   // Snapshot what was persisted *before* detaching: "topsecret" must not be
-  // present. (Reading raw after SetPersistentStore(nullptr) would be a
+  // present. (Reading raw after SetPersistenceStore(nullptr) would be a
   // use-after-free because the history destroys the store on detach.)
   const std::vector<std::string> before = raw->persisted();
 
-  history.SetPersistentStore(nullptr);  // Store is destroyed here.
+  history.SetPersistenceStore(nullptr);  // Store is destroyed here.
 
   // After detach, new commands no longer reach any store and, crucially, do
   // not corrupt the in-memory history.

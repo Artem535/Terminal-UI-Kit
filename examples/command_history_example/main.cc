@@ -9,10 +9,15 @@
 // Controls:
 //   Enter        add the typed command to history
 //   Up / Down    navigate previous / next history entries
-//   c            clear history
+//   c            clear history (when the command box is not focused)
 //   t            toggle sensitive mode (blocks "secret"/"password" from
 //                persistence while keeping them in memory)
-//   q            quit
+//   q            quit (when the command box is not focused)
+//   Esc          quit (from anywhere)
+//
+// The single-letter hotkeys are gated on the command box not being focused so
+// that typing a command containing "c", "t" or "q" is never swallowed; Tab
+// moves focus between the command and search inputs.
 //
 // The demo attaches a counting store so the "Persisted" counter visibly
 // stops increasing for sensitive commands.
@@ -54,6 +59,7 @@ struct State {
   std::unique_ptr<CountingStore> store = std::make_unique<CountingStore>();
   CountingStore* store_view = store.get();
   std::string command_text;
+  std::string draft;  // Preserves typed text while Up/Down navigation is active.
   std::string substring_query;
   std::string prefix_query;
   bool sensitive_mode = false;
@@ -74,11 +80,10 @@ void rebuild_policy(State& s) {
 
 int main() {
   using namespace ftxui;
-  using terminal_ui_kit::editor::SensitiveCommandPolicy;
 
   const terminal_ui_kit::Theme theme = terminal_ui_kit::default_dark_theme();
   State state;
-  state.history.SetPersistentStore(std::move(state.store));
+  state.history.SetPersistenceStore(std::move(state.store));
 
   auto add_current = [&state] {
     const std::size_t before = state.history.Size();
@@ -163,7 +168,8 @@ int main() {
                                {"up/down", "navigate history"},
                                {"c", "clear history"},
                                {"t", "toggle sensitive"},
-                               {"q", "quit"}},
+                               {"esc", "quit"},
+                               {"q", "quit (outside command box)"}},
                               theme));
 
     return vbox(std::move(body)) | border | flex;
@@ -172,23 +178,42 @@ int main() {
   auto root = Renderer(container, render);
 
   auto screen = ScreenInteractive::Fullscreen();
-  root |= CatchEvent([&state, &screen](Event event) {
-    if (event == Event::Character('q')) {
+
+  // The single-letter hotkeys below (c/t/q) must not fire while the user is
+  // typing a command that happens to contain one of those letters, so they
+  // are only active when the command box is not the focused input. `Esc`
+  // quits from anywhere.
+  const auto command_box_focused = [&container, &command_input] {
+    return container->ActiveChild() == command_input;
+  };
+  root |= CatchEvent([&state, &screen, &command_box_focused](Event event) {
+    if (!command_box_focused()) {
+      if (event == Event::Character('q')) {
+        screen.ExitLoopClosure()();
+        return true;
+      }
+      if (event == Event::Character('c')) {
+        state.history.Clear();
+        state.status = "History cleared";
+        return true;
+      }
+      if (event == Event::Character('t')) {
+        state.sensitive_mode = !state.sensitive_mode;
+        rebuild_policy(state);
+        state.status = state.sensitive_mode ? "Sensitive mode ON" : "Sensitive mode OFF";
+        return true;
+      }
+    }
+    if (event == Event::Escape) {
       screen.ExitLoopClosure()();
       return true;
     }
-    if (event == Event::Character('c')) {
-      state.history.Clear();
-      state.status = "History cleared";
-      return true;
-    }
-    if (event == Event::Character('t')) {
-      state.sensitive_mode = !state.sensitive_mode;
-      rebuild_policy(state);
-      state.status = state.sensitive_mode ? "Sensitive mode ON" : "Sensitive mode OFF";
-      return true;
-    }
     if (event == Event::ArrowUp) {
+      // First movement away from the draft snapshots whatever is currently
+      // typed, so an eventual return to the newest entry restores it.
+      if (!state.history.Current().has_value()) {
+        state.draft = state.command_text;
+      }
       if (const auto command = state.history.Previous(); command.has_value()) {
         state.command_text = *command;
         state.status = "Navigated Up";
@@ -202,7 +227,8 @@ int main() {
         state.command_text = *command;
         state.status = "Navigated Down";
       } else {
-        state.command_text.clear();
+        // Returned to the newest (draft) position: restore the typed text.
+        state.command_text = state.draft;
         state.status = "At newest entry (editing a fresh command)";
       }
       return true;

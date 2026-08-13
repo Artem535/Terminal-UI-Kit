@@ -73,9 +73,14 @@ Controls:
 | --- | --- |
 | `Enter` | Add the typed command to history |
 | `Up` / `Down` | Navigate previous / next history entries |
-| `c` | Clear history |
-| `t` | Toggle sensitive mode |
-| `q` | Quit |
+| `c` | Clear history (when the command box is not focused) |
+| `t` | Toggle sensitive mode (when the command box is not focused) |
+| `q` | Quit (when the command box is not focused) |
+| `Esc` | Quit (from anywhere) |
+| `Tab` | Move focus between the command and search inputs |
+
+The single-letter hotkeys are gated on the command box not being focused so
+that typing a command containing `c`, `t` or `q` is never swallowed.
 
 The underlying model is tested independently of the terminal in
 `tests/terminal_ui_kit/unit/command_history_test.cc`, which covers navigation
