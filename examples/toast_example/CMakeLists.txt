@@ -1,0 +1,6 @@
+add_executable(terminal_ui_kit_example_toast_example main.cc)
+
+target_link_libraries(terminal_ui_kit_example_toast_example PRIVATE
+  TerminalUiKit::Components)
+
+target_terminal_ui_kit_warnings(terminal_ui_kit_example_toast_example)
