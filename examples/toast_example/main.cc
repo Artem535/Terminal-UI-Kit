@@ -61,7 +61,7 @@ int main() {
 
   auto screen = ScreenInteractive::Fullscreen();
 
-  auto add = [&](ToastOptions options) { manager.Show(std::move(options)); };
+  auto add = [&](ToastOptions options) { manager.show(std::move(options)); };
 
   Component root = Renderer(toast_component, [&] {
     const std::size_t visible = manager.visible_count();
@@ -75,7 +75,7 @@ int main() {
     std::string status = "visible: " + std::to_string(visible) +
                          "  queued: " + std::to_string(queued) +
                          "  mode: " + (no_color ? "no-color" : "color");
-    if (manager.HasFocus()) {
+    if (manager.has_focus()) {
       status += "  [focus paused]";
     }
     if (action_count > 0) {
@@ -163,12 +163,12 @@ int main() {
       return true;
     }
     if (event == Event::Character('c')) {
-      manager.ClearAll();
+      manager.clear_all();
       return true;
     }
     if (event == Event::Character('n')) {
       no_color = !no_color;
-      toast_view->SetNoColor(no_color);
+      toast_view->set_no_color(no_color);
       return true;
     }
     if (event == Event::Character('q') || event == Event::Escape) {

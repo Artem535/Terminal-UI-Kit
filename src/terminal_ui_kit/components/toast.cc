@@ -12,31 +12,36 @@ namespace terminal_ui_kit {
 
 namespace {
 
-// Minimum elapsed resolution below which we do not bother advancing remaining
-// time. Mirrors the fact that a zero/negative tick is a no-op.
 using Duration = std::chrono::steady_clock::duration;
+
+// Upper bound for the toast width option so it cannot wrap the LESS_THAN
+// size constraint into a negative int.
+constexpr std::size_t kMaxToastWidth = static_cast<std::size_t>(1) << 20;
 
 }  // namespace
 
 ToastManager::ToastManager(ToastManagerOptions options)
-    : options_(options),
-      max_visible_(std::max<std::size_t>(1, options.max_visible)),
+    : max_visible_(std::max<std::size_t>(1, options.max_visible)),
       clock_(options.clock ? std::move(options.clock)
                            : ([] { return std::chrono::steady_clock::now(); })) {}
 
-std::size_t ToastManager::Show(const ToastOptions& options) {
+std::size_t ToastManager::show(const ToastOptions& options) {
   const std::size_t id = next_id_++;
   Toast toast;
   toast.id = id;
   toast.message = options.message;
   toast.severity = options.severity;
-  toast.remaining = options.duration;
+  // A non-positive duration would only ever render for one tick and then
+  // silently expire; treat it as persistent instead, so callers intending
+  // "stays until dismissed" are not surprised.
+  toast.remaining =
+      (options.duration && *options.duration > Duration::zero()) ? options.duration : std::nullopt;
   toast.action = options.action;
   toasts_.push_back(std::move(toast));
   return id;
 }
 
-void ToastManager::Close(std::size_t id) {
+void ToastManager::close(std::size_t id) {
   const auto it = std::find_if(toasts_.begin(), toasts_.end(),
                                [id](const Toast& toast) { return toast.id == id; });
   if (it == toasts_.end()) {
@@ -46,9 +51,14 @@ void ToastManager::Close(std::size_t id) {
   ClampFocus();
 }
 
-void ToastManager::ClearAll() {
+void ToastManager::clear_all() {
   toasts_.clear();
   focused_.reset();
+}
+
+std::vector<Toast> ToastManager::visible() const {
+  const std::size_t count = visible_count();
+  return std::vector<Toast>(toasts_.begin(), toasts_.begin() + static_cast<std::ptrdiff_t>(count));
 }
 
 void ToastManager::ClampFocus() {
@@ -65,10 +75,7 @@ void ToastManager::ClampFocus() {
   }
 }
 
-bool ToastManager::SetFocused(std::size_t id) {
-  if (toasts_.empty()) {
-    return false;
-  }
+bool ToastManager::set_focused(std::size_t id) {
   const std::size_t count = visible_count();
   for (std::size_t index = 0; index < count; ++index) {
     if (toasts_[index].id == id) {
@@ -79,18 +86,18 @@ bool ToastManager::SetFocused(std::size_t id) {
   return false;
 }
 
-void ToastManager::ClearFocus() { focused_.reset(); }
+void ToastManager::clear_focus() { focused_.reset(); }
 
-bool ToastManager::HasFocus() const { return focused_.has_value(); }
+bool ToastManager::has_focus() const { return focused_.has_value(); }
 
-std::optional<std::size_t> ToastManager::FocusedId() const {
+std::optional<std::size_t> ToastManager::focused_id() const {
   if (!focused_) {
     return std::nullopt;
   }
   return toasts_[*focused_].id;
 }
 
-bool ToastManager::MoveFocus(int delta) {
+bool ToastManager::move_focus(int delta) {
   const std::size_t count = visible_count();
   if (count == 0) {
     return false;
@@ -121,7 +128,7 @@ bool ToastManager::MoveFocus(int delta) {
   return false;
 }
 
-bool ToastManager::InvokeFocusedAction() {
+bool ToastManager::invoke_focused_action() {
   if (!focused_ || *focused_ >= toasts_.size()) {
     return false;
   }
@@ -142,7 +149,7 @@ bool ToastManager::InvokeFocusedAction() {
   return true;
 }
 
-bool ToastManager::CloseFocused() {
+bool ToastManager::close_focused() {
   if (!focused_ || *focused_ >= toasts_.size()) {
     return false;
   }
@@ -165,17 +172,16 @@ void ToastManager::OnTimeElapsed(Duration elapsed) {
       }
     }
     if (remove) {
-      // If the removed toast was before or at the focus position, ClampFocus
-      // after the loop keeps the selection valid.
       it = toasts_.erase(it);
     } else {
       ++it;
     }
   }
+  // Keep selection valid in case a timed-out toast was the focused one.
   ClampFocus();
 }
 
-void ToastManager::Tick() {
+void ToastManager::tick() {
   const auto now = (clock_ ? clock_() : std::chrono::steady_clock::now());
   if (!last_tick_) {
     last_tick_ = now;
@@ -194,10 +200,11 @@ void ToastManager::Tick() {
 
 ToastView::ToastView(ToastManager& manager, const Theme& theme, ToastViewOptions options)
     : manager_(manager), base_theme_(theme), options_(options) {
+  options_.max_toast_width = std::min(options_.max_toast_width, kMaxToastWidth);
   RebuildTheme();
 }
 
-void ToastView::SetNoColor(bool no_color) {
+void ToastView::set_no_color(bool no_color) {
   options_.no_color = no_color;
   RebuildTheme();
 }
@@ -207,27 +214,27 @@ void ToastView::RebuildTheme() {
 }
 
 ftxui::Element ToastView::Render() {
-  ftxui::animation::RequestAnimationFrame();
-
-  const std::size_t count = manager_.visible_count();
-  if (count == 0) {
+  const std::vector<Toast> visible = manager_.visible();
+  if (visible.empty()) {
+    // No toast to draw: do not request an animation frame, so the screen can
+    // go idle instead of redrawing forever.
     return ftxui::text("");
   }
+  ftxui::animation::RequestAnimationFrame();
 
-  const auto visible = manager_.Visible();
   std::size_t focused_pos = static_cast<std::size_t>(-1);
-  if (manager_.HasFocus()) {
-    const std::optional<std::size_t> id = manager_.FocusedId();
-    for (std::size_t i = 0; i < visible.size() && i < count; ++i) {
-      if (visible[i].id == *id) {
-        focused_pos = i;
+  if (manager_.has_focus()) {
+    const std::optional<std::size_t> id = manager_.focused_id();
+    for (std::size_t index = 0; index < visible.size(); ++index) {
+      if (visible[index].id == *id) {
+        focused_pos = index;
         break;
       }
     }
   }
 
   ftxui::Elements rows;
-  for (std::size_t index = 0; index < count; ++index) {
+  for (std::size_t index = 0; index < visible.size(); ++index) {
     const Toast& toast = visible[index];
     const bool focused = (index == focused_pos);
 
@@ -280,23 +287,26 @@ ftxui::Element ToastView::Render() {
 
 bool ToastView::OnEvent(ftxui::Event event) {
   if (event == ftxui::Event::Tab) {
-    return manager_.MoveFocus(1);
+    return manager_.move_focus(1);
   }
   if (event == ftxui::Event::TabReverse) {
-    return manager_.MoveFocus(-1);
+    return manager_.move_focus(-1);
   }
   if (event == ftxui::Event::Return) {
-    return manager_.InvokeFocusedAction();
+    return manager_.invoke_focused_action();
   }
   if (event == ftxui::Event::Delete || event == ftxui::Event::Backspace) {
-    return manager_.CloseFocused();
+    return manager_.close_focused();
   }
   return false;
 }
 
 void ToastView::OnAnimation(ftxui::animation::Params& params) {
   (void)params;
-  manager_.Tick();
+  if (manager_.empty()) {
+    return;  // Nothing on screen to keep animating.
+  }
+  manager_.tick();
   ftxui::animation::RequestAnimationFrame();
 }
 

@@ -65,7 +65,7 @@ ftxui::Component MakeView(ToastManager& manager, ToastViewOptions options = {}) 
 
 TEST(ToastView, RendersSingleToastMessage) {
   ToastManager manager;
-  manager.Show(Timed("operation finished", std::chrono::seconds(5)));
+  manager.show(Timed("operation finished", std::chrono::seconds(5)));
 
   auto view = MakeView(manager);
   std::string text = StripAnsi(test_support::render_to_text(view->Render(), 60, 5));
@@ -74,10 +74,10 @@ TEST(ToastView, RendersSingleToastMessage) {
 
 TEST(ToastView, RendersSeverityIcons) {
   ToastManager manager;
-  manager.Show(Timed("info", std::chrono::seconds(5), ToastSeverity::kInfo));
-  manager.Show(Timed("ok", std::chrono::seconds(5), ToastSeverity::kSuccess));
-  manager.Show(Timed("warn", std::chrono::seconds(5), ToastSeverity::kWarning));
-  manager.Show(Timed("err", std::chrono::seconds(5), ToastSeverity::kError));
+  manager.show(Timed("info", std::chrono::seconds(5), ToastSeverity::kInfo));
+  manager.show(Timed("ok", std::chrono::seconds(5), ToastSeverity::kSuccess));
+  manager.show(Timed("warn", std::chrono::seconds(5), ToastSeverity::kWarning));
+  manager.show(Timed("err", std::chrono::seconds(5), ToastSeverity::kError));
 
   auto view = MakeView(manager);
   std::string text = StripAnsi(test_support::render_to_text(view->Render(), 60, 8));
@@ -91,7 +91,7 @@ TEST(ToastView, RendersActionLabel) {
   ToastManager manager;
   ToastOptions options = Timed("save", std::chrono::seconds(5));
   options.action = ToastAction{"undo", [] {}};
-  manager.Show(options);
+  manager.show(options);
 
   auto view = MakeView(manager);
   std::string text = StripAnsi(test_support::render_to_text(view->Render(), 60, 5));
@@ -100,22 +100,22 @@ TEST(ToastView, RendersActionLabel) {
 
 TEST(ToastView, FocusedToastRendersMarker) {
   ToastManager manager;
-  std::size_t first = manager.Show(Timed("first", std::chrono::seconds(5)));
-  manager.Show(Timed("second", std::chrono::seconds(5)));
+  std::size_t first = manager.show(Timed("first", std::chrono::seconds(5)));
+  manager.show(Timed("second", std::chrono::seconds(5)));
 
   auto view = MakeView(manager);
   // Nothing focused yet: no marker.
   std::string unfocused = StripAnsi(test_support::render_to_text(view->Render(), 60, 5));
   EXPECT_EQ(unfocused.find("▶"), std::string::npos);
 
-  manager.SetFocused(first);
+  manager.set_focused(first);
   std::string focused = StripAnsi(test_support::render_to_text(view->Render(), 60, 5));
   EXPECT_NE(focused.find("▶"), std::string::npos);
 }
 
 TEST(ToastView, NoColorModeOmitsColorCodes) {
   ToastManager manager;
-  manager.Show(Timed("error", std::chrono::seconds(5), ToastSeverity::kError));
+  manager.show(Timed("error", std::chrono::seconds(5), ToastSeverity::kError));
 
   ToastViewOptions options;
   options.no_color = true;
@@ -132,7 +132,7 @@ TEST(ToastView, NoColorModeOmitsColorCodes) {
 
 TEST(ToastView, NarrowTerminalRendersWithoutCrash) {
   ToastManager manager;
-  manager.Show(Timed("a fairly long message that must still be visible when the terminal is narrow",
+  manager.show(Timed("a fairly long message that must still be visible when the terminal is narrow",
                      std::chrono::seconds(5)));
 
   auto view = MakeView(manager);
@@ -143,13 +143,13 @@ TEST(ToastView, NarrowTerminalRendersWithoutCrash) {
 
 TEST(ToastView, TabMovesFocus) {
   ToastManager manager;
-  manager.Show(Timed("a", std::chrono::seconds(5)));
-  manager.Show(Timed("b", std::chrono::seconds(5)));
+  manager.show(Timed("a", std::chrono::seconds(5)));
+  manager.show(Timed("b", std::chrono::seconds(5)));
 
   auto view = MakeView(manager);
-  EXPECT_FALSE(manager.HasFocus());
+  EXPECT_FALSE(manager.has_focus());
   EXPECT_TRUE(view->OnEvent(ftxui::Event::Tab));
-  EXPECT_TRUE(manager.HasFocus());
+  EXPECT_TRUE(manager.has_focus());
   EXPECT_TRUE(view->OnEvent(ftxui::Event::TabReverse));
 }
 
@@ -158,10 +158,10 @@ TEST(ToastView, EnterInvokesFocusedAction) {
   int calls = 0;
   ToastOptions options = Timed("act", std::chrono::seconds(5));
   options.action = ToastAction{"run", [&calls] { ++calls; }};
-  std::size_t id = manager.Show(options);
+  std::size_t id = manager.show(options);
 
   auto view = MakeView(manager);
-  manager.SetFocused(id);
+  manager.set_focused(id);
   EXPECT_TRUE(view->OnEvent(ftxui::Event::Return));
   EXPECT_EQ(calls, 1);
   EXPECT_TRUE(manager.empty());
@@ -169,10 +169,10 @@ TEST(ToastView, EnterInvokesFocusedAction) {
 
 TEST(ToastView, DeleteClosesFocusedToast) {
   ToastManager manager;
-  std::size_t id = manager.Show(Timed("go", std::chrono::seconds(5)));
+  std::size_t id = manager.show(Timed("go", std::chrono::seconds(5)));
 
   auto view = MakeView(manager);
-  manager.SetFocused(id);
+  manager.set_focused(id);
   EXPECT_TRUE(view->OnEvent(ftxui::Event::Delete));
   EXPECT_TRUE(manager.empty());
 }

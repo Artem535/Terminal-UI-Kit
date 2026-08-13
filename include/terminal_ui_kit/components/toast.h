@@ -51,7 +51,7 @@ struct ToastOptions {
 struct ToastManagerOptions {
   // Maximum number of toasts rendered at once. Additional shown toasts are
   // queued (FIFO by insertion id) and become visible as earlier ones are
-  // removed. Must be >= 1.
+  // removed. Must be >= 1 (clamped to 1 if 0 is passed).
   std::size_t max_visible = 5;
   ToastClock clock = [] { return std::chrono::steady_clock::now(); };
 };
@@ -71,56 +71,61 @@ struct Toast {
 
 // The retained state and timing logic of the toast system. Independent of any
 // rendering backend so it can be unit-tested directly with an injected fake
-// clock. Views (ToastView) read from Visible() and forward input/ticks here.
+// clock. Views (ToastView) read from visible()/active() and forward input and
+// time ticks here.
 //
-// Ordering: toasts are kept in FIFO insertion order. Visible() returns the
-// first max_visible active toasts; the rest are the queue and slide into the
+// Ordering: toasts are kept in FIFO insertion order. active() returns all of
+// them (visible + queued); visible() returns only the first max_visible
+// (the window actually rendered). The rest are queued and slide into the
 // visible window as earlier toasts are removed.
 class ToastManager {
  public:
   explicit ToastManager(ToastManagerOptions options = {});
 
   // Adds a toast and returns its stable id. Appended at the end of the queue.
-  std::size_t Show(const ToastOptions& options);
+  std::size_t show(const ToastOptions& options);
 
   // Removes a toast by id (no-op if absent). Focus stays valid: the selection
   // is clamped to the remaining visible window.
-  void Close(std::size_t id);
+  void close(std::size_t id);
 
   // Removes every active toast (visible and queued) and clears focus.
-  void ClearAll();
+  void clear_all();
 
-  // Advances time by the clock difference since the previous Tick, expiring
+  // Advances time by the clock difference since the previous tick, expiring
   // and removing non-persistent toasts whose remaining time has elapsed.
-  // While any toast is focused (focused_id() set) time is frozen: remaining
+  // While any toast is focused (focused_id() is set) time is frozen: remaining
   // durations are untouched, so timeouts pause and resume around focus.
-  void Tick();
+  void tick();
 
   // ---- Focus / selection -------------------------------------------------
   // A focused toast is always within the visible window. While one is focused,
-  // timeout is paused (see Tick).
-  bool SetFocused(std::size_t id);  // false if id is not visible
-  void ClearFocus();
-  bool HasFocus() const;
-  std::optional<std::size_t> FocusedId() const;
+  // timeout is paused (see tick()).
+  bool set_focused(std::size_t id);  // false if id is not visible
+  void clear_focus();
+  bool has_focus() const;
+  std::optional<std::size_t> focused_id() const;
 
   // Moves selection among visible toasts. Stepping past the last (delta>0) or
   // before the first (delta<0) clear the selection. Returns true if the focus
   // state changed.
-  bool MoveFocus(int delta);
+  bool move_focus(int delta);
 
   // Invokes the focused toast's action exactly once and removes that toast.
   // Safe if the callback itself removes toasts (the callback is copied before
   // invocation; removal is done beforehand so the callback sees consistent
-  // state). Returns true if an action was invoked.
-  bool InvokeFocusedAction();
+  // state). Returns true if an action was invoked. Focus stays on the toast
+  // that replaces the removed one (or is cleared if none remains).
+  bool invoke_focused_action();
 
   // Removes the focused toast (manual close). Returns true if one was removed.
-  bool CloseFocused();
+  bool close_focused();
 
   // ---- Queries -----------------------------------------------------------
-  // Visible toasts (first max_visible active), oldest first.
-  const std::vector<Toast>& Visible() const { return toasts_; }
+  // All active toasts (visible + queued), oldest first.
+  const std::vector<Toast>& active() const { return toasts_; }
+  // Only the visible window (first max_visible active toasts), oldest first.
+  std::vector<Toast> visible() const;
   std::size_t visible_count() const { return std::min(max_visible_, toasts_.size()); }
   std::size_t queued_count() const { return toasts_.size() - visible_count(); }
   bool empty() const { return toasts_.empty(); }
@@ -131,7 +136,6 @@ class ToastManager {
   void ClampFocus();
   void OnTimeElapsed(std::chrono::steady_clock::duration elapsed);
 
-  ToastManagerOptions options_;
   std::size_t max_visible_;
   ToastClock clock_;
   std::vector<Toast> toasts_;
@@ -153,18 +157,22 @@ struct ToastViewOptions {
 // severity, with the focused toast highlighted) and translates keyboard input
 // into manager calls: Tab/Shift+Tab move focus, Enter invokes the focused
 // action, Delete/Backspace close the focused toast. It drives expiry by
-// hooking FTXUI's animation ticks (calling manager.Tick()), so it requires no
-// event loop or background thread of its own.
+// hooking FTXUI's animation ticks (calling manager.tick()), so it requires no
+// event loop or background thread of its own. It only requests animation
+// frames while there is at least one toast, so an empty manager stays idle.
 //
 // Note on focus: a toast is "focused" when selected via Tab; while any toast
-// is selected the manager pauses timeouts (see ToastManager::Tick).
+// is selected the manager pauses timeouts (see ToastManager::tick).
+//
+// Lifetime: ToastView references the ToastManager without owning it; the
+// manager must outlive the view.
 class ToastView : public ftxui::ComponentBase {
  public:
   ToastView(ToastManager& manager, const Theme& theme, ToastViewOptions options = {});
 
   // Toggles the no-color fallback at runtime, re-styling on the next frame.
   // Lets interactive demos switch between color and no-color modes live.
-  void SetNoColor(bool no_color);
+  void set_no_color(bool no_color);
 
  private:
   ftxui::Element Render() override;
