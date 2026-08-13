@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <functional>
@@ -127,7 +128,6 @@ class ToastManager {
   std::size_t next_id() const { return next_id_; }
 
  private:
-  std::size_t VisibleIndexToPosition(std::size_t visible_index) const;
   void ClampFocus();
   void OnTimeElapsed(std::chrono::steady_clock::duration elapsed);
 
