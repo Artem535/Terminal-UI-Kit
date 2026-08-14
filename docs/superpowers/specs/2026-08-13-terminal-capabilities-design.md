@@ -126,7 +126,9 @@ Conventions for the boolean flags:
     `>= 3` (inline images arrived in iTerm2 3.0). A missing/malformed version
     parses to "unknown" and conservatively disables images.
   - `sixel`: positively identified sixel-capable programs (wezterm, xterm,
-    kitty, iTerm.app) or a `TERM` containing `sixel`.
+    kitty) or a `TERM` containing `sixel`. `iTerm.app` also advertises sixel,
+    but gated on the same "version parsed and `>= 3`" condition as
+    `iterm_images`, so a version-unknown/old iTerm does not over-claim.
 - **tmux / screen / ssh**: pure presence signals, independent of the others, so
   "tmux over SSH" and nested tmux+screen+SSH report all flags on.
 

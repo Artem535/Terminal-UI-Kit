@@ -122,6 +122,19 @@ TEST(TerminalCapabilities, TrueColorViaTermHint) {
   }
 }
 
+TEST(TerminalCapabilities, ColortermArbitraryValueMeans256) {
+  FakeEnvironment env;
+  env.Set("TERM", "xterm");
+  env.Set("COLORTERM", "gnome-terminal");
+  EXPECT_EQ(Detect(env).color_depth, ColorDepth::kAnsi256);
+}
+
+TEST(TerminalCapabilities, TermColorHintMeans16) {
+  FakeEnvironment env;
+  env.Set("TERM", "vt100-color");
+  EXPECT_EQ(Detect(env).color_depth, ColorDepth::kAnsi16);
+}
+
 TEST(TerminalCapabilities, KittyPreset) {
   FakeEnvironment env;
   env.Set("TERM", "xterm-kitty");
@@ -133,6 +146,12 @@ TEST(TerminalCapabilities, KittyPreset) {
   EXPECT_TRUE(caps.kitty_graphics);
   EXPECT_TRUE(caps.sixel);
   EXPECT_EQ(caps.terminal_identity, "kitty");
+}
+
+TEST(TerminalCapabilities, KittyGraphicsViaTermOnly) {
+  FakeEnvironment env;
+  env.Set("TERM", "xterm-kitty");
+  EXPECT_TRUE(Detect(env).kitty_graphics);
 }
 
 TEST(TerminalCapabilities, Iterm2Preset) {
@@ -159,16 +178,38 @@ TEST(TerminalCapabilities, ItermImagesRequiresVersionAtLeast3) {
 }
 
 TEST(TerminalCapabilities, SixelEnabledOnlyForKnownPrograms) {
-  for (const char* program : {"wezterm", "xterm", "kitty", "iTerm.app"}) {
+  for (const char* program : {"wezterm", "xterm", "kitty"}) {
     FakeEnvironment env;
     env.Set("TERM", "xterm");
     env.Set("TERM_PROGRAM", program);
     EXPECT_TRUE(Detect(env).sixel) << "program=" << program;
   }
+  {
+    // iTerm.app advertises sixel only when its version meets the gate.
+    FakeEnvironment env;
+    env.Set("TERM", "xterm");
+    env.Set("TERM_PROGRAM", "iTerm.app");
+    env.Set("TERM_PROGRAM_VERSION", "3.4.19");
+    EXPECT_TRUE(Detect(env).sixel);
+  }
   FakeEnvironment unknown;
   unknown.Set("TERM", "xterm");
   unknown.Set("TERM_PROGRAM", "SomeRandomTerminal");
   EXPECT_FALSE(Detect(unknown).sixel);
+}
+
+TEST(TerminalCapabilities, ItermSixelRequiresVersionAtLeast3) {
+  for (const char* version : {"2.0", "1", "3.x", "abc"}) {
+    FakeEnvironment env;
+    env.Set("TERM", "xterm");
+    env.Set("TERM_PROGRAM", "iTerm.app");
+    env.Set("TERM_PROGRAM_VERSION", version);
+    EXPECT_FALSE(Detect(env).sixel) << "version=" << version;
+  }
+  FakeEnvironment no_version;
+  no_version.Set("TERM", "xterm");
+  no_version.Set("TERM_PROGRAM", "iTerm.app");
+  EXPECT_FALSE(Detect(no_version).sixel);
 }
 
 TEST(TerminalCapabilities, Osc52DisabledForAppleTerminal) {
@@ -329,6 +370,18 @@ TEST(ParseProgramVersion, RejectsMalformedInput) {
   EXPECT_FALSE(ParseProgramVersion("   ", major, minor));
 }
 
+TEST(ParseProgramVersion, DotWithoutDigitsIsMalformed) {
+  // A '.' must be followed by a digit; "3." / "3.x" are ambiguous and must not
+  // silently enable version-gated capabilities.
+  int major = -1;
+  int minor = -1;
+  EXPECT_FALSE(ParseProgramVersion("3.", major, minor));
+  EXPECT_FALSE(ParseProgramVersion("3.x", major, minor));
+  EXPECT_TRUE(ParseProgramVersion("3", major, minor));
+  EXPECT_EQ(major, 3);
+  EXPECT_EQ(minor, 0);
+}
+
 TEST(ParseProgramVersion, HugeNumberSaturatesWithoutOverflow) {
   // A very long digit run must not overflow into undefined behavior; it
   // saturates at the int maximum and parses without crashing.
@@ -401,6 +454,41 @@ TEST(ApplyOverrides, DisableOverrideBeatsDumbOrHint) {
 TEST(ApplyOverrides, EmptyOverridesIsNoOp) {
   const TerminalCapabilities detected = Detect(RealTerm());
   EXPECT_TRUE(ApplyOverrides(detected, CapabilityOverrides{}) == detected);
+}
+
+TEST(ApplyOverrides, EveryBoolFieldCanBeOverridden) {
+  // Start from the fully-conservative default snapshot (every flag false) and
+  // enable each field through an explicit override, locking in the uniform
+  // overrides mechanism across all thirteen bool fields.
+  const TerminalCapabilities detected;
+  CapabilityOverrides overrides;
+  overrides.unicode = true;
+  overrides.mouse = true;
+  overrides.bracketed_paste = true;
+  overrides.hyperlinks = true;
+  overrides.kitty_graphics = true;
+  overrides.sixel = true;
+  overrides.iterm_images = true;
+  overrides.osc52 = true;
+  overrides.alternate_screen = true;
+  overrides.tmux = true;
+  overrides.screen = true;
+  overrides.ssh = true;
+  overrides.terminal_identity = "forced-id";
+  const TerminalCapabilities resolved = ApplyOverrides(detected, overrides);
+  EXPECT_TRUE(resolved.unicode);
+  EXPECT_TRUE(resolved.mouse);
+  EXPECT_TRUE(resolved.bracketed_paste);
+  EXPECT_TRUE(resolved.hyperlinks);
+  EXPECT_TRUE(resolved.kitty_graphics);
+  EXPECT_TRUE(resolved.sixel);
+  EXPECT_TRUE(resolved.iterm_images);
+  EXPECT_TRUE(resolved.osc52);
+  EXPECT_TRUE(resolved.alternate_screen);
+  EXPECT_TRUE(resolved.tmux);
+  EXPECT_TRUE(resolved.screen);
+  EXPECT_TRUE(resolved.ssh);
+  EXPECT_EQ(resolved.terminal_identity, "forced-id");
 }
 
 TEST(ResolveTerminalCapabilities, AppliesOverridesInOneStep) {

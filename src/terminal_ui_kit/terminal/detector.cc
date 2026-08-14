@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <limits>
+#include <optional>
 #include <string>
 
 namespace terminal_ui_kit {
@@ -69,7 +70,9 @@ bool ParseProgramVersion(std::string_view raw, int& major, int& minor) noexcept 
   if (!ParseLeadingDigits(raw, pos, major)) return false;
   if (pos < raw.size() && raw[pos] == '.') {
     ++pos;
-    ParseLeadingDigits(raw, pos, minor);
+    // A '.' must be followed by at least one digit; otherwise ("3." or "3.x")
+    // the version is ambiguous and we conservatively treat it as malformed.
+    if (!ParseLeadingDigits(raw, pos, minor)) return false;
   }
   return true;
 }
@@ -149,11 +152,15 @@ TerminalCapabilities DetectTerminalCapabilities(const EnvironmentProvider& env) 
   int major = 0;
   int minor = 0;
   const bool version_ok = ParseProgramVersion(term_program_version, major, minor);
-  (void)minor;
   caps.iterm_images = term_program_lower == "iterm.app" && version_ok && major >= 3;
 
+  // Sixel is advertised for positively identified sixel-capable programs. To
+  // stay internally consistent with `iterm_images` (which is version-gated),
+  // iTerm.app must also meet the version gate rather than advertising sixel on
+  // every version.
   caps.sixel = term_program_lower == "wezterm" || term_program_lower == "xterm" ||
-               term_program_lower == "kitty" || term_program_lower == "iterm.app" ||
+               term_program_lower == "kitty" ||
+               (term_program_lower == "iterm.app" && version_ok && major >= 3) ||
                ContainsLower(term_lower, "sixel");
 
   return caps;
