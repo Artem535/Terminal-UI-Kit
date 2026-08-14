@@ -22,7 +22,7 @@ void ToLowerInPlace(std::string& s) {
 }
 
 // Returns true when `haystack` (already lowercased) contains `needle`.
-bool ContainsLower(const std::string& haystack, const char* needle) {
+bool ContainsLower(const std::string& haystack, std::string_view needle) {
   return haystack.find(needle) != std::string::npos;
 }
 
