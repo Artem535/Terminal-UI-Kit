@@ -9,6 +9,12 @@ section 45 for the project's specific stability rules before/after 1.0).
 
 === Added
 
+- Terminal capability model (`TerminalUiKit::Terminal`): `ColorDepth` and
+  `TerminalCapabilities` value types, an injectable `EnvironmentProvider`
+  (`SystemEnvironment` plus a deterministic snapshot in tests), a static,
+  conservative detection policy (`DetectTerminalCapabilities`), and explicit
+  `CapabilityOverrides` for enabling/disabling individual capabilities.
+- `terminal_capabilities` interactive example application.
 - LogView component with follow/pause and severity badges (#PR7B)
 - streaming_log_viewer interactive example application
 - render_styled_text utility for StyledText-to-FTXUI Element conversion
