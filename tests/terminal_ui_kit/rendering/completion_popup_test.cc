@@ -254,5 +254,39 @@ TEST(CompletionPopupInteraction, NavigationKeysLeavePopupWhenHidden) {
   EXPECT_FALSE(popup.component()->OnEvent(ftxui::Event::ArrowDown));
 }
 
+TEST(CompletionPopupInteraction, HomeEndAndPageKeysNavigate) {
+  CompletionPopup popup =
+      MakeResultsPopup({MakeItem("a0"), MakeItem("a1"), MakeItem("a2"), MakeItem("a3")});
+  EXPECT_EQ(popup.selected_index(), 0U);
+  EXPECT_TRUE(popup.component()->OnEvent(ftxui::Event::End));
+  EXPECT_EQ(popup.selected_index(), 3U);
+  EXPECT_TRUE(popup.component()->OnEvent(ftxui::Event::Home));
+  EXPECT_EQ(popup.selected_index(), 0U);
+  EXPECT_TRUE(popup.component()->OnEvent(ftxui::Event::PageDown));
+  EXPECT_EQ(popup.selected_index(), 3U);  // step capped to the last item
+  EXPECT_TRUE(popup.component()->OnEvent(ftxui::Event::PageUp));
+  EXPECT_EQ(popup.selected_index(), 0U);
+}
+
+TEST(CompletionPopupInteraction, NavigationWhileLoadingFallsThroughToHost) {
+  struct ManualAsyncProvider : ICompletionProvider {
+    void complete(const CompletionContext&, std::uint64_t,
+                  const std::function<void(std::uint64_t, CompletionResult)>&) override {}
+  } provider;
+  CompletionPopupOptions options;
+  options.provider = std::shared_ptr<ICompletionProvider>(&provider, [](ICompletionProvider*) {});
+  CompletionPopup popup(InputHost(), options);
+  popup.set_query("ab", 2);
+  EXPECT_EQ(popup.state(), State::kLoading);
+  // No results to navigate: arrow keys are not consumed while loading.
+  EXPECT_FALSE(popup.component()->OnEvent(ftxui::Event::ArrowDown));
+}
+
+TEST(CompletionPopupPlacement, NegativeAvailableSpaceFallsBackToBelow) {
+  CompletionPopup popup = MakeResultsPopup({MakeItem("alpha"), MakeItem("able")});
+  popup.set_available_space(-1, -1);  // reset to auto
+  EXPECT_EQ(popup.placement(), CompletionPopup::Placement::kBelow);
+}
+
 }  // namespace
 }  // namespace terminal_ui_kit

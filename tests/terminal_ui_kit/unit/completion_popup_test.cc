@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -320,7 +321,7 @@ TEST(SyncCompletionProvider, ThrowingProviderBecomesErrorState) {
 // Selection, acceptance, duplicate labels, metadata
 // ---------------------------------------------------------------------------
 
-TEST(CompletionPopupSelection, NavigatesAndWrapsWithinRange) {
+TEST(CompletionPopupSelection, NavigatesAndClampsWithinRange) {
   ManualAsyncProvider provider;
   CompletionPopupOptions options;
   options.provider = std::shared_ptr<ICompletionProvider>(&provider, [](ICompletionProvider*) {});
@@ -411,6 +412,68 @@ TEST(CompletionPopupFuzzyDisabled, ShowsProviderResultsVerbatim) {
   EXPECT_EQ(popup.state(), State::kResults);
   ASSERT_EQ(popup.items().size(), 1U);
   EXPECT_EQ(popup.items()[0].label, "abc");
+}
+
+// ---------------------------------------------------------------------------
+// show/toggle recovery and public-API edge cases
+// ---------------------------------------------------------------------------
+
+TEST(CompletionPopupLifecycle, ShowRecoversNoResultsByReissuingQuery) {
+  ManualAsyncProvider provider;
+  CompletionPopupOptions options;
+  options.provider = std::shared_ptr<ICompletionProvider>(&provider, [](ICompletionProvider*) {});
+  CompletionPopup popup(nullptr, options);
+  popup.set_query("zz", 2);
+  EXPECT_EQ(popup.state(), State::kLoading);
+  ASSERT_EQ(provider.requests.size(), 1U);
+  provider.Respond(0, {});  // no results -> kNoResults
+  EXPECT_EQ(popup.state(), State::kNoResults);
+  const std::size_t requests_before = provider.requests.size();
+  popup.show();  // re-runs the query and leaves the no-results state
+  EXPECT_GT(provider.requests.size(), requests_before);
+  EXPECT_EQ(popup.state(), State::kLoading);
+}
+
+TEST(CompletionPopupLifecycle, ShowDoesNotDisturbActiveResults) {
+  ManualAsyncProvider provider;
+  CompletionPopupOptions options;
+  options.provider = std::shared_ptr<ICompletionProvider>(&provider, [](ICompletionProvider*) {});
+  CompletionPopup popup(nullptr, options);
+  popup.set_query("z", 1);
+  provider.Respond(0, {MakeItem("zebra")});
+  ASSERT_EQ(popup.state(), State::kResults);
+  ASSERT_EQ(provider.requests.size(), 1U);
+  popup.show();
+  EXPECT_EQ(provider.requests.size(), 1U);  // no re-issue while showing results
+  EXPECT_EQ(popup.state(), State::kResults);
+}
+
+TEST(CompletionPopupLifecycle, ToggleHidesAndShows) {
+  ManualAsyncProvider provider;
+  CompletionPopupOptions options;
+  options.provider = std::shared_ptr<ICompletionProvider>(&provider, [](ICompletionProvider*) {});
+  CompletionPopup popup(nullptr, options);
+  popup.set_query("z", 1);
+  provider.Respond(0, {MakeItem("zebra")});
+  EXPECT_TRUE(popup.visible());
+  popup.toggle();
+  EXPECT_FALSE(popup.visible());
+  EXPECT_EQ(popup.state(), State::kHidden);
+  popup.toggle();
+  EXPECT_TRUE(popup.visible());
+}
+
+TEST(CompletionPopupSelection, MoveSelectionHandlesIntMinWithoutOverflow) {
+  ManualAsyncProvider provider;
+  CompletionPopupOptions options;
+  options.provider = std::shared_ptr<ICompletionProvider>(&provider, [](ICompletionProvider*) {});
+  CompletionPopup popup(nullptr, options);
+  popup.set_query("z", 1);
+  provider.Respond(0, {MakeItem("zebra"), MakeItem("zulu")});
+  popup.move_selection(1);  // move to the last element
+  EXPECT_EQ(popup.selected_index(), 1U);
+  popup.move_selection(std::numeric_limits<int>::min());  // must not overflow
+  EXPECT_EQ(popup.selected_index(), 0U);
 }
 
 }  // namespace

@@ -71,6 +71,11 @@ struct CompletionResult {
 //
 // The interface is deliberately not tied to Folly, Asio, or any concrete
 // executor: the callback is the only seam (PRD section 23).
+//
+// THREAD-SAFETY: the component's state is not internally synchronized. An
+// asynchronous provider MUST marshal its `deliver` invocation back to the UI /
+// main thread (e.g. via a posted event on the host's event loop) before calling
+// it. Invoking `deliver` from a worker thread is a data race on the component.
 class ICompletionProvider {
  public:
   virtual ~ICompletionProvider() = default;
@@ -146,7 +151,9 @@ class CompletionPopup {
   // invalidated. Short (below min_query_length) or empty queries hide the popup.
   void set_query(std::string query, std::size_t cursor_offset);
 
-  // Programmatic open/close. `show()` re-runs the current query.
+  // Programmatic open/close. `show()` re-runs the current query (recovering
+  // from a loading / no-results / error state when it is not already showing
+  // results).
   void show();
   void hide();
   void toggle();
@@ -162,8 +169,10 @@ class CompletionPopup {
   };
   State state() const;
 
-  // Keyboard-style navigation over the current results. `move_selection`
-  // clamps; `select_index` wraps into range.
+  // Keyboard-style navigation over the current results. Both `move_selection`
+  // and `select_index` clamp into [0, items().size()). `move_selection` is
+  // bounded; callers must not pass INT_MIN (it is not reachable from key
+  // events, which use small step sizes).
   void move_selection(int delta);
   void select_index(std::size_t index);
   std::size_t selected_index() const;

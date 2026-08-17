@@ -165,7 +165,9 @@ class CompletionPopupImpl : public ftxui::ComponentBase {
   }
 
   void Show() {
-    if (state_ == State::kHidden) {
+    // Re-run the current query to recover from a transient loading / no-results
+    // / error state. Do not disturb an active results view.
+    if (state_ != State::kResults) {
       SetQuery(query_, cursor_offset_);
     }
   }
@@ -188,7 +190,10 @@ class CompletionPopupImpl : public ftxui::ComponentBase {
       const std::size_t step = static_cast<std::size_t>(delta);
       target = (target + step < count) ? target + step : count - 1;
     } else if (delta < 0) {
-      const std::size_t step = static_cast<std::size_t>(-delta);
+      // Avoid `-delta` signed overflow for the platform-minimum int. This path
+      // is not reachable from key events (which use small steps), but
+      // move_selection is a public API.
+      const std::size_t step = static_cast<std::size_t>(-static_cast<std::int64_t>(delta));
       target = (target > step) ? target - step : 0;
     }
     selected_ = target;
@@ -232,30 +237,31 @@ class CompletionPopupImpl : public ftxui::ComponentBase {
 
   bool OnEvent(ftxui::Event event) override {
     if (Visible()) {
-      if (event == ftxui::Event::ArrowUp) {
+      // Navigation is only meaningful once results are ready; otherwise the
+      // keys fall through to the host (consistent with Enter/Tab).
+      const bool has_results = state_ == CompletionPopup::State::kResults && !items_.empty();
+      if (has_results && event == ftxui::Event::ArrowUp) {
         MoveSelection(-1);
         return true;
       }
-      if (event == ftxui::Event::ArrowDown) {
+      if (has_results && event == ftxui::Event::ArrowDown) {
         MoveSelection(1);
         return true;
       }
-      if (event == ftxui::Event::PageUp) {
+      if (has_results && event == ftxui::Event::PageUp) {
         MoveSelection(-DesiredRows());
         return true;
       }
-      if (event == ftxui::Event::PageDown) {
+      if (has_results && event == ftxui::Event::PageDown) {
         MoveSelection(DesiredRows());
         return true;
       }
-      if (event == ftxui::Event::Home) {
+      if (has_results && event == ftxui::Event::Home) {
         SelectIndex(0);
         return true;
       }
-      if (event == ftxui::Event::End) {
-        if (state_ == CompletionPopup::State::kResults && !items_.empty()) {
-          SelectIndex(items_.size() - 1);
-        }
+      if (has_results && event == ftxui::Event::End) {
+        SelectIndex(items_.size() - 1);
         return true;
       }
       if (event == ftxui::Event::Return || event == ftxui::Event::Tab) {
@@ -388,6 +394,8 @@ class CompletionPopupImpl : public ftxui::ComponentBase {
       case CompletionKind::kUnknown:
         return to_decorator(theme_.primary);
     }
+    // All enumerators are covered above; the trailing return keeps GCC's
+    // -Wreturn-type satisfied across toolchains.
     return to_decorator(theme_.primary);
   }
 
