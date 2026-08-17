@@ -9,6 +9,9 @@ section 45 for the project's specific stability rules before/after 1.0).
 
 === Added
 
+- CompletionPopup component: reusable fuzzy autocomplete popup with sync /
+  async providers, stale-result cancellation, viewport-aware placement, and a
+  completion_popup_example application (#M3)
 - LogView component with follow/pause and severity badges (#PR7B)
 - streaming_log_viewer interactive example application
 - render_styled_text utility for StyledText-to-FTXUI Element conversion
