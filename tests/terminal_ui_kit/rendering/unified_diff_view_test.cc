@@ -247,8 +247,9 @@ TEST(UnifiedDiffView, NoColorFallbackRendersSameText) {
 
 TEST(UnifiedDiffView, NarrowTerminalKeepsContentVisible) {
   UnifiedDiffView view = MakeView(kSingleFile);
-  // A very narrow terminal: line numbers are dropped, markers + content stay.
-  const std::string text = Render(view, 8, 10);
+  // A narrow (but < the narrow-fallback cutoff) terminal: line numbers are
+  // dropped, so the marker + content stay visible.
+  const std::string text = Render(view, 10, 10);
   EXPECT_NE(text.find("keep"), std::string::npos);
   EXPECT_NE(text.find("new one"), std::string::npos);
 }
@@ -533,6 +534,101 @@ TEST(UnifiedDiffView, Utf8ContentPreserved) {
   const std::string text = Render(view, 40, 8);
   EXPECT_NE(text.find("старый"), std::string::npos);
   EXPECT_NE(text.find("новый"), std::string::npos);
+}
+
+// Returns true when `s` is a sequence of complete, well-formed UTF-8 code
+// points (no dangling continuation bytes and no truncated multi-byte chars).
+bool IsWellFormedUtf8(const std::string& s) {
+  std::size_t i = 0;
+  while (i < s.size()) {
+    const unsigned char c = static_cast<unsigned char>(s[i]);
+    std::size_t len = 0;
+    if (c < 0x80) {
+      len = 1;
+    } else if ((c & 0xE0) == 0xC0) {
+      len = 2;
+    } else if ((c & 0xF0) == 0xE0) {
+      len = 3;
+    } else if ((c & 0xF8) == 0xF0) {
+      len = 4;
+    } else {
+      return false;
+    }
+    if (i + len > s.size()) return false;
+    for (std::size_t k = 1; k < len; ++k) {
+      if ((static_cast<unsigned char>(s[i + k]) & 0xC0) != 0x80) return false;
+    }
+    i += len;
+  }
+  return true;
+}
+
+TEST(UnifiedDiffView, LongLineWithMultibyteTruncationStaysWellFormed) {
+  // A long line made of repeated two-byte chars guarantees the truncation
+  // boundary lands in the middle of a code point; the view must never split
+  // one, so the rendered output stays well-formed UTF-8.
+  std::string content;
+  for (int i = 0; i < 200; ++i) content += "\xC3\xA9";  // é (U+00E9)
+  const std::string diff =
+      "diff --git a/u.txt b/u.txt\n"
+      "--- a/u.txt\n"
+      "+++ b/u.txt\n"
+      "@@ -1,1 +1,1 @@\n"
+      "-" +
+      content +
+      "\n"
+      "+" +
+      content + "\n";
+
+  UnifiedDiffView view = MakeView(diff);
+  const std::string text = Render(view, 25, 10);
+  EXPECT_TRUE(IsWellFormedUtf8(StripAnsi(text)));
+}
+
+TEST(UnifiedDiffView, LongLineShowsContinuationMarkerInsideViewport) {
+  // After the line-number gutter is subtracted from the available width, a
+  // truncated line shows its "…" marker inside the viewport instead of being
+  // clipped off the right edge by FTXUI.
+  const std::string content = "start " + std::string(120, 'x') + " end";
+  const std::string diff =
+      "diff --git a/long.txt b/long.txt\n"
+      "--- a/long.txt\n"
+      "+++ b/long.txt\n"
+      "@@ -1,1 +1,1 @@\n"
+      "-" +
+      content +
+      "\n"
+      "+" +
+      content + "\n";
+
+  UnifiedDiffView view = MakeView(diff);
+  const std::string text = Render(view, 40, 10);
+  EXPECT_NE(text.find("start"), std::string::npos);
+  // U+2026 HORIZONTAL ELLIPSIS
+  EXPECT_TRUE(StripAnsi(text).find("\xE2\x80\xA6") != std::string::npos);
+}
+
+TEST(UnifiedDiffView, CollapseFromHeaderExpandsBackToHeader) {
+  // A single file with two hunks, selection starting on the file header.
+  // Collapse then expand must return to the header, so a following next-hunk
+  // lands on the first hunk (hunk 0) rather than skipping ahead to hunk 1.
+  const std::string diff =
+      "diff --git a/x.txt b/x.txt\n"
+      "--- a/x.txt\n"
+      "+++ b/x.txt\n"
+      "@@ -1,1 +1,1 @@\n"
+      " one\n"
+      "@@ -10,1 +10,2 @@\n"
+      " ten\n"
+      "+tenplus\n";
+
+  UnifiedDiffView view = MakeView(diff);
+  view.toggle_collapse();  // collapse -> header
+  EXPECT_TRUE(view.collapsed(0));
+  view.toggle_collapse();  // expand -> should still be on the header
+  EXPECT_FALSE(view.collapsed(0));
+  view.next_hunk();  // from the header, next-hunk goes to the first hunk
+  EXPECT_EQ(view.selected_hunk(), 0u);
 }
 
 }  // namespace

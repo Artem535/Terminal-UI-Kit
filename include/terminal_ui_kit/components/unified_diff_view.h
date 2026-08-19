@@ -93,7 +93,9 @@ class UnifiedDiffView {
 
   // --- Search ---
   // Set (or clear, with "") the active search query. Search is a
-  // case-insensitive substring match over line content. While a query is
+  // case-insensitive ASCII substring match over line content (multi-byte
+  // UTF-8 characters are matched byte-for-byte, so searching for non-ASCII
+  // text is supported only as an exact byte sequence). While a query is
   // active, `n`/`N` navigate search results instead of hunks.
   void set_search(const std::string& query);
   const std::string& search() const;

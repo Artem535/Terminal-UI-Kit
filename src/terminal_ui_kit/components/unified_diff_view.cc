@@ -46,21 +46,13 @@ std::string TruncateUtf8(std::string text, std::size_t max_bytes) {
   if (max_bytes == 0) {
     return std::string(kEllipsis);
   }
-  // Drop a trailing incomplete UTF-8 sequence.
+  // Back over bytes that are UTF-8 continuation bytes (0x10xxxxxx) so the
+  // truncation point never splits a multi-byte code point. A lead byte that
+  // would need a continuation beyond `max_bytes` is dropped along with its
+  // (already excluded) continuations, keeping only complete code points.
   std::size_t keep = max_bytes;
   while (keep > 0 && (static_cast<std::uint8_t>(text[keep]) & 0xC0) == 0x80) {
     --keep;
-  }
-  if (keep == 0) {
-    return std::string(kEllipsis);
-  }
-  if (keep < max_bytes) {
-    // `keep` ended just before a continuation byte; back up one more so we
-    // keep the leading byte of the multi-byte char out.
-    --keep;
-    while (keep > 0 && (static_cast<std::uint8_t>(text[keep]) & 0xC0) == 0x80) {
-      --keep;
-    }
   }
   text.erase(keep);
   text.append(kEllipsis);
@@ -128,7 +120,9 @@ FileKind DescribeFile(const diff::DiffFile& file) {
 
 class UnifiedDiffViewImpl {
  public:
-  explicit UnifiedDiffViewImpl(UnifiedDiffViewOptions options) : options_(std::move(options)) {
+  explicit UnifiedDiffViewImpl(UnifiedDiffViewOptions options)
+      : options_(std::move(options)),
+        effective_theme_(options_.enable_color ? options_.theme : without_color(options_.theme)) {
     VirtualListOptions list_opts;
     list_opts.item_count = [this] { return rows_.size(); };
     list_opts.item_height = 1;
@@ -274,16 +268,18 @@ class UnifiedDiffViewImpl {
     const DiffRow* current = selected_row_ptr();
     const std::size_t anchor_hunk = current ? current->hunk_index : 0;
     const bool anchor_line = current && current->kind == DiffRowKind::kLine;
+    const bool was_header = current && current->kind == DiffRowKind::kFileHeader;
     const std::size_t anchor_line_index = current ? current->line_index : 0;
 
     collapsed_[file] = collapsed_[file] ? 0 : 1;
     layout_dirty_ = true;
     rebuild_if_dirty();
 
-    // Re-anchor selection on the equivalent row.
+    // Re-anchor selection on the equivalent row. A file anchored on its header
+    // (either collapsed to it, or expanded while on it) stays on the header.
     const std::optional<std::size_t> sel = model_->selected_index();
     std::size_t target = *sel;
-    if (collapsed_[file]) {
+    if (collapsed_[file] || was_header) {
       target = first_row_of_file(file);
     } else if (anchor_line) {
       target = find_row(file, anchor_hunk, anchor_line_index);
@@ -392,6 +388,13 @@ class UnifiedDiffViewImpl {
         search_matches_.push_back(i);
       }
     }
+    // Keep the cursor in range when the match set shrinks (e.g. after a
+    // collapse rebuilds the row index).
+    if (search_matches_.empty()) {
+      search_cursor_ = 0;
+    } else {
+      search_cursor_ = std::min(search_cursor_, search_matches_.size() - 1);
+    }
   }
 
   static std::string LowerAscii(std::string s) {
@@ -457,7 +460,11 @@ class UnifiedDiffViewImpl {
     }
     if (event == ftxui::Event::Character('n') || event == ftxui::Event::Character('N')) {
       if (!search_query_.empty()) {
-        next_search_result();
+        if (event.input() == "n") {
+          next_search_result();
+        } else {
+          previous_search_result();
+        }
       } else if (event.input() == "n") {
         next_hunk();
       } else {
@@ -595,26 +602,31 @@ class UnifiedDiffViewImpl {
   ftxui::Element render_line(const DiffRow& row, int width) {
     const diff::DiffLine& line = files_[row.file_index].hunks[row.hunk_index].lines[row.line_index];
 
+    const int viewport = std::max(0, width);
     const int old_width = GutterUnit(old_digits_);
     const int new_width = GutterUnit(new_digits_);
-    const int gutter = old_width + new_width + 1;  // + marker column
-    const std::size_t content_width = ContentWidth(width);
+    // Columns consumed before the content: old number + space + new number +
+    // space + marker. `gutter` is only meaningful when line numbers are shown.
+    const int gutter = old_width + new_width + 3;
+    const bool narrow = (viewport - gutter) < 6;
 
-    const bool narrow = (std::max(0, width) - gutter) < 6;
     std::string old_cell;
     std::string new_cell;
     char marker = ' ';
+    std::size_t content_width = ContentWidth(viewport - 1);  // marker column
     if (narrow) {
       // Narrow-terminal fallback: drop line numbers, keep only the marker.
       marker = DiffMarker(line.type);
     } else {
       old_cell = line.old_line ? RightAlign(std::to_string(*line.old_line),
                                             static_cast<std::size_t>(old_width))
-                               : std::string(static_cast<std::size_t>(std::max(0, old_width)), ' ');
+                               : std::string(static_cast<std::size_t>(old_width), ' ');
       new_cell = line.new_line ? RightAlign(std::to_string(*line.new_line),
                                             static_cast<std::size_t>(new_width))
-                               : std::string(static_cast<std::size_t>(std::max(0, new_width)), ' ');
+                               : std::string(static_cast<std::size_t>(new_width), ' ');
       marker = DiffMarker(line.type);
+      // Content area is the viewport minus the number/marker gutter.
+      content_width = ContentWidth(viewport - gutter);
     }
 
     ftxui::Elements parts;
@@ -625,7 +637,10 @@ class UnifiedDiffViewImpl {
       parts.push_back(ftxui::text(" "));
     }
     parts.push_back(ftxui::text(std::string(1, marker)) | MarkerStyle(line.type));
-    parts.push_back(ftxui::text(LineContentTruncated(line, content_width)) | LineStyle(line.type));
+    // Reserve one column for the inline "…" continuation marker so it stays
+    // visible inside the viewport rather than being clipped off the edge.
+    const std::size_t text_budget = content_width > 0 ? content_width - 1 : 0;
+    parts.push_back(ftxui::text(LineContentTruncated(line, text_budget)) | LineStyle(line.type));
 
     return ftxui::hbox(std::move(parts));
   }
@@ -672,11 +687,7 @@ class UnifiedDiffViewImpl {
     return ' ';
   }
 
-  const Theme& effective_theme() const {
-    if (options_.enable_color) return options_.theme;
-    static const Theme kNoColor = without_color(default_dark_theme());
-    return kNoColor;
-  }
+  const Theme& effective_theme() const { return effective_theme_; }
 
   static bool IsDevNull(const std::string& path) { return path == "/dev/null"; }
 
@@ -701,6 +712,7 @@ class UnifiedDiffViewImpl {
   }
 
   UnifiedDiffViewOptions options_;
+  Theme effective_theme_;
   std::vector<diff::DiffFile> files_;
   std::vector<std::uint8_t> collapsed_;
   std::vector<DiffRow> rows_;
