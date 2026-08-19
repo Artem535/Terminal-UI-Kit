@@ -23,8 +23,8 @@ std::vector<std::string_view> split_into_codepoints(std::string_view text) {
   while (i < text.size()) {
     int length = utf8_codepoint_length(static_cast<unsigned char>(text[i]));
     length = std::min<int>(length, static_cast<int>(text.size() - i));
-    codepoints.push_back(text.substr(i, length));
-    i += length;
+    codepoints.push_back(text.substr(i, static_cast<std::size_t>(length)));
+    i += static_cast<std::size_t>(length);
   }
   return codepoints;
 }
@@ -94,8 +94,7 @@ std::vector<std::string> wrap_plain_text(std::string_view text, int width) {
   return lines;
 }
 
-std::vector<WrappedSegment> wrap_plain_text_with_offsets(
-    std::string_view text, int width) {
+std::vector<WrappedSegment> wrap_plain_text_with_offsets(std::string_view text, int width) {
   width = std::max(width, 1);
 
   std::vector<std::string_view> codepoints = split_into_codepoints(text);
@@ -133,11 +132,11 @@ std::vector<WrappedSegment> wrap_plain_text_with_offsets(
     if (run_width > width) {
       for (std::size_t k = start; k < i; ++k) {
         if (current_width == 0) {
-          current_offset = codepoints[k].data() - text.data();
+          current_offset = static_cast<std::size_t>(codepoints[k].data() - text.data());
         }
         if (current_width == width) {
           flush_line();
-          current_offset = codepoints[k].data() - text.data();
+          current_offset = static_cast<std::size_t>(codepoints[k].data() - text.data());
         }
         current_line += codepoints[k];
         ++current_width;
@@ -149,7 +148,7 @@ std::vector<WrappedSegment> wrap_plain_text_with_offsets(
       flush_line();
     }
     if (current_width == 0) {
-      current_offset = codepoints[start].data() - text.data();
+      current_offset = static_cast<std::size_t>(codepoints[start].data() - text.data());
     }
     for (std::size_t k = start; k < i; ++k) current_line += codepoints[k];
     current_width += run_width;

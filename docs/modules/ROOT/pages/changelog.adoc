@@ -12,6 +12,15 @@ section 45 for the project's specific stability rules before/after 1.0).
 - LogView component with follow/pause and severity badges (#PR7B)
 - streaming_log_viewer interactive example application
 - render_styled_text utility for StyledText-to-FTXUI Element conversion
+- UnifiedDiffView: a virtualized, viewport-based unified-diff view over the
+  canonical unified-diff model, with file/hunk navigation, collapse/expand,
+  case-insensitive search, a copy callback returning original source text,
+  no-color fallback, a narrow-terminal gutter fallback, long-line truncation,
+  and resize-stable selection. Built on `VirtualList`, it renders a 100,000-line
+  diff without rebuilding its flat layout per frame.
+- unified_diff_view_example interactive example application and a
+  100,000-line `UnifiedDiffView` render/load benchmark.
+- `VirtualListModel::visible_range()` read accessor for status-line reporting.
 
 * Repository foundation: CMake + Xmake build systems, vcpkg manifest,
   directory skeleton for `include/`, `src/`, `tests/`, `examples/`,

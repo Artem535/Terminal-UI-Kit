@@ -132,6 +132,13 @@ class VirtualListImpl : public ftxui::ComponentBase {
 
   std::optional<std::size_t> selected_index() const { return selected_index_; }
 
+  std::optional<std::pair<std::size_t, std::size_t>> visible_range() const {
+    if (!laid_out_) {
+      return std::nullopt;
+    }
+    return std::make_pair(last_visible_begin_, last_visible_count_);
+  }
+
  private:
   ftxui::Element Render() override {
     const int width = box_width();
@@ -143,6 +150,9 @@ class VirtualListImpl : public ftxui::ComponentBase {
     ftxui::Elements rows;
     const std::size_t end = visible_end(width);
     const std::size_t begin = first_visible_index();
+    last_visible_begin_ = begin;
+    last_visible_count_ = (end > begin) ? end - begin : 0;
+    laid_out_ = true;
     for (std::size_t index = begin; index < end; ++index) {
       ftxui::Element row = options_.render_item(index, width);
       if (!options_.estimate_height) {
@@ -403,6 +413,9 @@ class VirtualListImpl : public ftxui::ComponentBase {
   std::vector<int> prefix_sums_;
   int scroll_offset_ = 0;
   std::optional<std::size_t> selected_index_;
+  std::size_t last_visible_begin_ = 0;
+  std::size_t last_visible_count_ = 0;
+  bool laid_out_ = false;
 };
 
 ftxui::Component VirtualList(VirtualListOptions options) {
@@ -422,6 +435,10 @@ void VirtualListModel::select_index(std::size_t index) { impl_->select_index(ind
 
 std::optional<std::size_t> VirtualListModel::selected_index() const {
   return impl_->selected_index();
+}
+
+std::optional<std::pair<std::size_t, std::size_t>> VirtualListModel::visible_range() const {
+  return impl_->visible_range();
 }
 
 }  // namespace terminal_ui_kit

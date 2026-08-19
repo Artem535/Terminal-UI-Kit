@@ -70,7 +70,8 @@ add_library(terminal_ui_kit_components
   components/virtual_list.cc
   components/log_view.cc
   components/virtual_document.cc
-  components/code_view.cc)
+  components/code_view.cc
+  components/unified_diff_view.cc)
 add_library(TerminalUiKit::Components ALIAS terminal_ui_kit_components)
 target_include_directories(terminal_ui_kit_components PUBLIC
   $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>
@@ -80,6 +81,7 @@ target_terminal_ui_kit_warnings(terminal_ui_kit_components)
 target_link_libraries(terminal_ui_kit_components PUBLIC
   terminal_ui_kit_core
   terminal_ui_kit_document
+  terminal_ui_kit_diff
   ftxui::dom
   ftxui::component
   ftxui::screen)
