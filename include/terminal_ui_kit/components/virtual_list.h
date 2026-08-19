@@ -4,6 +4,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <utility>
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/dom/elements.hpp>
@@ -31,6 +32,12 @@ class VirtualListModel {
   void scroll_to_bottom();
   void select_index(std::size_t index);
   std::optional<std::size_t> selected_index() const;
+
+  // Returns {first_visible_index, visible_count} of the most recent render,
+  // or std::nullopt if the component has not been laid out yet. Used by
+  // composite views (e.g. the diff view) to build status lines that report
+  // the currently visible row range.
+  std::optional<std::pair<std::size_t, std::size_t>> visible_range() const;
 
  private:
   std::shared_ptr<VirtualListImpl> impl_;
