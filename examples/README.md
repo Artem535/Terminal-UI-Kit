@@ -40,6 +40,7 @@ Binaries are written under `build/examples/<name>/` with the prefix
 | `diff_parser/` | `terminal_ui_kit_example_diff_parser` | Parses a unified diff from stdin and prints a plain-text summary. | No (stdin) |
 | `command_history_example/` | `terminal_ui_kit_example_command_history` | Bounded, navigable command history with search, persistence, and sensitive-command policy. | Yes |
 | `markdown_viewer/` | `terminal_ui_kit_example_markdown_viewer` | Markdown rendering. Only built when `TERMINAL_UI_KIT_ENABLE_MARKDOWN=ON`. | Yes |
+| `line_number_formatting_example.cpp` | `terminal_ui_kit_example_line_number_formatting` | Right-aligned line-number gutters under configurable widths. | Yes |
 
 ## command_history_example
 
@@ -86,3 +87,23 @@ The underlying model is tested independently of the terminal in
 `tests/terminal_ui_kit/unit/command_history_test.cc`, which covers navigation
 boundaries, capacity eviction, duplicate filtering, search ordering, capacity
 `0`, persistence failure, and sensitive-command persistence suppression.
+
+## line_number_formatting_example
+
+Demonstrates the shared line-number gutter helper and both gutter-rendering
+components. It shows the required document (lines 1, 9, 99, 9999, 10000,
+99999, 100000) and lets you switch gutter widths to confirm that:
+
+- short numbers stay right-aligned;
+- numbers wider than the gutter render fully (never clipped);
+- no underflow produces enormous padding;
+- rendering stays correct after a terminal resize.
+
+Controls: `+`/`-` change gutter width, `c` toggles CodeView/VirtualDocument,
+`q`/`Esc` quits.
+
+Run it:
+
+```sh
+./build/examples/terminal_ui_kit_example_line_number_formatting
+```
