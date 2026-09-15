@@ -22,3 +22,14 @@ target_link_libraries(terminal_ui_kit_search_benchmark PRIVATE
   ftxui::component)
 
 target_terminal_ui_kit_warnings(terminal_ui_kit_search_benchmark)
+
+add_executable(terminal_ui_kit_completion_popup_benchmark completion_popup_benchmark.cc)
+
+target_link_libraries(terminal_ui_kit_completion_popup_benchmark PRIVATE
+  TerminalUiKit::Components
+  benchmark::benchmark
+  ftxui::screen
+  ftxui::dom
+  ftxui::component)
+
+target_terminal_ui_kit_warnings(terminal_ui_kit_completion_popup_benchmark)

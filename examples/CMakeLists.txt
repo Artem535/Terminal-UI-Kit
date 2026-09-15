@@ -25,6 +25,15 @@ target_link_libraries(terminal_ui_kit_example_terminal_capabilities PRIVATE
   TerminalUiKit::Terminal)
 target_terminal_ui_kit_warnings(terminal_ui_kit_example_terminal_capabilities)
 
+# Standalone completion-popup example. FTXUI is pulled transitively via
+# TerminalUiKit::Components so the ftxui imported targets remain visible under
+# CMake >= 4 (find_package scopes imported targets to their calling directory).
+add_executable(terminal_ui_kit_example_completion_popup
+  completion_popup_example.cpp)
+target_link_libraries(terminal_ui_kit_example_completion_popup PRIVATE
+  TerminalUiKit::Components)
+target_terminal_ui_kit_warnings(terminal_ui_kit_example_completion_popup)
+
 if(TERMINAL_UI_KIT_ENABLE_MARKDOWN)
   add_subdirectory(markdown_viewer)
 endif()

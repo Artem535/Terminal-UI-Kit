@@ -12,6 +12,7 @@ add_executable(terminal_ui_kit_rendering_tests
   modal_stack_test.cc
   log_view_test.cc
   virtual_document_test.cc
+  completion_popup_test.cc
   searchable_text_view_test.cc
   toast_manager_test.cc
   toast_view_test.cc

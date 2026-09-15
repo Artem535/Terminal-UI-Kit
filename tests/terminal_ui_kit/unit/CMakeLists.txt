@@ -10,6 +10,7 @@ add_executable(terminal_ui_kit_unit_tests
   wrapped_document_test.cc
   selection_manager_test.cc
   diff_parser_test.cc
+  completion_popup_test.cc
   search_engine_test.cc
   terminal_capabilities_test.cc
   command_history_test.cc
@@ -29,6 +30,7 @@ target_link_libraries(terminal_ui_kit_unit_tests PRIVATE
   TerminalUiKit::Core
   TerminalUiKit::Document
   TerminalUiKit::Diff
+  TerminalUiKit::Components
   TerminalUiKit::Search
   TerminalUiKit::Terminal
   TerminalUiKit::Editor

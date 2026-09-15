@@ -9,6 +9,9 @@ section 45 for the project's specific stability rules before/after 1.0).
 
 === Added
 
+- CompletionPopup component: reusable fuzzy autocomplete popup with sync /
+  async providers, stale-result cancellation, viewport-aware placement, and a
+  completion_popup_example application (#M3)
 - Terminal capability model (`TerminalUiKit::Terminal`): `ColorDepth` and
   `TerminalCapabilities` value types, an injectable `EnvironmentProvider`
   (`SystemEnvironment` plus a deterministic snapshot in tests), a static,
