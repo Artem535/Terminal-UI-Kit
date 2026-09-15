@@ -77,7 +77,7 @@ int main() {
       const int word_count = 5 + std::rand() % 20;
       for (int w = 0; w < word_count; ++w) {
         if (w > 0) line += " ";
-        line += words[std::rand() % kWordCount];
+        line += words[static_cast<std::size_t>(std::rand()) % kWordCount];
       }
       line += "\n";
       doc.append(line);

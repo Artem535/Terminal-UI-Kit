@@ -10,6 +10,7 @@ add_executable(terminal_ui_kit_unit_tests
   wrapped_document_test.cc
   selection_manager_test.cc
   diff_parser_test.cc
+  transcript_model_test.cc
   editor_document_test.cc
   completion_popup_test.cc
   search_engine_test.cc
