@@ -10,6 +10,7 @@ add_executable(terminal_ui_kit_unit_tests
   wrapped_document_test.cc
   selection_manager_test.cc
   diff_parser_test.cc
+  terminal_capabilities_test.cc
   command_history_test.cc
   line_number_test.cc)
 
@@ -27,6 +28,7 @@ target_link_libraries(terminal_ui_kit_unit_tests PRIVATE
   TerminalUiKit::Core
   TerminalUiKit::Document
   TerminalUiKit::Diff
+  TerminalUiKit::Terminal
   TerminalUiKit::Editor
   GTest::gtest_main)
 

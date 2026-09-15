@@ -40,6 +40,7 @@ Binaries are written under `build/examples/<name>/` with the prefix
 | `diff_parser/` | `terminal_ui_kit_example_diff_parser` | Parses a unified diff from stdin and prints a plain-text summary. | No (stdin) |
 | `toast_example/` | `terminal_ui_kit_example_toast` | ToastManager / ToastView: timed and persistent notifications with a FIFO queue. | Yes |
 | `command_history_example/` | `terminal_ui_kit_example_command_history` | Bounded, navigable command history with search, persistence, and sensitive-command policy. | Yes |
+| `terminal_capabilities_example.cpp` | `terminal_ui_kit_example_terminal_capabilities` | Terminal-capability detection across presets. | Yes |
 | `markdown_viewer/` | `terminal_ui_kit_example_markdown_viewer` | Markdown rendering. Only built when `TERMINAL_UI_KIT_ENABLE_MARKDOWN=ON`. | Yes |
 | `line_number_formatting_example.cpp` | `terminal_ui_kit_example_line_number_formatting` | Right-aligned line-number gutters under configurable widths. | Yes |
 
@@ -123,6 +124,36 @@ The underlying model is tested independently of the terminal in
 `tests/terminal_ui_kit/unit/command_history_test.cc`, which covers navigation
 boundaries, capacity eviction, duplicate filtering, search ordering, capacity
 `0`, persistence failure, and sensitive-command persistence suppression.
+
+## terminal_capabilities
+
+An interactive FTXUI demo of the `TerminalUiKit::Terminal` module
+(`terminal_ui_kit/terminal/*.h`). It renders a table of detected capabilities —
+color depth, Unicode, mouse, bracketed paste, hyperlinks, OSC 52, Kitty
+graphics, Sixel, iTerm images, alternate screen, tmux, screen, SSH, and terminal
+identity — and lets you switch between environments:
+
+| Key | Scenario |
+| --- | -------- |
+| `1` | Real process environment (`SystemEnvironment`) |
+| `2` | `TERM=dumb` |
+| `3` | Kitty preset |
+| `4` | iTerm2 preset |
+| `5` | tmux over SSH |
+| `6` | Unknown terminal |
+| `7` | Custom `CapabilityOverrides` scenario |
+| `q` | Quit |
+
+The example uses only the public Terminal module API; synthetic environments are
+supplied through an in-file `EnvironmentProvider` implementation and explicit
+`CapabilityOverrides`, so every non-live scenario is fully deterministic. The
+layout is an ordinary FTXUI tree and reflows on terminal resize.
+
+Run it:
+
+```sh
+./build/examples/terminal_ui_kit_example_terminal_capabilities
+```
 
 ## line_number_formatting_example
 

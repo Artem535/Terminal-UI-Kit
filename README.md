@@ -311,6 +311,8 @@ components:
 - `virtual_list_viewer` — a virtualized 100,000-row list;
 - `streaming_log_viewer` — live structured logs with ANSI styling;
 - `virtual_document_viewer` — incrementally updated wrapped text;
+- `diff_parser` — unified diff parsing to a plain-text model;
+- `terminal_capabilities` — terminal-capability detection across presets;
 - `markdown_viewer` — Markdown rendering when the Markdown feature is enabled;
 - `command_history_example` — bounded, navigable command history with search,
   persistence, and a sensitive-command policy.
