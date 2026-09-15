@@ -38,9 +38,45 @@ Binaries are written under `build/examples/<name>/` with the prefix
 | `streaming_log_viewer/` | `terminal_ui_kit_example_streaming_log_viewer` | Live structured logs with ANSI styling. | Yes |
 | `virtual_document_viewer/` | `terminal_ui_kit_example_virtual_document_viewer` | An incrementally updated wrapped text document. | Yes |
 | `diff_parser/` | `terminal_ui_kit_example_diff_parser` | Parses a unified diff from stdin and prints a plain-text summary. | No (stdin) |
+| `toast_example/` | `terminal_ui_kit_example_toast` | ToastManager / ToastView: timed and persistent notifications with a FIFO queue. | Yes |
 | `command_history_example/` | `terminal_ui_kit_example_command_history` | Bounded, navigable command history with search, persistence, and sensitive-command policy. | Yes |
 | `markdown_viewer/` | `terminal_ui_kit_example_markdown_viewer` | Markdown rendering. Only built when `TERMINAL_UI_KIT_ENABLE_MARKDOWN=ON`. | Yes |
 | `line_number_formatting_example.cpp` | `terminal_ui_kit_example_line_number_formatting` | Right-aligned line-number gutters under configurable widths. | Yes |
+
+## toast_example
+
+Interactive toast system demo: timed + persistent notifications, a FIFO queue
+with a configurable visible-count limit, optional action callbacks, keyboard
+focus with a timeout pause while focused, and a no-color fallback.
+
+Run it with:
+
+```sh
+./build/examples/toast_example/terminal_ui_kit_example_toast
+```
+
+Controls:
+
+```text
+i          Add info toast
+s          Add success toast
+w          Add warning toast
+e          Add error toast
+a          Add toast with action
+p          Add persistent toast (dismiss with Delete or c)
+c          Clear all toasts
+Tab        Move focus to next toast
+Shift+Tab  Move focus to previous toast
+Enter      Invoke the focused toast's action
+Delete     Close the focused toast
+t          Toggle color / no-color fallback
+q or Esc   Quit
+```
+
+Timed toasts show a live countdown and drain automatically under the running
+`ScreenInteractive` loop; the focused toast's timeout is paused while it stays
+focused. Exceed `max_visible` to see queueing first-in/first-out. Quit with `q`
+or `Esc`.
 
 ## command_history_example
 
