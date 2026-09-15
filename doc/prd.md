@@ -1170,7 +1170,8 @@ struct DiffFile {
 - alternate screen;
 - terminal identity;
 - tmux and screen;
-- SSH environment.
+- SSH environment;
+- terminal dimensions (columns and lines).
 
 ## API
 
@@ -1187,6 +1188,8 @@ struct TerminalCapabilities {
   bool osc52;
   bool tmux;
   bool ssh;
+  int columns;  // character cells; 0 == unknown
+  int lines;    // character cells; 0 == unknown
 };
 ```
 

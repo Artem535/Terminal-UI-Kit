@@ -54,6 +54,15 @@ struct TerminalCapabilities {
   bool screen = false;
   // Session arrived over SSH.
   bool ssh = false;
+
+  // Terminal size in character cells, taken from the COLUMNS / LINES
+  // environment variables. Zero means "unknown": the variable was absent,
+  // empty, or malformed, and must not be read as a real zero-sized terminal.
+  // Detection is environment-only; an application that needs the live size
+  // should query its terminal layer (e.g. FTXUI) or set an explicit override.
+  int columns = 0;
+  int lines = 0;
+
   // Stable terminal identity: TERM_PROGRAM when set, otherwise TERM.
   std::string terminal_identity;
 

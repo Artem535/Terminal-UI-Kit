@@ -27,6 +27,8 @@ struct CapabilityOverrides {
   std::optional<bool> tmux;
   std::optional<bool> screen;
   std::optional<bool> ssh;
+  std::optional<int> columns;
+  std::optional<int> lines;
   std::optional<std::string> terminal_identity;
 };
 
