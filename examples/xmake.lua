@@ -1,9 +1,7 @@
--- Xmake frontend for example applications (secondary; CMake is authoritative).
---
--- This file is only loaded when the `examples` option is enabled:
---   xmake f --examples=y
--- Under CMake (the authoritative frontend) examples are driven entirely by
--- examples/CMakeLists.txt.
+-- Xmake registration for the example applications (PRD section 11.2).
+-- Xmake is a secondary, developer-facing frontend; CMake remains
+-- authoritative for what actually gets built. Each example here mirrors the
+-- corresponding CMake target in examples/CMakeLists.txt.
 --
 -- The terminal-capabilities example reproduces the CMake dependency shape:
 -- it links the terminal module sources directly (Xmake does not compile
@@ -27,4 +25,11 @@ target("terminal_ui_kit_example_terminal_capabilities")
     add_files("terminal_capabilities_example.cpp")
     add_files("../src/terminal_ui_kit/terminal/*.cc")
     set_warnings("all", "extra", "pedantic", "shadow", "conversion", "error")
+target_end()
+
+target("terminal_ui_kit_example_line_number_formatting")
+    set_kind("binary")
+    add_files("line_number_formatting_example.cpp")
+    add_includedirs("include", {public = true})
+    add_deps("terminal_ui_kit_core", "terminal_ui_kit_components")
 target_end()

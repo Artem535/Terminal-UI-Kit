@@ -132,6 +132,7 @@ Other useful examples include:
 ./build/examples/streaming_log_viewer/terminal_ui_kit_example_streaming_log_viewer
 ./build/examples/progress_viewer/terminal_ui_kit_example_progress_viewer
 ./build/examples/task_dashboard/terminal_ui_kit_example_task_dashboard
+./build/examples/command_history_example/terminal_ui_kit_example_command_history
 ```
 
 ## Basic usage
@@ -312,7 +313,9 @@ components:
 - `virtual_document_viewer` — incrementally updated wrapped text;
 - `diff_parser` — unified diff parsing to a plain-text model;
 - `terminal_capabilities` — terminal-capability detection across presets;
-- `markdown_viewer` — Markdown rendering when the Markdown feature is enabled.
+- `markdown_viewer` — Markdown rendering when the Markdown feature is enabled;
+- `command_history_example` — bounded, navigable command history with search,
+  persistence, and a sensitive-command policy.
 
 Additional example directories may exist as placeholders for planned modules.
 Only examples registered in [`examples/CMakeLists.txt`](examples/CMakeLists.txt)
