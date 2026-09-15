@@ -10,7 +10,20 @@ add_subdirectory(task_dashboard)
 add_subdirectory(virtual_list_viewer)
 add_subdirectory(streaming_log_viewer)
 add_subdirectory(virtual_document_viewer)
+add_subdirectory(searchable_text_view_example)
 add_subdirectory(diff_parser)
+add_subdirectory(toast_example)
+add_subdirectory(command_history_example)
+
+# Standalone terminal-capabilities example. FTXUI is pulled transitively via
+# TerminalUiKit::Components so the ftxui imported targets remain visible under
+# CMake >= 4 (find_package scopes imported targets to their calling directory).
+add_executable(terminal_ui_kit_example_terminal_capabilities
+  terminal_capabilities_example.cpp)
+target_link_libraries(terminal_ui_kit_example_terminal_capabilities PRIVATE
+  TerminalUiKit::Components
+  TerminalUiKit::Terminal)
+target_terminal_ui_kit_warnings(terminal_ui_kit_example_terminal_capabilities)
 
 # Standalone completion-popup example. FTXUI is pulled transitively via
 # TerminalUiKit::Components so the ftxui imported targets remain visible under
@@ -24,3 +37,12 @@ target_terminal_ui_kit_warnings(terminal_ui_kit_example_completion_popup)
 if(TERMINAL_UI_KIT_ENABLE_MARKDOWN)
   add_subdirectory(markdown_viewer)
 endif()
+
+# Standalone example demonstrating the line-number gutter formatting fix
+# (single-file example kept at the examples/ root).
+add_executable(terminal_ui_kit_example_line_number_formatting
+  line_number_formatting_example.cpp)
+target_link_libraries(terminal_ui_kit_example_line_number_formatting PRIVATE
+  TerminalUiKit::Core
+  TerminalUiKit::Components)
+target_terminal_ui_kit_warnings(terminal_ui_kit_example_line_number_formatting)
