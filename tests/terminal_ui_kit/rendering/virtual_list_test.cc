@@ -83,6 +83,7 @@ TEST(VirtualList, LegacyAggregateInitializationKeepsFixedRowHeight) {
       },
       2,
       {},
+      {},
   };
 
   VirtualListModel model(std::move(options));
