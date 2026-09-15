@@ -10,7 +10,13 @@ add_executable(terminal_ui_kit_unit_tests
   wrapped_document_test.cc
   selection_manager_test.cc
   diff_parser_test.cc
-  transcript_model_test.cc)
+  transcript_model_test.cc
+  editor_document_test.cc
+  completion_popup_test.cc
+  search_engine_test.cc
+  terminal_capabilities_test.cc
+  command_history_test.cc
+  line_number_test.cc)
 
 if(TERMINAL_UI_KIT_ENABLE_MARKDOWN)
   target_sources(terminal_ui_kit_unit_tests PRIVATE markdown_document_test.cc)
@@ -27,6 +33,9 @@ target_link_libraries(terminal_ui_kit_unit_tests PRIVATE
   TerminalUiKit::Document
   TerminalUiKit::Diff
   TerminalUiKit::Components
+  TerminalUiKit::Search
+  TerminalUiKit::Terminal
+  TerminalUiKit::Editor
   GTest::gtest_main)
 
 if(TERMINAL_UI_KIT_ENABLE_MARKDOWN)

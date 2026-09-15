@@ -48,6 +48,10 @@ struct DiffFile {
   std::string old_path;
   std::string new_path;
   std::vector<DiffHunk> hunks;
+  // True when the diff carries a `Binary files ... differ` notice for this
+  // file. The parser sets it so a view can render a distinct binary notice;
+  // such a file has no hunks.
+  bool binary = false;
 };
 
 }  // namespace diff

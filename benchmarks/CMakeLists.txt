@@ -21,3 +21,49 @@ target_link_libraries(terminal_ui_kit_virtual_list_benchmark PRIVATE
   ftxui::component)
 
 target_terminal_ui_kit_warnings(terminal_ui_kit_virtual_list_benchmark)
+
+add_executable(terminal_ui_kit_search_benchmark search_benchmark.cc)
+
+target_link_libraries(terminal_ui_kit_search_benchmark PRIVATE
+  TerminalUiKit::Search
+  TerminalUiKit::Components
+  benchmark::benchmark
+  ftxui::screen
+  ftxui::dom
+  ftxui::component)
+
+target_terminal_ui_kit_warnings(terminal_ui_kit_search_benchmark)
+
+add_executable(terminal_ui_kit_completion_popup_benchmark completion_popup_benchmark.cc)
+
+target_link_libraries(terminal_ui_kit_completion_popup_benchmark PRIVATE
+  TerminalUiKit::Components
+  benchmark::benchmark
+  ftxui::screen
+  ftxui::dom
+  ftxui::component)
+
+target_terminal_ui_kit_warnings(terminal_ui_kit_completion_popup_benchmark)
+
+add_executable(terminal_ui_kit_unified_diff_view_benchmark unified_diff_view_benchmark.cc)
+
+target_link_libraries(terminal_ui_kit_unified_diff_view_benchmark PRIVATE
+  TerminalUiKit::Components
+  TerminalUiKit::Diff
+  benchmark::benchmark
+  ftxui::screen
+  ftxui::dom
+  ftxui::component)
+
+target_terminal_ui_kit_warnings(terminal_ui_kit_unified_diff_view_benchmark)
+
+add_executable(terminal_ui_kit_multiline_editor_benchmark multiline_editor_benchmark.cc)
+
+target_link_libraries(terminal_ui_kit_multiline_editor_benchmark PRIVATE
+  TerminalUiKit::Editor
+  benchmark::benchmark
+  ftxui::screen
+  ftxui::dom
+  ftxui::component)
+
+target_terminal_ui_kit_warnings(terminal_ui_kit_multiline_editor_benchmark)
