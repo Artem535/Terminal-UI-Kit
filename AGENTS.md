@@ -21,8 +21,7 @@ For non-trivial work, write or update a design spec in
 `docs/superpowers/specs/` and a checkbox implementation plan in
 `docs/superpowers/plans/`. Follow the dependency order in PRD section 63:
 foundation/core, basic components, virtualization, streaming/logging, editor,
-Markdown, then diff and terminal integrations. Include an example application
-when the feature needs interactive verification.
+Markdown, then diff and terminal integrations.
 
 ## Build, Test, and Tooling
 
@@ -49,6 +48,21 @@ functions/locals, `snake_case_` private fields, `kPascalCase` constants, and
 `snake_case.h`/`.cc` files. Add focused GoogleTest coverage (`foo_test.cc`) for
 every behavior; rendering tests use virtual-screen helpers. Add a benchmark for
 large-data components.
+
+## Demo Apps
+
+Every task ends with a runnable demo app. Treat it as part of the deliverable,
+not a follow-up: the task is done when a human can launch an example and drive
+the new behavior themselves.
+
+- Add the example under `examples/` (`<name>_example.cpp`), or extend the
+  existing example that owns the behavior.
+- Exercise the new behavior end to end through the public API, including the
+  interactive flows and edge cases a user would hit.
+- Register it in `examples/CMakeLists.txt` and `examples/xmake.lua`, and list it
+  in `examples/README.md`.
+- Build it, run it (interactively in a PTY for interactive examples), and record
+  it in the plan's checklist and the PR verification notes.
 
 ## Commits and Pull Requests
 
