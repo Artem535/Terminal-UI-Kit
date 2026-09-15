@@ -37,12 +37,49 @@ Binaries are written under `build/examples/<name>/` with the prefix
 | `virtual_list_viewer/` | `terminal_ui_kit_example_virtual_list_viewer` | A virtualized 100,000-row list with variable row heights. | Yes |
 | `streaming_log_viewer/` | `terminal_ui_kit_example_streaming_log_viewer` | Live structured logs with ANSI styling. | Yes |
 | `virtual_document_viewer/` | `terminal_ui_kit_example_virtual_document_viewer` | An incrementally updated wrapped text document. | Yes |
+| `searchable_text_view_example/` | `terminal_ui_kit_example_searchable_text_view` | Literal/regex search over a document with highlighting and navigation. | Yes |
 | `diff_parser/` | `terminal_ui_kit_example_diff_parser` | Parses a unified diff from stdin and prints a plain-text summary. | No (stdin) |
 | `toast_example/` | `terminal_ui_kit_example_toast` | ToastManager / ToastView: timed and persistent notifications with a FIFO queue. | Yes |
 | `command_history_example/` | `terminal_ui_kit_example_command_history` | Bounded, navigable command history with search, persistence, and sensitive-command policy. | Yes |
 | `terminal_capabilities_example.cpp` | `terminal_ui_kit_example_terminal_capabilities` | Terminal-capability detection across presets. | Yes |
 | `markdown_viewer/` | `terminal_ui_kit_example_markdown_viewer` | Markdown rendering. Only built when `TERMINAL_UI_KIT_ENABLE_MARKDOWN=ON`. | Yes |
 | `line_number_formatting_example.cpp` | `terminal_ui_kit_example_line_number_formatting` | Right-aligned line-number gutters under configurable widths. | Yes |
+
+## searchable_text_view_example
+
+Demonstrates the reusable, searchable text view component
+(`terminal_ui_kit/components/searchable_text_view.h`) with a deterministic,
+sizeable sample document (repeated tokens plus UTF-8 Cyrillic lines):
+
+- literal and regular-expression search
+- case-sensitive / case-insensitive matching
+- incremental query updates while typing
+- previous/next match navigation with wrap-around
+- current-match index and total match count
+- invalid-regex and no-results states
+- UTF-8 source, unchanged; all visible matches highlighted, active match
+  in a distinct style
+- automatic scrolling to the active match; re-wrap on terminal resize
+
+Controls:
+
+| Key   | Action                            |
+|-------|-----------------------------------|
+| `/`   | Open search                       |
+| type  | Edit the query (incremental)      |
+| Enter | Apply the query / close prompt    |
+| `n`   | Next match                        |
+| `N`   | Previous match                    |
+| `c`   | Toggle case sensitivity           |
+| `r`   | Toggle regex mode                 |
+| Esc   | Close / cancel search             |
+| `q`   | **Quit** (documented exit key)    |
+
+Run it:
+
+```sh
+./build/examples/searchable_text_view_example/terminal_ui_kit_example_searchable_text_view
+```
 
 ## toast_example
 

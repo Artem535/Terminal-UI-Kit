@@ -15,6 +15,13 @@ set_languages("cxx20")
 
 local prefix = os.getenv("HOME") .. "/.local"
 
+target("terminal_ui_kit_example_searchable_text_view")
+    set_kind("binary")
+    add_files("searchable_text_view_example/main.cc")
+    add_includedirs("include", "../include", {public = true})
+    add_deps("terminal_ui_kit_components", "terminal_ui_kit_search")
+target_end()
+
 target("terminal_ui_kit_example_terminal_capabilities")
     set_kind("binary")
     add_deps("terminal_ui_kit_core")

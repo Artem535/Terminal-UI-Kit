@@ -71,6 +71,7 @@ add_library(terminal_ui_kit_components
   components/log_view.cc
   components/virtual_document.cc
   components/code_view.cc
+  components/searchable_text_view.cc
   components/toast_manager.cc
   components/toast_view.cc)
 add_library(TerminalUiKit::Components ALIAS terminal_ui_kit_components)
@@ -82,6 +83,7 @@ target_terminal_ui_kit_warnings(terminal_ui_kit_components)
 target_link_libraries(terminal_ui_kit_components PUBLIC
   terminal_ui_kit_core
   terminal_ui_kit_document
+  terminal_ui_kit_search
   ftxui::dom
   ftxui::component
   ftxui::screen)
@@ -107,6 +109,22 @@ target_compile_features(terminal_ui_kit_document PUBLIC cxx_std_20)
 target_terminal_ui_kit_warnings(terminal_ui_kit_document)
 target_link_libraries(terminal_ui_kit_document PUBLIC terminal_ui_kit_core)
 set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_document)
+
+# Search has real implementation sources (search_engine.cc), so it is a
+# compiled library rather than an INTERFACE target. It depends only on Core
+# and is independent of FTXUI so pure-data consumers and tests can link it
+# with no terminal backend.
+add_library(terminal_ui_kit_search
+  search/search_engine.cc)
+add_library(TerminalUiKit::Search ALIAS terminal_ui_kit_search)
+target_include_directories(terminal_ui_kit_search PUBLIC
+  $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>
+  $<INSTALL_INTERFACE:include>)
+target_compile_features(terminal_ui_kit_search PUBLIC cxx_std_20)
+target_terminal_ui_kit_warnings(terminal_ui_kit_search)
+target_link_libraries(terminal_ui_kit_search PUBLIC terminal_ui_kit_core)
+set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_search)
+
 # Editor has a real implementation source (editor/command_history.cc), so it
 # is a compiled library rather than an INTERFACE target. It depends only on
 # Core, keeping the command-history model independent of FTXUI and any
@@ -276,6 +294,7 @@ target_link_libraries(terminal_ui_kit_all INTERFACE
   terminal_ui_kit_core
   terminal_ui_kit_components
   terminal_ui_kit_document
+  terminal_ui_kit_search
   terminal_ui_kit_editor
   terminal_ui_kit_diff
   terminal_ui_kit_markdown
@@ -287,6 +306,7 @@ set(TERMINAL_UI_KIT_INSTALL_TARGETS
   terminal_ui_kit_core
   terminal_ui_kit_components
   terminal_ui_kit_document
+  terminal_ui_kit_search
   terminal_ui_kit_editor
   terminal_ui_kit_diff
   terminal_ui_kit_terminal
