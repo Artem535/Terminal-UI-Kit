@@ -33,3 +33,15 @@ target_link_libraries(terminal_ui_kit_completion_popup_benchmark PRIVATE
   ftxui::component)
 
 target_terminal_ui_kit_warnings(terminal_ui_kit_completion_popup_benchmark)
+
+add_executable(terminal_ui_kit_unified_diff_view_benchmark unified_diff_view_benchmark.cc)
+
+target_link_libraries(terminal_ui_kit_unified_diff_view_benchmark PRIVATE
+  TerminalUiKit::Components
+  TerminalUiKit::Diff
+  benchmark::benchmark
+  ftxui::screen
+  ftxui::dom
+  ftxui::component)
+
+target_terminal_ui_kit_warnings(terminal_ui_kit_unified_diff_view_benchmark)

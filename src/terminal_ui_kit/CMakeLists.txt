@@ -71,6 +71,7 @@ add_library(terminal_ui_kit_components
   components/log_view.cc
   components/virtual_document.cc
   components/code_view.cc
+  components/unified_diff_view.cc
   components/completion_popup.cc
   components/searchable_text_view.cc
   components/toast_manager.cc

@@ -242,3 +242,30 @@ Controls:
 | q         | quit                            |
 
 Exit by pressing `q`.
+
+## unified_diff_view
+
+`unified_diff_view_example.cpp` — an interactive viewer for the
+`UnifiedDiffView` component. It parses a unified diff with the canonical
+`UnifiedDiffParser` and displays it as a virtualized, scrolling diff view. All
+sample data is deterministic and self-contained (no network access).
+
+Scenarios (cycle with `Tab`): normal single-file diff, multi-file diff, new
+file, deleted file, binary file, multiple hunks, long lines, empty diff, and a
+~100,000-line diff.
+
+Controls:
+
+```text
+j/k or ↑↓   scroll / select a row
+n/N         next / previous hunk
+]/[         next / previous file
+Enter       collapse / expand the current file
+/           search (Enter cycles matches, Esc closes)
+y           copy the selected line's source text
+Tab         switch scenario
+q/Esc       quit
+```
+
+The status line reports `File X/Y · Hunk A/B · Visible rows C–D of N`. The view
+is virtualized, so the 100,000-line scenario stays responsive.
