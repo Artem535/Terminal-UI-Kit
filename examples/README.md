@@ -1,22 +1,49 @@
-# Example applications
+# Examples
 
-Standalone runnable demos of the library's components. Each example is a
-separate executable and demonstrates only the public API of the component it
-exercises.
+Terminal UI Kit ships focused example applications that demonstrate individual
+components in isolation (PRD section 54). Each example lives in its own
+subdirectory and is a standalone `add_executable` target; each is registered
+in [`CMakeLists.txt`](CMakeLists.txt) and built as part of the `examples`
+CMake subtarget.
 
-| Example | Executable | Demonstrates |
-| --- | --- | --- |
-| `theme_viewer` | `terminal_ui_kit_example_theme_viewer` | Theme roles, light/dark |
-| `components_gallery` | `terminal_ui_kit_example_components_gallery` | Component gallery |
-| `progress_viewer` | `terminal_ui_kit_example_progress_viewer` | Progress bars / tree |
-| `task_dashboard` | `terminal_ui_kit_example_task_dashboard` | ProgressTree dashboard |
-| `virtual_list_viewer` | `terminal_ui_kit_example_virtual_list_viewer` | VirtualList |
-| `streaming_log_viewer` | `terminal_ui_kit_example_streaming_log_viewer` | StreamingDocument / LogModel |
-| `virtual_document_viewer` | `terminal_ui_kit_example_virtual_document_viewer` | VirtualDocument |
-| `diff_parser` | `terminal_ui_kit_example_diff_parser` | UnifiedDiffParser |
-| `toast_example` | `terminal_ui_kit_example_toast` | ToastManager / ToastView |
+The examples are interactive terminal applications built on FTXUI, with two
+exceptions noted below. Quit an interactive example by pressing the `q` key
+(or the key shown in its on-screen controls). Examples require no network
+access and use only deterministic, built-in sample data.
 
-## `toast_example`
+## Building
+
+Examples are built when `TERMINAL_UI_KIT_BUILD_EXAMPLES` is enabled:
+
+```sh
+cmake -S . -B build \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DTERMINAL_UI_KIT_BUILD_EXAMPLES=ON \
+  -DTERMINAL_UI_KIT_BUILD_TESTS=ON
+cmake --build build --parallel
+```
+
+Binaries are written under `build/examples/<name>/` with the prefix
+`terminal_ui_kit_example_`.
+
+## List of examples
+
+| Directory | Executable | Description | Interactive |
+| --- | --- | --- | --- |
+| `components_gallery/` | `terminal_ui_kit_example_components_gallery` | Status components, panels, modals, themes, and code rendering. | Yes |
+| `theme_viewer/` | `terminal_ui_kit_example_theme_viewer` | Semantic theme roles (`default_dark_theme`, `default_light_theme`). | Yes |
+| `progress_viewer/` | `terminal_ui_kit_example_progress_viewer` | Determinate and indeterminate progress. | Yes |
+| `task_dashboard/` | `terminal_ui_kit_example_task_dashboard` | Hierarchical task state (ProgressTree / TaskList). | Yes |
+| `virtual_list_viewer/` | `terminal_ui_kit_example_virtual_list_viewer` | A virtualized 100,000-row list with variable row heights. | Yes |
+| `streaming_log_viewer/` | `terminal_ui_kit_example_streaming_log_viewer` | Live structured logs with ANSI styling. | Yes |
+| `virtual_document_viewer/` | `terminal_ui_kit_example_virtual_document_viewer` | An incrementally updated wrapped text document. | Yes |
+| `diff_parser/` | `terminal_ui_kit_example_diff_parser` | Parses a unified diff from stdin and prints a plain-text summary. | No (stdin) |
+| `toast_example/` | `terminal_ui_kit_example_toast` | ToastManager / ToastView: timed and persistent notifications with a FIFO queue. | Yes |
+| `command_history_example/` | `terminal_ui_kit_example_command_history` | Bounded, navigable command history with search, persistence, and sensitive-command policy. | Yes |
+| `markdown_viewer/` | `terminal_ui_kit_example_markdown_viewer` | Markdown rendering. Only built when `TERMINAL_UI_KIT_ENABLE_MARKDOWN=ON`. | Yes |
+| `line_number_formatting_example.cpp` | `terminal_ui_kit_example_line_number_formatting` | Right-aligned line-number gutters under configurable widths. | Yes |
+
+## toast_example
 
 Interactive toast system demo: timed + persistent notifications, a FIFO queue
 with a configurable visible-count limit, optional action callbacks, keyboard
@@ -25,8 +52,7 @@ focus with a timeout pause while focused, and a no-color fallback.
 Run it with:
 
 ```sh
-cmake --preset debug --build examples
-./build/debug/examples/toast_example/terminal_ui_kit_example_toast
+./build/examples/toast_example/terminal_ui_kit_example_toast
 ```
 
 Controls:
@@ -51,3 +77,69 @@ Timed toasts show a live countdown and drain automatically under the running
 `ScreenInteractive` loop; the focused toast's timeout is paused while it stays
 focused. Exceed `max_visible` to see queueing first-in/first-out. Quit with `q`
 or `Esc`.
+
+## command_history_example
+
+A bounded, navigable `CommandHistory` model for input and editor components.
+The demo drives a small `CommandHistory` (capacity 8) through its public API:
+
+- adding commands (and watching empty / whitespace-only / consecutive-duplicate
+  input get ignored);
+- `Up` / `Down` navigation over previous and next entries;
+- substring search (a left panel) and prefix search (a right panel), both
+  showing the most-recent-first ordering;
+- current history size and capacity, including capacity eviction of the oldest
+  command once the bound is reached;
+- clearing the history;
+- toggling sensitive mode, which blocks `secret` and `password` from reaching
+  the attached persistence store (they stay in memory); the on-screen
+  "Persisted" counter stops increasing for those commands.
+
+A counting store is attached to prove that persistence activity (and its
+suppression for sensitive commands) really happens.
+
+Run it:
+
+```sh
+./build/examples/command_history_example/terminal_ui_kit_example_command_history
+```
+
+Controls:
+
+| Key | Action |
+| --- | --- |
+| `Enter` | Add the typed command to history |
+| `Up` / `Down` | Navigate previous / next history entries |
+| `c` | Clear history (when the command box is not focused) |
+| `t` | Toggle sensitive mode (when the command box is not focused) |
+| `q` | Quit (when the command box is not focused) |
+| `Esc` | Quit (from anywhere) |
+| `Tab` | Move focus between the command and search inputs |
+
+The single-letter hotkeys are gated on the command box not being focused so
+that typing a command containing `c`, `t` or `q` is never swallowed.
+
+The underlying model is tested independently of the terminal in
+`tests/terminal_ui_kit/unit/command_history_test.cc`, which covers navigation
+boundaries, capacity eviction, duplicate filtering, search ordering, capacity
+`0`, persistence failure, and sensitive-command persistence suppression.
+
+## line_number_formatting_example
+
+Demonstrates the shared line-number gutter helper and both gutter-rendering
+components. It shows the required document (lines 1, 9, 99, 9999, 10000,
+99999, 100000) and lets you switch gutter widths to confirm that:
+
+- short numbers stay right-aligned;
+- numbers wider than the gutter render fully (never clipped);
+- no underflow produces enormous padding;
+- rendering stays correct after a terminal resize.
+
+Controls: `+`/`-` change gutter width, `c` toggles CodeView/VirtualDocument,
+`q`/`Esc` quits.
+
+Run it:
+
+```sh
+./build/examples/terminal_ui_kit_example_line_number_formatting
+```

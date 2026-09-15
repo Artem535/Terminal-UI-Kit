@@ -40,7 +40,7 @@ endfunction()
 # Core has real implementation sources (text_wrap.cc), so it is a compiled
 # library rather than an INTERFACE target like the still-header-only
 # modules below.
-add_library(terminal_ui_kit_core core/text_wrap.cc core/selection.cc theme/theme.cc)
+add_library(terminal_ui_kit_core core/text_wrap.cc core/selection.cc core/line_number.cc theme/theme.cc)
 add_library(TerminalUiKit::Core ALIAS terminal_ui_kit_core)
 target_include_directories(terminal_ui_kit_core PUBLIC
   $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>
@@ -107,10 +107,21 @@ target_compile_features(terminal_ui_kit_document PUBLIC cxx_std_20)
 target_terminal_ui_kit_warnings(terminal_ui_kit_document)
 target_link_libraries(terminal_ui_kit_document PUBLIC terminal_ui_kit_core)
 set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_document)
-_terminal_ui_kit_add_module(editor)
-_terminal_ui_kit_add_module(terminal)
+# Editor has a real implementation source (editor/command_history.cc), so it
+# is a compiled library rather than an INTERFACE target. It depends only on
+# Core, keeping the command-history model independent of FTXUI and any
+# terminal backend so pure-data consumers and tests can link it with no FTXUI.
+add_library(terminal_ui_kit_editor editor/command_history.cc)
+add_library(TerminalUiKit::Editor ALIAS terminal_ui_kit_editor)
+target_include_directories(terminal_ui_kit_editor PUBLIC
+  $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>
+  $<INSTALL_INTERFACE:include>)
+target_compile_features(terminal_ui_kit_editor PUBLIC cxx_std_20)
+target_terminal_ui_kit_warnings(terminal_ui_kit_editor)
+target_link_libraries(terminal_ui_kit_editor PUBLIC terminal_ui_kit_core)
+set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_editor)
 
-target_link_libraries(terminal_ui_kit_editor INTERFACE terminal_ui_kit_document)
+_terminal_ui_kit_add_module(terminal)
 
 # Diff has real implementation sources (unified_diff_parser.cc), so it is a
 # compiled library rather than an INTERFACE target. It depends only on Core
