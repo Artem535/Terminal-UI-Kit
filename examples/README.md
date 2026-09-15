@@ -171,8 +171,8 @@ boundaries, capacity eviction, duplicate filtering, search ordering, capacity
 An interactive FTXUI demo of the `TerminalUiKit::Terminal` module
 (`terminal_ui_kit/terminal/*.h`). It renders a table of detected capabilities —
 color depth, Unicode, mouse, bracketed paste, hyperlinks, OSC 52, Kitty
-graphics, Sixel, iTerm images, alternate screen, tmux, screen, SSH, and terminal
-identity — and lets you switch between environments:
+graphics, Sixel, iTerm images, alternate screen, tmux, screen, SSH, columns,
+lines, and terminal identity — and lets you switch between environments:
 
 | Key | Scenario |
 | --- | -------- |
@@ -182,13 +182,15 @@ identity — and lets you switch between environments:
 | `4` | iTerm2 preset |
 | `5` | tmux over SSH |
 | `6` | Unknown terminal |
-| `7` | Custom `CapabilityOverrides` scenario |
+| `7` | Custom `CapabilityOverrides` scenario (includes a forced 100x30 size) |
 | `q` | Quit |
 
 The example uses only the public Terminal module API; synthetic environments are
 supplied through an in-file `EnvironmentProvider` implementation and explicit
 `CapabilityOverrides`, so every non-live scenario is fully deterministic. The
-layout is an ordinary FTXUI tree and reflows on terminal resize.
+Kitty preset reports a 120x40 size from `COLUMNS`/`LINES`; scenarios without
+those variables show `(unknown)`. The layout is an ordinary FTXUI tree and
+reflows on terminal resize.
 
 Run it:
 

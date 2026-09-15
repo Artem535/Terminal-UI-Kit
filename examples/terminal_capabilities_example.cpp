@@ -3,8 +3,8 @@
 // Interactive FTXUI demo of the terminal-capability model in
 // terminal_ui_kit/terminal. It renders a capability table (color depth,
 // unicode, mouse, bracketed paste, hyperlinks, OSC 52, kitty graphics, sixel,
-// iTerm images, alternate screen, tmux, screen, SSH, and terminal identity)
-// for a selectable scenario.
+// iTerm images, alternate screen, tmux, screen, SSH, columns, lines, and
+// terminal identity) for a selectable scenario.
 //
 // The example uses only the public Terminal module API. It does not detect the
 // running terminal at runtime by querying it; instead it computes capabilities
@@ -85,6 +85,8 @@ CapabilityOverrides CustomOverrides() {
   overrides.unicode = false;  // explicit disable, beats the detected default
   overrides.sixel = true;     // explicit enable on an otherwise-unset program
   overrides.osc52 = false;    // explicit disable
+  overrides.columns = 100;    // explicit size, beats COLUMNS/LINES detection
+  overrides.lines = 30;
   return overrides;
 }
 
@@ -94,7 +96,11 @@ const std::vector<Scenario>& Scenarios() {
       {"TERM=dumb", false, {{"TERM", "dumb"}}, {}},
       {"Kitty",
        false,
-       {{"TERM", "xterm-kitty"}, {"TERM_PROGRAM", "kitty"}, {"COLORTERM", "truecolor"}},
+       {{"TERM", "xterm-kitty"},
+        {"TERM_PROGRAM", "kitty"},
+        {"COLORTERM", "truecolor"},
+        {"COLUMNS", "120"},
+        {"LINES", "40"}},
        {}},
       {"iTerm2",
        false,
@@ -125,6 +131,9 @@ std::unique_ptr<EnvironmentProvider> BuildProvider(const Scenario& scenario) {
 
 std::string YesNo(bool value) { return value ? "yes" : "no"; }
 
+// A dimension of 0 means "unknown" (no usable COLUMNS/LINES signal).
+std::string Dimension(int value) { return value > 0 ? std::to_string(value) : "(unknown)"; }
+
 // A single table row: left-aligned label, then the value.
 ftxui::Element Row(const std::string& label, const std::string& value) {
   return ftxui::hbox({
@@ -149,6 +158,8 @@ ftxui::Element CapabilityTable(const TerminalCapabilities& caps) {
   rows.push_back(Row("tmux", YesNo(caps.tmux)));
   rows.push_back(Row("screen", YesNo(caps.screen)));
   rows.push_back(Row("SSH", YesNo(caps.ssh)));
+  rows.push_back(Row("Columns", Dimension(caps.columns)));
+  rows.push_back(Row("Lines", Dimension(caps.lines)));
   rows.push_back(
       Row("Terminal identity", caps.terminal_identity.empty() ? "(none)" : caps.terminal_identity));
   return ftxui::vbox(std::move(rows));
@@ -187,6 +198,12 @@ ftxui::Element OverridesSummary(const CapabilityOverrides& overrides) {
   push("tmux", overrides.tmux);
   push("screen", overrides.screen);
   push("ssh", overrides.ssh);
+  if (overrides.columns.has_value()) {
+    lines.push_back(Row("  override columns", Dimension(*overrides.columns)));
+  }
+  if (overrides.lines.has_value()) {
+    lines.push_back(Row("  override lines", Dimension(*overrides.lines)));
+  }
   if (overrides.terminal_identity.has_value()) {
     lines.push_back(Row("  override terminal_identity", *overrides.terminal_identity));
   }
