@@ -12,7 +12,12 @@ add_executable(terminal_ui_kit_rendering_tests
   modal_stack_test.cc
   log_view_test.cc
   virtual_document_test.cc
-  unified_diff_view_test.cc)
+  unified_diff_view_test.cc
+  completion_popup_test.cc
+  searchable_text_view_test.cc
+  toast_manager_test.cc
+  toast_view_test.cc
+  code_view_test.cc)
 
 if(TERMINAL_UI_KIT_ENABLE_MARKDOWN)
   target_sources(terminal_ui_kit_rendering_tests PRIVATE markdown_view_test.cc)
