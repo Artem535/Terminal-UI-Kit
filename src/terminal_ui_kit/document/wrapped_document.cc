@@ -79,8 +79,7 @@ void WrappedDocument::wrap_logical_line(const std::string& logical, std::size_t 
     return;
   }
   for (std::size_t sub = 0; sub < wrapped.size(); ++sub) {
-    lines_.push_back(
-        {std::move(wrapped[sub].first), logical_index, sub, wrapped[sub].second});
+    lines_.push_back({std::move(wrapped[sub].first), logical_index, sub, wrapped[sub].second});
   }
 }
 

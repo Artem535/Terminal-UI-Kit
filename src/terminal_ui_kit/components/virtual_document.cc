@@ -140,24 +140,19 @@ class VirtualDocumentImpl {
       std::size_t seg_start = line.byte_offset;
       std::size_t seg_end = seg_start + display_text.size();
 
-      if (line.logical_line == sel.start.line &&
-          line.logical_line == sel.end.line) {
+      if (line.logical_line == sel.start.line && line.logical_line == sel.end.line) {
         // Selection on same logical line - may affect this display segment
         if (sel.end.column <= seg_start || sel.start.column >= seg_end) {
           parts.push_back(ftxui::text(display_text));
         } else {
-          std::size_t split_a = (sel.start.column > seg_start)
-                                    ? sel.start.column - seg_start
-                                    : 0;
-          std::size_t split_b = (sel.end.column < seg_end)
-                                    ? sel.end.column - seg_start
-                                    : display_text.size();
+          std::size_t split_a = (sel.start.column > seg_start) ? sel.start.column - seg_start : 0;
+          std::size_t split_b =
+              (sel.end.column < seg_end) ? sel.end.column - seg_start : display_text.size();
           if (split_a > 0) {
             parts.push_back(ftxui::text(display_text.substr(0, split_a)));
           }
-          parts.push_back(
-              ftxui::text(display_text.substr(split_a, split_b - split_a)) |
-              ftxui::inverted);
+          parts.push_back(ftxui::text(display_text.substr(split_a, split_b - split_a)) |
+                          ftxui::inverted);
           if (split_b < display_text.size()) {
             parts.push_back(ftxui::text(display_text.substr(split_b)));
           }
@@ -167,8 +162,7 @@ class VirtualDocumentImpl {
         if (sel.start.column > seg_start && sel.start.column < seg_end) {
           std::size_t split = sel.start.column - seg_start;
           parts.push_back(ftxui::text(display_text.substr(0, split)));
-          parts.push_back(ftxui::text(display_text.substr(split)) |
-                          ftxui::inverted);
+          parts.push_back(ftxui::text(display_text.substr(split)) | ftxui::inverted);
         } else if (sel.start.column <= seg_start) {
           parts.push_back(ftxui::text(display_text) | ftxui::inverted);
         } else {
@@ -178,16 +172,14 @@ class VirtualDocumentImpl {
         // This line contains the end of selection
         if (sel.end.column > seg_start && sel.end.column < seg_end) {
           std::size_t split = sel.end.column - seg_start;
-          parts.push_back(ftxui::text(display_text.substr(0, split)) |
-                          ftxui::inverted);
+          parts.push_back(ftxui::text(display_text.substr(0, split)) | ftxui::inverted);
           parts.push_back(ftxui::text(display_text.substr(split)));
         } else if (sel.end.column <= seg_start) {
           parts.push_back(ftxui::text(display_text));
         } else {
           parts.push_back(ftxui::text(display_text) | ftxui::inverted);
         }
-      } else if (line.logical_line > sel.start.line &&
-                 line.logical_line < sel.end.line) {
+      } else if (line.logical_line > sel.start.line && line.logical_line < sel.end.line) {
         parts.push_back(ftxui::text(display_text) | ftxui::inverted);
       } else {
         parts.push_back(ftxui::text(display_text));

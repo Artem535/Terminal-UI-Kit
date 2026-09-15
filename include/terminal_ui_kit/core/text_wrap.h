@@ -22,7 +22,6 @@ using WrappedSegment = std::pair<std::string, std::size_t>;
 
 // Like wrap_plain_text but also returns the byte offset of each wrapped
 // segment within the original source text.
-std::vector<WrappedSegment> wrap_plain_text_with_offsets(
-    std::string_view text, int width);
+std::vector<WrappedSegment> wrap_plain_text_with_offsets(std::string_view text, int width);
 
 }  // namespace terminal_ui_kit

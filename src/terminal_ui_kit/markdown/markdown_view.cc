@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 
-#include <cmark-gfm.h>
 #include <ftxui/component/component.hpp>
 #include <ftxui/dom/elements.hpp>
 
@@ -12,6 +11,7 @@
 #include "terminal_ui_kit/components/style_bridge.h"
 #include "terminal_ui_kit/markdown/markdown_document.h"
 #include "terminal_ui_kit/theme/theme.h"
+#include <cmark-gfm.h>
 
 namespace terminal_ui_kit {
 namespace {
@@ -22,8 +22,7 @@ ftxui::Element render_node(cmark_node* node, const Theme& theme,
 ftxui::Element render_children(cmark_node* node, const Theme& theme,
                                std::function<void(std::string)> on_link) {
   ftxui::Elements elements;
-  for (cmark_node* child = cmark_node_first_child(node); child;
-       child = cmark_node_next(child)) {
+  for (cmark_node* child = cmark_node_first_child(node); child; child = cmark_node_next(child)) {
     elements.push_back(render_node(child, theme, on_link));
   }
   return ftxui::vbox(std::move(elements));
@@ -32,8 +31,7 @@ ftxui::Element render_children(cmark_node* node, const Theme& theme,
 ftxui::Elements collect_inline(cmark_node* node, const Theme& theme,
                                std::function<void(std::string)> on_link) {
   ftxui::Elements parts;
-  for (cmark_node* child = cmark_node_first_child(node); child;
-       child = cmark_node_next(child)) {
+  for (cmark_node* child = cmark_node_first_child(node); child; child = cmark_node_next(child)) {
     cmark_node_type type = cmark_node_get_type(child);
     const char* literal = cmark_node_get_literal(child);
 
@@ -53,15 +51,13 @@ ftxui::Elements collect_inline(cmark_node* node, const Theme& theme,
         }
         break;
       case CMARK_NODE_EMPH:
-        for (cmark_node* gc = cmark_node_first_child(child); gc;
-             gc = cmark_node_next(gc)) {
+        for (cmark_node* gc = cmark_node_first_child(child); gc; gc = cmark_node_next(gc)) {
           const char* t = cmark_node_get_literal(gc);
           if (t) parts.push_back(ftxui::text(t) | ftxui::dim);
         }
         break;
       case CMARK_NODE_STRONG:
-        for (cmark_node* gc = cmark_node_first_child(child); gc;
-             gc = cmark_node_next(gc)) {
+        for (cmark_node* gc = cmark_node_first_child(child); gc; gc = cmark_node_next(gc)) {
           const char* t = cmark_node_get_literal(gc);
           if (t) parts.push_back(ftxui::text(t) | ftxui::bold);
         }
@@ -69,8 +65,7 @@ ftxui::Elements collect_inline(cmark_node* node, const Theme& theme,
       case CMARK_NODE_LINK: {
         const char* url = cmark_node_get_url(child);
         ftxui::Elements link_parts;
-        for (cmark_node* gc = cmark_node_first_child(child); gc;
-             gc = cmark_node_next(gc)) {
+        for (cmark_node* gc = cmark_node_first_child(child); gc; gc = cmark_node_next(gc)) {
           const char* t = cmark_node_get_literal(gc);
           if (t) link_parts.push_back(ftxui::text(t));
         }
@@ -112,8 +107,8 @@ ftxui::Element render_node(cmark_node* node, const Theme& theme,
 
     case CMARK_NODE_BLOCK_QUOTE:
       return ftxui::hbox({
-        ftxui::text(" ") | ftxui::dim,
-        render_children(node, theme, on_link),
+          ftxui::text(" ") | ftxui::dim,
+          render_children(node, theme, on_link),
       });
 
     case CMARK_NODE_LIST: {
@@ -123,12 +118,11 @@ ftxui::Element render_node(cmark_node* node, const Theme& theme,
       for (cmark_node* child = cmark_node_first_child(node); child;
            child = cmark_node_next(child)) {
         if (cmark_node_get_type(child) != CMARK_NODE_ITEM) continue;
-        std::string bullet = (list_type == CMARK_ORDERED_LIST)
-                                 ? std::to_string(index++) + ". "
-                                 : "- ";
+        std::string bullet =
+            (list_type == CMARK_ORDERED_LIST) ? std::to_string(index++) + ". " : "- ";
         items.push_back(ftxui::hbox({
-          ftxui::text(bullet),
-          render_children(child, theme, on_link),
+            ftxui::text(bullet),
+            render_children(child, theme, on_link),
         }));
       }
       return ftxui::vbox(std::move(items));
@@ -155,9 +149,8 @@ ftxui::Element render_node(cmark_node* node, const Theme& theme,
 
 }  // namespace
 
-ftxui::Component MarkdownView(
-    std::shared_ptr<MarkdownDocument> document,
-    MarkdownViewOptions options) {
+ftxui::Component MarkdownView(std::shared_ptr<MarkdownDocument> document,
+                              MarkdownViewOptions options) {
   return ftxui::Renderer([document, options] {
     if (!document || !document->root()) {
       return ftxui::text("");

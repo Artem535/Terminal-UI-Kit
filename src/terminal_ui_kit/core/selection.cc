@@ -10,9 +10,7 @@ void SelectionManager::start(TextPosition pos) {
   selecting_ = true;
 }
 
-void SelectionManager::extend_to(TextPosition pos) {
-  active_ = pos;
-}
+void SelectionManager::extend_to(TextPosition pos) { active_ = pos; }
 
 void SelectionManager::clear() {
   anchor_.reset();
@@ -21,8 +19,7 @@ void SelectionManager::clear() {
 }
 
 bool SelectionManager::has_selection() const {
-  return selecting_ && anchor_.has_value() && active_.has_value() &&
-         anchor_ != active_;
+  return selecting_ && anchor_.has_value() && active_.has_value() && anchor_ != active_;
 }
 
 TextRange SelectionManager::range() const {
@@ -39,12 +36,9 @@ TextRange SelectionManager::range() const {
   return r;
 }
 
-bool SelectionManager::is_selecting() const {
-  return selecting_;
-}
+bool SelectionManager::is_selecting() const { return selecting_; }
 
-std::string SelectionManager::selected_text(
-    const StreamingDocument& doc) const {
+std::string SelectionManager::selected_text(const StreamingDocument& doc) const {
   if (!has_selection()) {
     return {};
   }

@@ -94,8 +94,7 @@ std::vector<std::string> wrap_plain_text(std::string_view text, int width) {
   return lines;
 }
 
-std::vector<WrappedSegment> wrap_plain_text_with_offsets(
-    std::string_view text, int width) {
+std::vector<WrappedSegment> wrap_plain_text_with_offsets(std::string_view text, int width) {
   width = std::max(width, 1);
 
   std::vector<std::string_view> codepoints = split_into_codepoints(text);
