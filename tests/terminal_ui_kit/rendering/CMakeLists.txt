@@ -12,6 +12,7 @@ add_executable(terminal_ui_kit_rendering_tests
   modal_stack_test.cc
   log_view_test.cc
   virtual_document_test.cc
+  multiline_editor_test.cc
   unified_diff_view_test.cc
   completion_popup_test.cc
   searchable_text_view_test.cc
@@ -27,6 +28,7 @@ target_link_libraries(terminal_ui_kit_rendering_tests PRIVATE
   TerminalUiKit::Testing
   TerminalUiKit::Components
   TerminalUiKit::Document
+  TerminalUiKit::Editor
   TerminalUiKit::Diff
   GTest::gtest_main)
 

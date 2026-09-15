@@ -65,3 +65,14 @@ target("terminal_ui_kit_example_unified_diff_view")
     add_deps("terminal_ui_kit_components", "terminal_ui_kit_diff")
     add_links("ftxui-component", "ftxui-dom", "ftxui-screen")
 target_end()
+
+target("terminal_ui_kit_example_multiline_editor")
+    set_kind("binary")
+    add_files(
+        "multiline_editor/main.cc",
+        "../src/terminal_ui_kit/editor/editor_document.cc",
+        "../src/terminal_ui_kit/editor/command_history.cc",
+        "../src/terminal_ui_kit/editor/multiline_editor.cc")
+    add_includedirs("include", "../include", {public = true})
+    set_languages("cxx20")
+target_end()

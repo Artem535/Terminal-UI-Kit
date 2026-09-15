@@ -45,3 +45,14 @@ target_link_libraries(terminal_ui_kit_unified_diff_view_benchmark PRIVATE
   ftxui::component)
 
 target_terminal_ui_kit_warnings(terminal_ui_kit_unified_diff_view_benchmark)
+
+add_executable(terminal_ui_kit_multiline_editor_benchmark multiline_editor_benchmark.cc)
+
+target_link_libraries(terminal_ui_kit_multiline_editor_benchmark PRIVATE
+  TerminalUiKit::Editor
+  benchmark::benchmark
+  ftxui::screen
+  ftxui::dom
+  ftxui::component)
+
+target_terminal_ui_kit_warnings(terminal_ui_kit_multiline_editor_benchmark)

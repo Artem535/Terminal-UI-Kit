@@ -127,18 +127,28 @@ target_terminal_ui_kit_warnings(terminal_ui_kit_search)
 target_link_libraries(terminal_ui_kit_search PUBLIC terminal_ui_kit_core)
 set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_search)
 
-# Editor has a real implementation source (editor/command_history.cc), so it
-# is a compiled library rather than an INTERFACE target. It depends only on
-# Core, keeping the command-history model independent of FTXUI and any
-# terminal backend so pure-data consumers and tests can link it with no FTXUI.
-add_library(terminal_ui_kit_editor editor/command_history.cc)
+
+# Editor has real implementation sources (editor_document.cc, command_history.cc,
+# multiline_editor.cc). The model (EditorDocument) and history (CommandHistory)
+# are terminal-agnostic; multiline_editor.cc is the FTXUI view, so the module
+# links FTXUI (Components already requires it).
+terminal_ui_kit_require_ftxui()
+add_library(terminal_ui_kit_editor
+  editor/editor_document.cc
+  editor/command_history.cc
+  editor/multiline_editor.cc)
 add_library(TerminalUiKit::Editor ALIAS terminal_ui_kit_editor)
 target_include_directories(terminal_ui_kit_editor PUBLIC
   $<BUILD_INTERFACE:${_terminal_ui_kit_include_dir}>
   $<INSTALL_INTERFACE:include>)
 target_compile_features(terminal_ui_kit_editor PUBLIC cxx_std_20)
 target_terminal_ui_kit_warnings(terminal_ui_kit_editor)
-target_link_libraries(terminal_ui_kit_editor PUBLIC terminal_ui_kit_core)
+target_link_libraries(terminal_ui_kit_editor PUBLIC
+  terminal_ui_kit_core
+  terminal_ui_kit_document
+  ftxui::dom
+  ftxui::component
+  ftxui::screen)
 set_property(GLOBAL APPEND PROPERTY TERMINAL_UI_KIT_MODULE_TARGETS terminal_ui_kit_editor)
 
 # Terminal has real implementation sources (capabilities, environment,
