@@ -15,3 +15,12 @@ add_subdirectory(diff_parser)
 if(TERMINAL_UI_KIT_ENABLE_MARKDOWN)
   add_subdirectory(markdown_viewer)
 endif()
+
+# Standalone example demonstrating the line-number gutter formatting fix
+# (single-file example kept at the examples/ root).
+add_executable(terminal_ui_kit_example_line_number_formatting
+  line_number_formatting_example.cpp)
+target_link_libraries(terminal_ui_kit_example_line_number_formatting PRIVATE
+  TerminalUiKit::Core
+  TerminalUiKit::Components)
+target_terminal_ui_kit_warnings(terminal_ui_kit_example_line_number_formatting)
