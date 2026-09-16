@@ -69,12 +69,28 @@ struct TerminalCapabilities {
   bool tmux = false;
   bool screen = false;
   bool ssh = false;
+  int columns = 0;  // character cells; 0 == unknown
+  int lines = 0;    // character cells; 0 == unknown
   std::string terminal_identity;
 };
 ```
 
 A default-constructed snapshot is fully conservative (nothing enabled, no color,
-empty identity) and is therefore safe as an "unknown" fallback.
+zero dimensions, empty identity) and is therefore safe as an "unknown" fallback.
+
+### Terminal dimensions
+
+The snapshot carries the terminal size in character cells as `columns` and
+`lines`. Detection reads the `COLUMNS` and `LINES` environment variables, which
+keeps the model purely environment-driven and platform-neutral (no `ioctl`,
+no FTXUI dependency, no runtime terminal query).
+
+`0` is the sentinel for "unknown": the variable was absent, empty, non-numeric,
+zero, or negative. Callers must treat `0` as "size not known" rather than a real
+zero-sized terminal. Surrounding ASCII whitespace is tolerated; an over-long
+digit run saturates at `INT_MAX` instead of overflowing. Because shells do not
+always export `COLUMNS`/`LINES`, applications that need the live size should
+query their terminal layer (e.g. FTXUI) or set an explicit override.
 
 ### Environment access
 
@@ -102,6 +118,7 @@ Signals read by `DetectTerminalCapabilities`:
 | `TMUX` | Present and non-empty => running under tmux. |
 | `STY` | Present and non-empty => running under GNU screen. |
 | `SSH_CONNECTION` / `SSH_CLIENT` / `SSH_TTY` | Any present and non-empty => SSH session. |
+| `COLUMNS` / `LINES` | Terminal size in character cells; malformed or non-positive => `0` (unknown). |
 
 Precedence (highest to lowest):
 
@@ -137,7 +154,8 @@ handled, documented path (returns `false`, `major=minor=0`).
 
 ### User overrides
 
-`CapabilityOverrides` holds one `std::optional` per capability plus
+`CapabilityOverrides` holds one `std::optional` per capability (including
+`std::optional<int> columns` / `lines`) plus
 `std::optional<std::string> terminal_identity`. An engaged override wins over
 the detected value; a disengaged one leaves detection intact. This gives both
 "explicit enable override" and "explicit disable override" with a single
@@ -161,7 +179,9 @@ list: empty env, `TERM=dumb`, unknown terminal, 16/256/truecolor, Unicode,
 Kitty, iTerm2, Sixel, OSC 52, hyperlinks, tmux, GNU screen, SSH, tmux-over-SSH,
 explicit enable/disable overrides, conflicting variables, `NO_COLOR` without
 disabling unrelated capabilities, unknown `TERM_PROGRAM`, missing variables,
-malformed version strings, nested tmux/SSH, and stable terminal identity.
+malformed version strings, nested tmux/SSH, stable terminal identity, and
+terminal dimensions (present, absent, empty, non-numeric, zero, negative,
+whitespace-padded, over-long, and overridden).
 
 The capabilities model is pure data with no view, so dedicated rendering or
 interaction *tests* do not apply to the library itself; interactive verification
@@ -172,7 +192,7 @@ is provided by the runnable example (see below).
 `examples/terminal_capabilities_example.cpp`, a separate FTXUI executable that:
 - renders a capability table (color depth, unicode, mouse, bracketed paste,
   hyperlinks, OSC 52, Kitty graphics, Sixel, iTerm images, alternate screen,
-  tmux, screen, SSH, terminal identity);
+  tmux, screen, SSH, columns, lines, terminal identity);
 - switches among seven scenarios with `1`..`7`: real environment, `TERM=dumb`,
   Kitty preset, iTerm2 preset, tmux over SSH, unknown terminal, and a custom
   override;

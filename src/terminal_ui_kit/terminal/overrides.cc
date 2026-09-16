@@ -23,6 +23,8 @@ TerminalCapabilities ApplyOverrides(const TerminalCapabilities& caps,
   if (overrides.tmux.has_value()) result.tmux = *overrides.tmux;
   if (overrides.screen.has_value()) result.screen = *overrides.screen;
   if (overrides.ssh.has_value()) result.ssh = *overrides.ssh;
+  if (overrides.columns.has_value()) result.columns = *overrides.columns;
+  if (overrides.lines.has_value()) result.lines = *overrides.lines;
   if (overrides.terminal_identity.has_value()) {
     result.terminal_identity = *overrides.terminal_identity;
   }

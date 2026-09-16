@@ -60,6 +60,8 @@ TEST(TerminalCapabilities, EmptyEnvironmentIsConservative) {
   EXPECT_FALSE(caps.tmux);
   EXPECT_FALSE(caps.screen);
   EXPECT_FALSE(caps.ssh);
+  EXPECT_EQ(caps.columns, 0);
+  EXPECT_EQ(caps.lines, 0);
   EXPECT_TRUE(caps.terminal_identity.empty());
 }
 
@@ -413,6 +415,65 @@ TEST(TerminalCapabilities, IdentityIsStableAcrossDetections) {
 }
 
 // ---------------------------------------------------------------------------
+// Terminal dimensions
+// ---------------------------------------------------------------------------
+
+TEST(TerminalCapabilities, DimensionsAbsentMeansUnknown) {
+  const TerminalCapabilities caps = Detect(RealTerm());
+  EXPECT_EQ(caps.columns, 0);
+  EXPECT_EQ(caps.lines, 0);
+}
+
+TEST(TerminalCapabilities, DimensionsParsedFromEnvironment) {
+  FakeEnvironment env = RealTerm();
+  env.Set("COLUMNS", "120");
+  env.Set("LINES", "40");
+  const TerminalCapabilities caps = Detect(env);
+  EXPECT_EQ(caps.columns, 120);
+  EXPECT_EQ(caps.lines, 40);
+}
+
+TEST(TerminalCapabilities, DimensionsTolerateSurroundingWhitespace) {
+  FakeEnvironment env = RealTerm();
+  env.Set("COLUMNS", " 80 ");
+  env.Set("LINES", "\t24\t");
+  const TerminalCapabilities caps = Detect(env);
+  EXPECT_EQ(caps.columns, 80);
+  EXPECT_EQ(caps.lines, 24);
+}
+
+TEST(TerminalCapabilities, MalformedDimensionsDegradeToUnknown) {
+  for (const char* value : {"", "abc", "80x24", "0", "-5", "12.5", "  ", "1 2"}) {
+    FakeEnvironment env = RealTerm();
+    env.Set("COLUMNS", value);
+    env.Set("LINES", value);
+    const TerminalCapabilities caps = Detect(env);
+    EXPECT_EQ(caps.columns, 0) << "COLUMNS=" << value;
+    EXPECT_EQ(caps.lines, 0) << "LINES=" << value;
+  }
+}
+
+TEST(TerminalCapabilities, OverlongDimensionSaturates) {
+  FakeEnvironment env = RealTerm();
+  env.Set("COLUMNS", "99999999999999999999");
+  const TerminalCapabilities caps = Detect(env);
+  EXPECT_EQ(caps.columns, std::numeric_limits<int>::max());
+}
+
+TEST(TerminalCapabilities, DimensionsAreIndependentOfTermType) {
+  // Dimensions are a plain environment signal, reported even for a dumb
+  // terminal where the interactive flags are suppressed.
+  FakeEnvironment env;
+  env.Set("TERM", "dumb");
+  env.Set("COLUMNS", "100");
+  env.Set("LINES", "30");
+  const TerminalCapabilities caps = Detect(env);
+  EXPECT_EQ(caps.columns, 100);
+  EXPECT_EQ(caps.lines, 30);
+  EXPECT_FALSE(caps.mouse);
+}
+
+// ---------------------------------------------------------------------------
 // Explicit overrides
 // ---------------------------------------------------------------------------
 
@@ -454,6 +515,32 @@ TEST(ApplyOverrides, DisableOverrideBeatsDumbOrHint) {
 TEST(ApplyOverrides, EmptyOverridesIsNoOp) {
   const TerminalCapabilities detected = Detect(RealTerm());
   EXPECT_TRUE(ApplyOverrides(detected, CapabilityOverrides{}) == detected);
+}
+
+TEST(ApplyOverrides, DimensionsCanBeOverridden) {
+  FakeEnvironment env = RealTerm();
+  env.Set("COLUMNS", "80");
+  env.Set("LINES", "24");
+  const TerminalCapabilities detected = Detect(env);
+
+  CapabilityOverrides overrides;
+  overrides.columns = 200;
+  overrides.lines = 60;
+  const TerminalCapabilities resolved = ApplyOverrides(detected, overrides);
+  EXPECT_EQ(resolved.columns, 200);
+  EXPECT_EQ(resolved.lines, 60);
+}
+
+TEST(ApplyOverrides, DimensionOverrideCanForceUnknown) {
+  // An explicit 0 override clears a detected size back to "unknown".
+  FakeEnvironment env = RealTerm();
+  env.Set("COLUMNS", "80");
+  const TerminalCapabilities detected = Detect(env);
+  EXPECT_EQ(detected.columns, 80);
+
+  CapabilityOverrides overrides;
+  overrides.columns = 0;
+  EXPECT_EQ(ApplyOverrides(detected, overrides).columns, 0);
 }
 
 TEST(ApplyOverrides, EveryBoolFieldCanBeOverridden) {

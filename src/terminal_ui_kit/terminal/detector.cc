@@ -4,6 +4,7 @@
 #include <limits>
 #include <optional>
 #include <string>
+#include <string_view>
 
 namespace terminal_ui_kit {
 namespace terminal {
@@ -59,6 +60,36 @@ bool ParseLeadingDigits(std::string_view raw, std::size_t& pos, int& out) {
   return true;
 }
 
+// Parses a terminal dimension (COLUMNS / LINES) into a positive size in
+// character cells, or 0 for "unknown". Surrounding ASCII whitespace is
+// tolerated; an absent, empty, non-numeric, zero, or negative value yields 0 so
+// malformed input degrades safely. An over-long digit run saturates at INT_MAX
+// rather than overflowing.
+int ParseDimension(const std::optional<std::string>& raw) {
+  if (!raw.has_value()) return 0;
+  const std::string_view view = *raw;
+  std::size_t begin = 0;
+  std::size_t end = view.size();
+  while (begin < end && (view[begin] == ' ' || view[begin] == '\t')) ++begin;
+  while (end > begin && (view[end - 1] == ' ' || view[end - 1] == '\t')) --end;
+  if (begin == end) return 0;
+
+  long long value = 0;
+  static constexpr long long kMax = std::numeric_limits<int>::max();
+  for (std::size_t i = begin; i < end; ++i) {
+    const char c = view[i];
+    if (c < '0' || c > '9') return 0;  // malformed -> unknown
+    const int digit = c - '0';
+    if (value > (kMax - digit) / 10) {
+      value = kMax;  // saturate; keep scanning so later non-digits still fail
+      continue;
+    }
+    value = value * 10 + digit;
+  }
+  if (value <= 0) return 0;
+  return static_cast<int>(value);
+}
+
 }  // namespace
 
 bool ParseProgramVersion(std::string_view raw, int& major, int& minor) noexcept {
@@ -112,6 +143,10 @@ TerminalCapabilities DetectTerminalCapabilities(const EnvironmentProvider& env) 
   caps.screen = PresentNonEmpty(env, "STY");
   caps.ssh = PresentNonEmpty(env, "SSH_CONNECTION") || PresentNonEmpty(env, "SSH_CLIENT") ||
              PresentNonEmpty(env, "SSH_TTY");
+
+  // ---- Terminal dimensions: COLUMNS / LINES, 0 when unknown. -------------
+  caps.columns = ParseDimension(env.Get("COLUMNS"));
+  caps.lines = ParseDimension(env.Get("LINES"));
 
   // ---- Color depth. Precedence: NO_COLOR/TERM=dumb, COLORTERM, TERM hints. --
   if (no_color || dumb) {
