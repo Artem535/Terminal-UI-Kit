@@ -17,8 +17,7 @@ struct MarkdownViewOptions {
   std::function<void(std::string url)> on_link;
 };
 
-ftxui::Component MarkdownView(
-    std::shared_ptr<MarkdownDocument> document,
-    MarkdownViewOptions options);
+ftxui::Component MarkdownView(std::shared_ptr<MarkdownDocument> document,
+                              MarkdownViewOptions options);
 
 }  // namespace terminal_ui_kit

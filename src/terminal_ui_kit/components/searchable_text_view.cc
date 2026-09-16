@@ -73,8 +73,7 @@ std::string_view RemoveLastUtf8Codepoint(std::string_view text) {
 class SearchableTextViewImpl {
  public:
   explicit SearchableTextViewImpl(SearchableTextViewOptions options)
-      : options_(std::move(options)),
-        wrapped_(WrappedDocument(80, options_.tab_width)) {
+      : options_(std::move(options)), wrapped_(WrappedDocument(80, options_.tab_width)) {
     VirtualListOptions list_opts;
     list_opts.item_count = [this] { return wrapped_.display_line_count(); };
     list_opts.item_height = 1;
